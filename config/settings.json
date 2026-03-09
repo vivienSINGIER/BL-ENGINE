@@ -1,0 +1,135 @@
+{
+    "projects": {
+        "253B309C-1FFA-78D0-272E-28621B0F4E9D": {
+            "config-debug": {
+                "additionalDependencies": ["winmm.lib"],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "config-release": {
+                "additionalDependencies": ["winmm.lib"],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "dependencies": [],
+            "dependents": [
+                "2B5B58A5-54D3-7ED9-6508-05E6687F72C6"
+            ],
+            "name": "Core",
+            "property-lib": true,
+            "property-pch": false,
+            "property-vcpkg": false,
+            "property-window": false
+        },
+        "2B5B58A5-54D3-7ED9-6508-05E6687F72C6": {
+            "config-debug": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "config-release": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "dependencies": [
+                "253B309C-1FFA-78D0-272E-28621B0F4E9D",
+                "2B9D205D-4876-56CC-0ADB-38AD5BA80E15"
+            ],
+            "dependents": [
+                "2CD33508-2DBE-388A-7E88-69DC5EAB4FC9",
+                "2CA5693A-5CCC-1494-4A74-131E34756FDF"
+                
+            ],
+            "name": "Engine",
+            "property-lib": true,
+            "property-pch": false,
+            "property-vcpkg": false,
+            "property-window": false
+        },
+        "2B9D205D-4876-56CC-0ADB-38AD5BA80E15": {
+            "config-debug": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "config-release": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "dependencies": [],
+            "dependents": [
+                "2B5B58A5-54D3-7ED9-6508-05E6687F72C6"
+            ],
+            "name": "Render",
+            "property-lib": true,
+            "property-pch": false,
+            "property-vcpkg": false,
+            "property-window": false
+        },
+        "2CA5693A-5CCC-1494-4A74-131E34756FDF": {
+            "config-debug": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "config-release": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "dependencies": [
+                "2B5B58A5-54D3-7ED9-6508-05E6687F72C6"
+            ],
+            "dependents": [],
+            "name": "Gameplay",
+            "property-lib": false,
+            "property-pch": false,
+            "property-vcpkg": false,
+            "property-window": true
+        },
+        "2CD33508-2DBE-388A-7E88-69DC5EAB4FC9": {
+            "config-debug": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "config-release": {
+                "additionalDependencies": [],
+                "additionalIncludeDirectories": [],
+                "additionalLibraryDirectories": [],
+                "preprocessorDefinitions": []
+            },
+            "dependencies": [
+                "2B5B58A5-54D3-7ED9-6508-05E6687F72C6"
+            ],
+            "dependents": [],
+            "name": "Sandbox",
+            "property-lib": false,
+            "property-pch": false,
+            "property-vcpkg": false,
+            "property-window": true
+        }
+    },
+    "projects_name_to_guid": {
+        "Core": "253B309C-1FFA-78D0-272E-28621B0F4E9D",
+        "Engine": "2B5B58A5-54D3-7ED9-6508-05E6687F72C6",
+        "Gameplay": "2CA5693A-5CCC-1494-4A74-131E34756FDF",
+        "Render": "2B9D205D-4876-56CC-0ADB-38AD5BA80E15",
+        "Sandbox": "2CD33508-2DBE-388A-7E88-69DC5EAB4FC9"
+    },
+    "solution_guid": "2ADC7331-3354-2CF4-41AB-2FB00E5630BA",
+    "solution_name": "DX12Engine",
+    "startup_project": "2CD33508-2DBE-388A-7E88-69DC5EAB4FC9",
+    "version": "2.0"
+}
