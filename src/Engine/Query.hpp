@@ -1,0 +1,23 @@
+#ifndef QUERY_HPP_DEFINED
+#define QUERY_HPP_DEFINED
+
+#include "Engine.h"
+#include "Archetype.hpp"
+#include "ArchetypeRegistry.hpp"
+#include "ComponentStorage.hpp"
+#include "ComponentRegistry.hpp"
+
+struct QueryBase {
+    ComponentMask      required;
+    Vector<Archetype*> matched;
+    virtual ~QueryBase() = default;
+};
+
+template<typename... Ts>
+struct Query : QueryBase {
+    Query() {
+        (required.set(ComponentRegistry::Id<Ts>()), ...);
+    }
+};
+
+#endif
