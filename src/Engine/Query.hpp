@@ -3,8 +3,7 @@
 
 #include "Engine.h"
 #include "Archetype.hpp"
-#include "ArchetypeRegistry.hpp"
-#include "ComponentStorage.hpp"
+#include "ArchetypeRegistry.h"
 #include "ComponentRegistry.hpp"
 
 struct QueryBase {
@@ -14,7 +13,8 @@ struct QueryBase {
 };
 
 template<typename... Ts>
-struct Query : QueryBase {
+struct Query : QueryBase
+{
     Query() {
         (required.set(ComponentRegistry::Id<Ts>()), ...);
     }

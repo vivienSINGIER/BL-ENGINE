@@ -1,6 +1,7 @@
 #ifndef WORLD_H_DEFINED
 #define WORLD_H_DEFINED
 
+#include "ArchetypeRegistry.h"
 #include "Engine.h"
 #include "EntityManager.h"
 #include "Query.hpp"
@@ -33,12 +34,13 @@ private:
     Vector<QueryBase*> m_queries;
     
     void MoveEntity(EntityId _entity, EntityRecord& rec, Archetype* _src, Archetype* _dst);
-    void RemoveFromArchetype(EntityId _entity, EntityRecord& _rec);
-    void FixSwappedEntity(Archetype* _arch, uint32 _row);
+    void RemoveFromArchetype(EntityId _e, EntityRecord& _rec);
 
-    Archetype* GetOrCreateEdge(Archetype* _src, ComponentId, _CERT_ID, bool _add);
+    Archetype* GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add);
 
     static void TryMatchQuery(QueryBase* _query, Archetype* _arch);
 };
+
+#include "World.inl"
 
 #endif

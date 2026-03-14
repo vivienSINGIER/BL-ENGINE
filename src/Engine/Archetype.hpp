@@ -3,6 +3,7 @@
 
 #include "Engine.h"
 #include "ComponentStorage.hpp"
+#include "EntityManager.h"
 
 struct Archetype
 {
@@ -10,8 +11,10 @@ struct Archetype
     ComponentStorage storage;
     Vector<EntityId> entities;
     
-    Array<EntityId, MAX_COMPONENTS> EdgeAdd{};
-    Array<EntityId, MAX_COMPONENTS> EdgeRemove{};
+    Array<Archetype*, MAX_COMPONENTS> EdgeAdd{};
+    Array<Archetype*, MAX_COMPONENTS> EdgeRemove{};
+
+    Archetype(ComponentMask _mask) : mask(_mask) {}
 };
 
 #endif

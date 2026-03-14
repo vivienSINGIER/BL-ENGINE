@@ -31,10 +31,10 @@ struct ComponentStorage
     void Push(ComponentId _cId, T const& _val)
     {
         Vector<Byte>& col = columns[_cId];
-        uint64 offset = sizeof(col);
+        uint64 offset = col.size();
         col.resize(offset + sizeof(T));
 
-        std::memcpy(col.data() + offset, _val, sizeof(T));
+        std::memcpy(col.data() + offset, &_val, sizeof(T));
     }
 
     void FinishPush()
