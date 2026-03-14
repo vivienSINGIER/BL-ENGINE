@@ -1,7 +1,7 @@
 #ifndef COMPONENT_STORAGE_HPP_DEFINED
 #define COMPONENT_STORAGE_HPP_DEFINED
 
-#include "Engine.h"
+#include "../define.h"
 #include "ComponentRegistry.hpp"
 
 struct ComponentStorage

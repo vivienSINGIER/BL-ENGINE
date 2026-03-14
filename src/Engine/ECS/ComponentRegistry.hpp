@@ -1,9 +1,7 @@
 #ifndef COMPONENT_REGISTRY_HPP_DEFINED
 #define COMPONENT_REGISTRY_HPP_DEFINED
 
-#include <cassert>
-
-#include "Engine.h"
+#include "../define.h"
 
 struct ComponentRegistry 
 {

@@ -2,8 +2,7 @@
 #define TEST_ECS_H_DEFINED
 
 #include "Test.h"
-#include "../Engine/World.h"
-#include "../Engine/ISystem.hpp"
+#include "../Engine/Engine.h"
 
 struct Position  { float x, y; };
 struct Velocity  { float vx, vy; };

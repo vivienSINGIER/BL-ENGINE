@@ -2,7 +2,7 @@
 #define ARCHETYPE_REGISTRY_H_DEFINED
 
 #include "Archetype.hpp"
-#include "Engine.h"
+#include "../define.h"
 #include "../Core/define.h"
 
 class World;

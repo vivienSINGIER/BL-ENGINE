@@ -1,7 +1,7 @@
 #ifndef QUERY_HPP_DEFINED
 #define QUERY_HPP_DEFINED
 
-#include "Engine.h"
+#include "../define.h"
 #include "Archetype.hpp"
 #include "ArchetypeRegistry.h"
 #include "ComponentRegistry.hpp"

@@ -2,7 +2,7 @@
 #define WORLD_H_DEFINED
 
 #include "ArchetypeRegistry.h"
-#include "Engine.h"
+#include "../define.h"
 #include "EntityManager.h"
 #include "Query.hpp"
 #include "SystemScheduler.h"

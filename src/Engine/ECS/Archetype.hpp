@@ -1,7 +1,7 @@
 #ifndef ARCHETYPE_HPP_DEFINED
 #define ARCHETYPE_HPP_DEFINED
 
-#include "Engine.h"
+#include "../define.h"
 #include "ComponentStorage.hpp"
 #include "EntityManager.h"
 

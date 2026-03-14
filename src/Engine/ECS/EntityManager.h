@@ -1,7 +1,7 @@
 #ifndef ENTITY_MANAGER_H_DEFINED
 #define ENTITY_MANAGER_H_DEFINED
 
-#include "Engine.h"
+#include "../define.h"
 
 struct Archetype;
 

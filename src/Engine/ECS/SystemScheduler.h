@@ -2,7 +2,7 @@
 #define SYSTEM_SCHEDULER_HPP_DEFINED
 
 #include "Archetype.hpp"
-#include "Engine.h"
+#include "../define.h"
 
 struct ISystem;
 
