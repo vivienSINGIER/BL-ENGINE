@@ -66,6 +66,7 @@ void World::MoveEntity(EntityId _entity, EntityRecord& _rec, Archetype* _src, Ar
 
             Vector<Byte>& dstCol = _dst->storage.columns[cid];
             dstCol.insert(dstCol.end(), raw, raw + stride);
+            _dst->storage.strides[cid] = stride;
         }
     }
 

@@ -30,6 +30,10 @@ struct ComponentStorage
     template <typename T>
     void Push(ComponentId _cId, T const& _val)
     {
+        auto it = columns.find(_cId);
+        if (it == columns.end())
+            RegisterColumn(_cId, sizeof(T));
+        
         Vector<Byte>& col = columns[_cId];
         uint64 offset = col.size();
         col.resize(offset + sizeof(T));

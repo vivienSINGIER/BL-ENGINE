@@ -20,7 +20,7 @@ T& World::AddComponent(EntityId _e, T const& _val)
 
     MoveEntity(_e, rec, src, dst);
 
-    dst->storage.Push<T>(_val);
+    dst->storage.Push<T>(cid, _val);
 
     rec = m_entityManager.GetRecord(_e);
     T& stored = dst->storage.Get<T>(cid, rec.row);

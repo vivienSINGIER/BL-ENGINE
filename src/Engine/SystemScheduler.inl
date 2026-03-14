@@ -6,8 +6,8 @@
 template <typename T, typename ... Args>
 T* SystemScheduler::AddSystem(Phase _phase, Args&&... args)
 {
-    T* system = new T(args);
-    m_phases[_phase] = system;
+    T* system = new T(std::forward<Args>(args)...);
+    m_phases[_phase].push_back(system);
     return system;
 }
 

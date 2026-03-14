@@ -29,7 +29,7 @@ void EntityManager::Destroy(EntityId _e)
 bool EntityManager::IsAlive(EntityId _e)
 {
     uint32 index = EntityIndex(_e);
-    return index < m_vRecords.size() && m_vRecords[index].gen == EntityGen(_e) && m_vRecords[index].archetype != nullptr;
+    return index < m_vRecords.size() && m_vRecords[index].gen == EntityGen(_e);
 }
 
 EntityRecord& EntityManager::GetRecord(EntityId _e)

@@ -3,7 +3,7 @@
 
 #include "Archetype.hpp"
 #include "Engine.h"
-#include "Common/Common.h"
+#include "../Core/define.h"
 
 class World;
 

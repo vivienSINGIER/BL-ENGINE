@@ -8,4 +8,7 @@
 #include "Tests/DemoGeos.hpp"
 #include "Tests/DemoTexture.hpp"
 
+#include "Tests/TestECS.hpp"
+
+
 #endif
