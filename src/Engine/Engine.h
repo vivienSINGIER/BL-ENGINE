@@ -5,5 +5,6 @@
 #include "ECS/World.h"
 #include "ECS/ISystem.hpp"
 #include "ECS/EntityManager.h"
+#include "ECS/Script.hpp"
 
 #endif

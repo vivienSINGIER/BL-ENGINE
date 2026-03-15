@@ -1,11 +1,16 @@
 #ifndef WORLD_H_DEFINED
 #define WORLD_H_DEFINED
 
-#include "ArchetypeRegistry.h"
+#include <functional>
+
 #include "../define.h"
+
+#include "ArchetypeRegistry.h"
 #include "EntityManager.h"
 #include "Query.hpp"
 #include "SystemScheduler.h"
+
+struct IScript;
 
 class World 
 {
@@ -20,6 +25,13 @@ public:
     template <typename T> T& GetComponent(EntityId _e);
     template <typename T> bool HasComponent(EntityId _e);
 
+    template <typename T> T& AddScript(EntityId _e);
+    template <typename T> void RemoveScript(EntityId _e);
+    template <typename T> T& GetScript(EntityId _e);
+    template <typename T> bool HasScript(EntityId _e);
+
+    template <typename... Args> void NotifyScripts(EntityId _e, void (IScript::*fn)(Args...), Args... args);
+    
     template <typename T, typename... Args>
     T* RegisterSystem(Phase _phase, Args&&... args);
     void Update(float _dt);
@@ -33,9 +45,13 @@ private:
     SystemScheduler m_systemScheduler;
     Vector<QueryBase*> m_queries;
     
+    UnorderedMap<ComponentId, std::function<IScript*(EntityId, World&)>> m_scriptSystems;
+    
     void MoveEntity(EntityId _entity, EntityRecord& rec, Archetype* _src, Archetype* _dst);
     void RemoveFromArchetype(EntityId _e, EntityRecord& _rec);
 
+    template <typename T> void CheckScriptSystem();
+    
     Archetype* GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add);
 
     static void TryMatchQuery(QueryBase* _query, Archetype* _arch);

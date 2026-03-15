@@ -9,6 +9,7 @@
 #include "Tests/DemoTexture.hpp"
 
 #include "Tests/TestECS.hpp"
+#include "Tests/TestScripts.hpp"
 
 
 #endif

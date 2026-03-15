@@ -13,7 +13,7 @@ struct Health    { float hp; };
 // ─────────────────────────────────────────────
 
 // Moves entities that have both Position and Velocity
-struct MoveSystem : System<MoveSystem, Position, Velocity>
+struct MoveSystem : System<Position, Velocity>
 {
     void OnUpdate(float dt, Position& pos, Velocity& vel) override
     {
@@ -23,7 +23,7 @@ struct MoveSystem : System<MoveSystem, Position, Velocity>
 };
 
 // Drains health on every entity that has Health
-struct DrainSystem : System<DrainSystem, Health>
+struct DrainSystem : System<Health>
 {
     void OnUpdate(float dt, Health& hp) override
     {

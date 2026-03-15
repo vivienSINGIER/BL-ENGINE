@@ -12,7 +12,7 @@ struct  ISystem
     virtual ~ISystem() = default;
 };
 
-template <typename TSystem, typename... TComponents>
+template <typename... TComponents>
 struct System : public ISystem
 {
     Query<TComponents...> query;
@@ -36,6 +36,21 @@ struct System : public ISystem
     }
     
     virtual ~System() = default;
+};
+
+template <typename TScript>
+struct ScriptSystem : System<TScript>
+{
+    void OnUpdate(float _dt, TScript& _script)
+    {
+        if (_script.m_isStarted == false)
+        {
+            _script.m_isStarted = true;
+            _script.Start();
+        }
+        
+        _script.Update(_dt);
+    }
 };
 
 #endif

@@ -24,6 +24,8 @@ void World::DestroyEntity(EntityId _entity)
 {
     assert(m_entityManager.IsAlive(_entity) && "Destroying dead entity");
 
+    NotifyScripts(_entity, &IScript::Destroy);
+    
     EntityRecord& rec = m_entityManager.GetRecord(_entity);
     RemoveFromArchetype(_entity, rec);
     m_entityManager.Destroy(_entity);
