@@ -1,0 +1,71 @@
+#ifndef ENGINE_MANAGER_CPP_DEFINED
+#define ENGINE_MANAGER_CPP_DEFINED
+
+#include "EngineManager.h"
+#include "Scene.h"
+#include "RessourceManager.h"
+
+#include "../Render/Generic/Render.h"
+#include "../Render/Generic/Factories/ShaderFactory.hpp"
+
+EngineManager* EngineManager::s_pInstance = nullptr;
+
+EngineManager::EngineManager()
+{
+    s_pInstance = this;
+    m_chrono = Chrono();
+}
+
+EngineManager::~EngineManager()
+{
+    s_pInstance->Exit();
+}
+
+void EngineManager::Initialize(UINT _width, UINT _height, WString _title)
+{
+    if (m_pWindow == nullptr)
+    {
+        m_pWindow = new Window(_width, _height, _title);
+        m_pWindow->InitD3D12();
+        m_pDevice = m_pWindow->GetDevice();
+    }
+    if (m_pSceneManager == nullptr)
+        m_pSceneManager = new SceneManager;
+    
+    //m_pDevice->SetClearColor(ToColor(3, 63, 153)); //TO DO
+    m_pRessourceManager = new RessourceManager;
+
+    Shader* coloredS = ShaderFactory::CreateLitColored(m_pDevice);
+    RessourceManager::AddShader("Color", coloredS);
+
+    Material* white = coloredS->CreateMaterial();
+    white->SetFloat4("DiffuseAlbedo", {1.0f, 1.0f, 1.0f, 1.0f});
+    RessourceManager::AddMaterial("Default", white);
+
+    RenderFont* font = m_pDevice->CreateRenderFont(L"../../res/Font/Lovely Rose.otf", 10.0f);
+    RessourceManager::AddFont("Default", font);
+}
+
+void EngineManager::Run()
+{
+    m_chrono.Start();
+    
+    while ( m_pWindow->IsOpen() )
+    {
+        m_deltaTime = m_chrono.Reset();
+        
+        m_pWindow->Update();
+        m_pWindow->Clear();
+
+        m_pSceneManager->GetCurrentScene()->Update(m_deltaTime);
+
+        m_pWindow->Display();
+    }
+}
+
+void EngineManager::Exit()
+{
+    delete m_pRessourceManager;
+}
+
+#endif

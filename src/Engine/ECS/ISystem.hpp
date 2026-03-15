@@ -16,10 +16,12 @@ template <typename... TComponents>
 struct System : public ISystem
 {
     Query<TComponents...> query;
+    World* world;
 
     void OnRegister(World& _world)
     {
         _world.RegisterQuery(&query);
+        world = &_world;
     }
 
     virtual void OnUpdate(float _dt, TComponents&... _components) = 0;
