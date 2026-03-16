@@ -145,6 +145,16 @@ Archetype* World::GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add)
 
 void World::TryMatchQuery(QueryBase* _query, Archetype* _arch)
 {
-    if ((_query->required & _arch->mask) == _query->required)
+    bool match = true;
+    if ((_query->required & _arch->mask) != _query->required)
+        match = false;
+
+    for (ComponentMask& mask : _query->orMasks)
+    {
+        if ((mask & _arch->mask).any() == false)
+            match = false;
+    }
+
+    if (match)
         _query->matched.push_back(_arch);
 }
