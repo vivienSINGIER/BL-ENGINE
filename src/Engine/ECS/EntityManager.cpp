@@ -8,11 +8,12 @@ EntityId EntityManager::Create()
         m_freeList.pop_back();
 
         m_vRecords[index].gen++;
+        m_vRecords[index].isActive = true;
         return MakeEntity(index, m_vRecords[index].gen);
     }
 
     uint32 index = (uint32)m_vRecords.size();
-    m_vRecords.push_back({nullptr, 0, 0}); // Row is set to 0 until components are stored in the archetype
+    m_vRecords.push_back({nullptr, true, 0, 0}); // Row is set to 0 until components are stored in the archetype
     return MakeEntity(index, m_vRecords.back().gen);
 }
 
