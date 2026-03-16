@@ -1,6 +1,8 @@
 #ifndef COMPONENT_STORAGE_HPP_DEFINED
 #define COMPONENT_STORAGE_HPP_DEFINED
 
+#include <filesystem>
+
 #include "../define.h"
 #include "ComponentRegistry.hpp"
 
@@ -26,6 +28,16 @@ struct ComponentStorage
     void SetActive(ComponentId _column, uint64 _row, bool _value)
     {
         activeStates[_column][_row] = _value;
+    }
+
+    bool IsRowActive(uint64 _row, ComponentMask& _mask)
+    {
+        for (auto& [cid, col] : activeStates)
+        {
+            if (col[_row] == false && _mask.test(cid))
+                return false;
+        }
+        return true;
     }
     
     template <typename T>

@@ -92,8 +92,8 @@ void World::MoveEntity(EntityId _entity, EntityRecord& _rec, Archetype* _src, Ar
     {
         if (_dst->mask.test(cid))
         {
-            Vector<bool>& srcCol = _dst->storage.activeStates[cid];
-            Vector<bool>& dstCol = _src->storage.activeStates[cid];
+            Vector<bool>& srcCol = _src->storage.activeStates[cid];
+            Vector<bool>& dstCol = _dst->storage.activeStates[cid];
 
             dstCol.insert(dstCol.end(), srcCol.begin(), srcCol.end());
         }
