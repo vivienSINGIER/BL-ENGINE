@@ -22,12 +22,18 @@ struct System : public ISystem
     {
         _world.RegisterQuery(&query);
         world = &_world;
+        OnInit();
     }
 
-    virtual void OnUpdate(float _dt, TComponents&... _components) = 0;
+    virtual void OnInit() {};
+    
+    virtual void OnStartUpdate(float _dt) {};
+    virtual void OnUpdate(float _dt, TComponents&... _components) {};
+    virtual void OnEndUpdate(float _dt) {};
 
-    void Update(float _dt)
+    virtual void Update(float _dt)
     {
+        OnStartUpdate(_dt);
         for (Archetype* arch : query.matched)
         {
             for (uint64 i = 0; i < arch->storage.count; i++)
@@ -38,6 +44,7 @@ struct System : public ISystem
                 OnUpdate(_dt, arch->storage.Get<TComponents>(ComponentRegistry::Id<TComponents>(), i)...);
             }
         }
+        OnEndUpdate(_dt);
     }
     
     virtual ~System() = default;
