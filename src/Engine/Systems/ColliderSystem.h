@@ -4,14 +4,27 @@
 #include "../ECS/ISystem.hpp"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
-#include "Utils.hpp"
 
-struct BSP
+struct AABB
 {
-    Axis split;
-    BSP* childs[2];
-    std::vector<Segment3D> segments;
-    int nbSegments;
+	XMFLOAT3 min;
+	XMFLOAT3 max;
+};
+
+struct Contact 
+{
+	EntityId a;
+	EntityId b;
+	XMFLOAT3 normal;
+	float penetration;
+};
+
+struct PartitionGrid
+{
+	float cellSize;
+	int numCellsX;
+	int numCellsY;
+	UnorderedMap<XMINT2, Vector<EntityId>> cells;
 };
 
 class ColliderSystem : public System<ColliderComponent,TransformComponent>
@@ -20,12 +33,17 @@ public:
 	void OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform) override;
 
 private:
-	void BuildBSP(std::vector<Segment3D>& _segments, int _depth);
+	void BroadPhase();
+	void NarrowPhase();
 
-	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);
-	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
+	void BuildCandidatePairs();
 
-	BSP m_bsp;
+	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
+
+	PartitionGrid m_partitionGrid;
+	Vector<Contact> m_vContacts;
+	Vector<std::pair<EntityId, EntityId>> m_candidatePairs;
 };
 
 #endif // !COLLIDER_SYSTEM_H_DEFINED

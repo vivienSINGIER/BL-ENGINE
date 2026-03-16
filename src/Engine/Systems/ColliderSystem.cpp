@@ -2,45 +2,80 @@
 
 void ColliderSystem::OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform)
 {
+	m_vContacts.clear();
+
+	BroadPhase();
+	BuildCandidatePairs();
 
 }
 
-void ColliderSystem::BuildBSP(std::vector<Segment3D>& _segments, int _depth)
+void ColliderSystem::BroadPhase()
+{
+	m_partitionGrid.cells.clear();
+}
+
+void ColliderSystem::NarrowPhase()
+{
+}
+
+void ColliderSystem::BuildCandidatePairs()
 {
 
 }
 
-bool ColliderSystem::CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB)
+AABB ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
-	if (_boxA.type != ColliderType::Box || _boxB.type != ColliderType::Box) return false;
+	XMFLOAT3 center = _transform.transform.GetWorldPosition();
 
-	XMFLOAT3 posA = _transformA.transform.GetWorldPosition();
-	XMFLOAT3 posB = _transformB.transform.GetWorldPosition();
-	XMFLOAT3 halfA = _boxA.box.halfExtents;
-	XMFLOAT3 halfB = _boxB.box.halfExtents;
+	AABB aabb = { XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) };
 
-	if (posA.x + halfA.x < posB.x - halfB.x || posA.x - halfA.x > posB.x + halfB.x) return false; 
-	if (posA.y + halfA.y < posB.y - halfB.y || posA.y - halfA.y > posB.y + halfB.y) return false;
-	if (posA.z + halfA.z < posB.z - halfB.z || posA.z - halfA.z > posB.z + halfB.z) return false;
+	if (_collider.type == ColliderType::Box)
+	{
+		aabb.min = 
+		{
+			center.x - _collider.box.halfExtents.x,
+			center.y - _collider.box.halfExtents.y,
+			center.z - _collider.box.halfExtents.z
+		};
+		aabb.max = 
+		{
+			center.x + _collider.box.halfExtents.x,
+			center.y + _collider.box.halfExtents.y,
+			center.z + _collider.box.halfExtents.z
+		};
+	}
+	else if (_collider.type == ColliderType::Sphere)
+	{
+		aabb.min = 
+		{
+			center.x - _collider.sphere.radius,
+			center.y - _collider.sphere.radius,
+			center.z - _collider.sphere.radius
+		};
+		aabb.max = 
+		{
+			center.x + _collider.sphere.radius,
+			center.y + _collider.sphere.radius,
+			center.z + _collider.sphere.radius
+		};
+	}
 
-	return true;
+	return aabb;
 }
 
-bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB)
+void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, const AABB& aabb)
 {
-	if (_sphereA.type != ColliderType::Sphere || _sphereB.type != ColliderType::Sphere) return false;
+	int cellXMin = static_cast<int>(aabb.min.x / m_partitionGrid.cellSize);
+	int cellYMin = static_cast<int>(aabb.min.y / m_partitionGrid.cellSize);
+	int cellXMax = static_cast<int>(aabb.max.x / m_partitionGrid.cellSize);
+	int cellYMax = static_cast<int>(aabb.max.y / m_partitionGrid.cellSize);
 
-	XMFLOAT3 posA = _transformA.transform.GetWorldPosition();
-	XMFLOAT3 posB = _transformB.transform.GetWorldPosition();
-	float radiusA = _sphereA.sphere.radius;
-	float radiusB = _sphereB.sphere.radius;
-
-	float dx = posA.x - posB.x;
-	float dy = posA.y - posB.y;
-	float dz = posA.z - posB.z;
-
-	float d = dx * dx + dy * dy + dz * dz;
-	if (d > (radiusA + radiusB) * (radiusA + radiusB)) return false;
-
-	return true;
+	for (int x = cellXMin; x <= cellXMax; ++x)
+	{
+		for (int y = cellYMin; y <= cellYMax; ++y)
+		{
+			XMFLOAT2 cellKey = { static_cast<float>(x), static_cast<float>(y) };
+			m_partitionGrid.cells[cellKey].push_back(entity);
+		}
+	}
 }
