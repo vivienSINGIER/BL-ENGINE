@@ -4,6 +4,7 @@
 #include "Test.h"
 #include "../Engine/Engine.h"
 #include <random>
+#include <queue>
 
 
 class TestLaby: public Test
@@ -32,85 +33,106 @@ public:
 		}
 	}
 
-    static void Recursive_division(std::vector<std::vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
+    static void Recursive_division(std::vector<std::vector<char>>& _grid,
+        int _xMin, int _xMax, int _yMin, int _yMax)
     {
         if (_yMax - _yMin > _xMax - _xMin)
         {
-            if(_yMax - _yMin <= 2) return;
+            if (_yMax - _yMin <= 2) return;
 
-            int x = RandomInt(_xMin + 1, _xMax );
-            if ((x - _xMin) % 2 == 0)
-                x += (RandomInt(0, 2) == 0) ? 1 : -1;
+            // Mur horizontal : choisit un y PAIR dans la sous-région
+            int y = RandomInt(_yMin + 1, _yMax - 1);
+            if (y % 2 == 1) y++;  // force y pair
+            if (y >= _yMax) y -= 2;
+            if (y <= _yMin) return;
 
-			int y = RandomInt(_yMin + 2, _yMax - 1);
-			if ((y - _yMin) % 2 == 1)
-				y += (RandomInt(0, 2) == 0) ? 1 : -1;
+            // Passage : choisit un x IMPAIR dans la sous-région
+            int x = RandomInt(_xMin, _xMax - 1);
+            if (x % 2 == 0) x++;  // force x impair
+            if (x >= _xMax) x -= 2;
+            if (x <= _xMin) return;
 
-			for (int i = _xMin + 1; i < _xMax; i++)
-				if (i != x)
-					_grid[i][y] = 'X';
+            for (int i = _xMin + 1; i < _xMax; i++)
+                if (i != x)
+                    _grid[i][y] = 'X';
 
             if (y - _yMin > 2)
-            {
                 Recursive_division(_grid, _xMin, _xMax, _yMin, y);
-				system("cls");
-				printGrid(_grid);
-				Sleep(500);
-            }
-           
             if (_yMax - y > 2)
-            {
                 Recursive_division(_grid, _xMin, _xMax, y, _yMax);
-                system("cls");
-                printGrid(_grid);
-                Sleep(500);
-            }
         }
         else
         {
-			if (_xMax - _xMin <= 2) return;
+            if (_xMax - _xMin <= 2) return;
 
-			int x = RandomInt(_xMin + 2, _xMax - 1);
-			if ((x - _xMin) % 2 == 1)
-				x += (RandomInt(0, 2) == 0) ? 1 : -1;
+            // Mur vertical : choisit un x PAIR dans la sous-région
+            int x = RandomInt(_xMin + 1, _xMax - 1);
+            if (x % 2 == 1) x++;  // force x pair
+            if (x >= _xMax) x -= 2;
+            if (x <= _xMin) return;
 
-			int y = RandomInt(_yMin + 1, _yMax);
-			if ((y - _yMin) % 2 == 0)
-				y += (RandomInt(0, 2) == 0) ? 1 : -1;
+            // Passage : choisit un y IMPAIR dans la sous-région
+            int y = RandomInt(_yMin, _yMax - 1);
+            if (y % 2 == 0) y++;  // force y impair
+            if (y >= _yMax) y -= 2;
+            if (y <= _yMin) return;
 
-			for (int i = _yMin + 1; i < _yMax; i++)
-				if (i != y)
+            for (int i = _yMin + 1; i < _yMax; i++)
+                if (i != y)
                     _grid[x][i] = 'X';
 
             if (x - _xMin > 2)
-            {
                 Recursive_division(_grid, _xMin, x, _yMin, _yMax);
-                system("cls");
-                printGrid(_grid);
-                Sleep(500);
-            }
-
             if (_xMax - x > 2)
-            {
                 Recursive_division(_grid, x, _xMax, _yMin, _yMax);
-                system("cls");
-                printGrid(_grid);
-                Sleep(500);
-            }
-
         }
     }
 
     static void printGrid(std::vector<std::vector<char>>& _grid)
     {
-        for (auto& row : _grid)
-        {
-            for (auto& cell : row)
-				std::cout << (cell == 'X' ? "W" : " ");
-            std::cout << std::endl;
+        for (const auto& row : _grid) {
+            for (char c : row) {
+                if (c == 'X') std::cout << "WW";
+                else if (c == '?') std::cout << "??"; // visible !
+                else               std::cout << "  ";
+            }
+            std::cout << '\n';
         }
 	}
 
+    static void bfs_check(std::vector<std::vector<char>>& grid) {
+        int h = grid.size(), w = grid[0].size();
+        std::vector<std::vector<bool>> visited(h, std::vector<bool>(w, false));
+        std::queue<std::pair<int, int>> q;
+
+        q.push({ 1, 1 });
+        visited[1][1] = true;
+
+        int dx[] = { 0, 0, 1, -1 };
+        int dy[] = { 1, -1, 0, 0 };
+
+        while (!q.empty()) {
+            auto [y, x] = q.front(); q.pop();
+            for (int d = 0; d < 4; d++) {
+                int nx = x + dx[d], ny = y + dy[d];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h
+                    && !visited[ny][nx] && grid[ny][nx] != 'X') {
+                    visited[ny][nx] = true;
+                    q.push({ ny, nx });
+                }
+            }
+        }
+
+        int unreachable = 0;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                if (grid[y][x] == ' ' && !visited[y][x]) {
+                    grid[y][x] = '?'; // zone inaccessible
+                    unreachable++;
+                }
+
+        std::cerr << "Cellules inaccessibles : " << unreachable << "\n";
+    }
 
     static void Run()
     {
@@ -140,6 +162,7 @@ public:
 
 		Recursive_division(grid, 0, m_widthGrid - 1, 0, m_heightGrid - 1);
 		system("cls");
+        bfs_check(grid);
 		printGrid(grid);
 
         EngineManager::GetInstance().Run();
