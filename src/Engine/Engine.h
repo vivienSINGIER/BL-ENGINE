@@ -7,4 +7,17 @@
 #include "ECS/EntityManager.h"
 #include "ECS/Script.hpp"
 
+// ------------- ENGINE -------------
+#include "EngineManager.h"
+#include "RessourceManager.h"
+#include "SceneManager.h"
+
+// ----------- COMPONENTS -----------
+#include "Components/MeshRenderer.hpp"
+#include "Components/TransformComponent.hpp"
+
+// ------------ SYSTEMS -------------
+#include "Systems/MeshRendererSystem.h"
+#include "Systems/TransformSystem.h"
+
 #endif

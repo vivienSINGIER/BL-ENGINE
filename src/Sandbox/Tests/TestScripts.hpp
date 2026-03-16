@@ -59,6 +59,7 @@ class TestScripts : public Test
 public: 
     static void Run()
     {
+        EngineManager::GetInstance().Initialize(1080, 720, L"Test Scripts");
         World world;
 
         // ── Test 1: basic entity creation ──────────

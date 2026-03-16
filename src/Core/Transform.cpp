@@ -389,7 +389,7 @@ void Transform::AddLocalYPR(const XMFLOAT3& ypr)
     {
         XMVECTOR right  = XMVector3Rotate(XMVectorSet(1,0,0,0), qRot);
         XMVECTOR qPitch = XMQuaternionRotationAxis(right, ypr.y);
-        qRot = XMQuaternionMultiply(qPitch, qRot);
+        qRot = XMQuaternionMultiply(qRot, qPitch);
     }
 
     if (ypr.z != 0.0f) // roll (local Z axis)
@@ -455,9 +455,7 @@ void Transform::UpdateLocalRotationFromAxes()
 void Transform::UpdateLocalRotationFromQuaternion()
 {
     XMStoreFloat4x4(&localRot, XMMatrixRotationQuaternion(XMLoadFloat4(&localQuat)));
-
-    //ExtractAxesFromMatrix(worldRot, mRight, mUp, mForward);
-
+    ExtractAxesFromMatrix(localRot, mRight, mUp, mForward);
     dirty |= LOCAL_ROTATE;
 }
 

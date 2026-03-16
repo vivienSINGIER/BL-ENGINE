@@ -3,6 +3,7 @@
 
 bool TransformSystem::IsDirty(Transform& _transform, DIRTY_FLAG _flag)
 {
+    uint8 dirty = _transform.GetDirty();
     return (_transform.GetDirty() & _flag) == _flag;
 }
 
@@ -40,5 +41,10 @@ void TransformSystem::OnUpdate(float _dt, TransformComponent& _t)
     }
 
     if (isDirty)
+    {
         _t.transform.UpdateWorldMatrix();
+        _t.transform.dirty = WORLD | INVERSE;
+    }
+
+    int o = 0;
 }

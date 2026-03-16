@@ -20,15 +20,15 @@ public:
     EngineManager();
     ~EngineManager();
 
-    static EngineManager& GetInstance() { return *s_pInstance; }
+    static EngineManager& GetInstance();
     
     void Initialize(UINT _width, UINT _height, WString _title);
     void Run();
     void Exit();
     
-    static float GetDeltaTime() { return s_pInstance->m_deltaTime; }
-    static Window* GetWindow() { return s_pInstance->m_pWindow; }
-    static Device* GetDevice() { return s_pInstance->m_pDevice; }
+    static float GetDeltaTime() { return GetInstance().m_deltaTime; }
+    static Window* GetWindow() { return GetInstance().m_pWindow; }
+    static Device* GetDevice() { return GetInstance().m_pDevice; }
     
 private:
     static EngineManager* s_pInstance;
