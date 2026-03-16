@@ -3,6 +3,29 @@
 
 #include "define.h"
 
+struct Segment2D
+{
+    XMFLOAT2 pointA;
+	XMFLOAT2 pointB;
+};
+
+struct Segment3D
+{
+    XMFLOAT3 pointA;
+    XMFLOAT3 pointB;
+};
+
+struct Axis
+{
+    XMFLOAT2 origin;
+	XMFLOAT2 direction;
+};
+
+inline float Det(XMFLOAT2 a, XMFLOAT2 b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
 inline float Clamp(float v)
 {
     if ( v<0.0f )
