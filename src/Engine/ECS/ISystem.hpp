@@ -32,6 +32,9 @@ struct System : public ISystem
         {
             for (uint64 i = 0; i < arch->storage.count; i++)
             {
+                if (world->IsActive(arch->entities.at(i)) == false) continue;
+                if (arch->storage.IsRowActive(i, query.required) == false) continue;
+                
                 OnUpdate(_dt, arch->storage.Get<TComponents>(ComponentRegistry::Id<TComponents>(), i)...);
             }
         }

@@ -11,6 +11,7 @@ public:
     {
         float moveDir = 1.0f;
         float scaleFactor = 1.1f;
+        float activetimer = 0.0f;
         
         void Update(float dt) override
         {
@@ -29,6 +30,15 @@ public:
             t.transform.AddLocalYPR(XMFLOAT3(1.0f * dt, 1.0f * dt, 0.0f));
             t.transform.MoveWorld(XMFLOAT3(moveDir * dt, 0.0f, 0.0f));
             t.transform.ScaleWorld(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
+
+            activetimer += dt;
+            if (activetimer > 1.0f)
+                world->SetActiveComponent<MeshRenderer>(entity, false);
+            if (activetimer > 2.0f)
+            {
+                world->SetActiveComponent<MeshRenderer>(entity, true);
+                activetimer = 0.0f;
+            }
         }
     };
     

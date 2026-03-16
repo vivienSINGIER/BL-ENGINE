@@ -31,6 +31,23 @@ void World::DestroyEntity(EntityId _entity)
     m_entityManager.Destroy(_entity);
 }
 
+void World::SetActive(EntityId _entity)
+{
+    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    rec.isActive = true;
+}
+
+void World::SetInactive(EntityId _entity)
+{
+    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    rec.isActive = false;
+}
+
+bool World::IsActive(EntityId _entity)
+{
+    return m_entityManager.GetRecord(_entity).isActive;
+}
+
 void World::Update(float _dt)
 {
     m_systemScheduler.Run(_dt);
@@ -58,7 +75,7 @@ void World::MoveEntity(EntityId _entity, EntityRecord& _rec, Archetype* _src, Ar
 {
     uint32 srcRow = _rec.row;
 
-    // Copies columns for src to dest
+    // Copies columns from src to dest
     for (auto& [cid, col] : _src->storage.columns)
     {
         if (_dst->mask.test(cid))
@@ -69,6 +86,16 @@ void World::MoveEntity(EntityId _entity, EntityRecord& _rec, Archetype* _src, Ar
             Vector<Byte>& dstCol = _dst->storage.columns[cid];
             dstCol.insert(dstCol.end(), raw, raw + stride);
             _dst->storage.strides[cid] = stride;
+        }
+    }
+    for (auto& [cid, col] : _src->storage.activeStates)
+    {
+        if (_dst->mask.test(cid))
+        {
+            Vector<bool>& srcCol = _src->storage.activeStates[cid];
+            Vector<bool>& dstCol = _dst->storage.activeStates[cid];
+
+            dstCol.insert(dstCol.end(), srcCol.begin(), srcCol.end());
         }
     }
 
