@@ -4,10 +4,10 @@
 #include "EngineManager.h"
 #include "Scene.h"
 #include "RessourceManager.h"
+#include "InputManager.h"
 
 #include "../Render/Generic/Render.h"
 #include "../Render/Generic/Factories/ShaderFactory.hpp"
-
 EngineManager* EngineManager::s_pInstance = nullptr;
 
 EngineManager::EngineManager()
@@ -49,6 +49,8 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title)
     Material* white = coloredS->CreateMaterial();
     white->SetFloat4("DiffuseAlbedo", {1.0f, 1.0f, 1.0f, 1.0f});
     RessourceManager::AddMaterial("Default", white);
+
+	InputManager::Initialize(m_pWindow->GetHWND());
 }
 
 void EngineManager::Run()
