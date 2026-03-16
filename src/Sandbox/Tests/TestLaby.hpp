@@ -40,15 +40,13 @@ public:
         {
             if (_yMax - _yMin <= 2) return;
 
-            // Mur horizontal : choisit un y PAIR dans la sous-région
             int y = RandomInt(_yMin + 1, _yMax - 1);
-            if (y % 2 == 1) y++;  // force y pair
+            if (y % 2 == 1) y++;
             if (y >= _yMax) y -= 2;
             if (y <= _yMin) return;
 
-            // Passage : choisit un x IMPAIR dans la sous-région
             int x = RandomInt(_xMin, _xMax - 1);
-            if (x % 2 == 0) x++;  // force x impair
+            if (x % 2 == 0) x++;
             if (x >= _xMax) x -= 2;
             if (x <= _xMin) return;
 
@@ -65,15 +63,13 @@ public:
         {
             if (_xMax - _xMin <= 2) return;
 
-            // Mur vertical : choisit un x PAIR dans la sous-région
             int x = RandomInt(_xMin + 1, _xMax - 1);
-            if (x % 2 == 1) x++;  // force x pair
+            if (x % 2 == 1) x++;
             if (x >= _xMax) x -= 2;
             if (x <= _xMin) return;
 
-            // Passage : choisit un y IMPAIR dans la sous-région
             int y = RandomInt(_yMin, _yMax - 1);
-            if (y % 2 == 0) y++;  // force y impair
+            if (y % 2 == 0) y++;
             if (y >= _yMax) y -= 2;
             if (y <= _yMin) return;
 
@@ -87,6 +83,22 @@ public:
                 Recursive_division(_grid, x, _xMax, _yMin, _yMax);
         }
     }
+
+    static void Lobby(std::vector<std::vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
+    {
+        for (int i = _xMin; i <= _xMax; i++)
+            for (int j = _yMin; j <= _yMax; j++)
+                _grid[i][j] = ' ';
+
+        for (int i = _xMin; i <= _xMax; i++) { _grid[i][_yMin] = 'X'; _grid[i][_yMax] = 'X'; }
+        for (int j = _yMin; j <= _yMax; j++) { _grid[_xMin][j] = 'X'; _grid[_xMax][j] = 'X'; }
+
+        _grid[_xMin][(_yMin + _yMax) / 2] = ' '; // haut
+        _grid[_xMax][(_yMin + _yMax) / 2] = ' '; // bas
+        _grid[(_xMin + _xMax) / 2][_yMin] = ' '; // gauche
+        _grid[(_xMin + _xMax) / 2][_yMax] = ' '; // droite
+    }
+
 
     static void printGrid(std::vector<std::vector<char>>& _grid)
     {
@@ -158,9 +170,67 @@ public:
 
 		std::vector<std::vector<char>> grid(m_widthGrid, std::vector<char>(m_heightGrid, ' '));
 	    
-		Enclose(grid);
+        Enclose(grid);
 
-		Recursive_division(grid, 0, m_widthGrid - 1, 0, m_heightGrid - 1);
+        int cx = m_widthGrid / 2;
+        int cy = m_heightGrid / 2;
+        if (cx % 2 == 0) cx--;
+        if (cy % 2 == 0) cy--;
+
+        int rW = 3, rH = 3;
+        int rxMin = cx - rW; if (rxMin % 2 == 1) rxMin--;
+        int rxMax = cx + rW; if (rxMax % 2 == 1) rxMax++;
+        int ryMin = cy - rH; if (ryMin % 2 == 1) ryMin--;
+        int ryMax = cy + rH; if (ryMax % 2 == 1) ryMax++;
+
+        // Murs de séparation
+        for (int i = 0; i < m_widthGrid; i++)
+        {
+            grid[i][ryMin] = 'X';
+            grid[i][ryMax] = 'X';
+        }
+        for (int j = 0; j < m_heightGrid; j++)
+        {
+            grid[rxMin][j] = 'X';
+            grid[rxMax][j] = 'X';
+        }
+
+        // 8 zones
+        Recursive_division(grid, 0, rxMin, 0, ryMin);
+        Recursive_division(grid, rxMax, m_widthGrid - 1, 0, ryMin);
+        Recursive_division(grid, 0, rxMin, ryMax, m_heightGrid - 1);
+        Recursive_division(grid, rxMax, m_widthGrid - 1, ryMax, m_heightGrid - 1);
+        Recursive_division(grid, rxMin, rxMax, 0, ryMin);
+        Recursive_division(grid, rxMin, rxMax, ryMax, m_heightGrid - 1);
+        Recursive_division(grid, 0, rxMin, ryMin, ryMax);
+        Recursive_division(grid, rxMax, m_widthGrid - 1, ryMin, ryMax);
+
+        // Percer APRES la generation
+        int midX = (rxMin + rxMax) / 2;
+        int midY = (ryMin + ryMax) / 2;
+
+        // Mur horizontal ryMin : une ouverture par zone (toutes les 2 cellules impaires)
+        for (int i = 1; i < m_widthGrid - 1; i += 2)
+            if (i != rxMin && i != rxMax)
+                grid[i][ryMin] = ' ';
+
+        // Mur horizontal ryMax
+        for (int i = 1; i < m_widthGrid - 1; i += 2)
+            if (i != rxMin && i != rxMax)
+                grid[i][ryMax] = ' ';
+
+        // Mur vertical rxMin
+        for (int j = 1; j < m_heightGrid - 1; j += 2)
+            if (j != ryMin && j != ryMax)
+                grid[rxMin][j] = ' ';
+
+        // Mur vertical rxMax
+        for (int j = 1; j < m_heightGrid - 1; j += 2)
+            if (j != ryMin && j != ryMax)
+                grid[rxMax][j] = ' ';
+
+        Lobby(grid, rxMin, rxMax, ryMin, ryMax);
+
 		system("cls");
         bfs_check(grid);
 		printGrid(grid);
