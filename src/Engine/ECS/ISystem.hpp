@@ -20,9 +20,9 @@ struct System : public ISystem
 
     void OnRegister(World& _world)
     {
+        OnInit();
         _world.RegisterQuery(&query);
         world = &_world;
-        OnInit();
     }
 
     virtual void OnInit() {};
