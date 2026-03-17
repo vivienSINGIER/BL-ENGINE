@@ -27,7 +27,7 @@ struct PartitionGrid
 	UnorderedMap<XMINT2, Vector<EntityId>> cells;
 };
 
-class ColliderSystem : public System<ColliderComponent,TransformComponent>
+class ColliderSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
 	void OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform) override;
@@ -38,7 +38,7 @@ private:
 
 	void BuildCandidatePairs();
 
-	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+	AABB CalculateWorldAABB(TransformComponent& _transform);
 	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
 
 	PartitionGrid m_partitionGrid;

@@ -2,20 +2,23 @@
 
 void ColliderSystem::OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform)
 {
-	m_vContacts.clear();
-
-	BroadPhase();
-	BuildCandidatePairs();
-
 }
 
 void ColliderSystem::BroadPhase()
 {
 	m_partitionGrid.cells.clear();
+	for (Archetype* arch : query.matched)
+	{
+		for (uint64 i = 0; i < arch->storage.count; i++)
+		{
+			arch->storage.Get<TransformComponent>(ComponentRegistry::Id<TransformComponent>(), i);
+		}
+	}
 }
 
 void ColliderSystem::NarrowPhase()
 {
+
 }
 
 void ColliderSystem::BuildCandidatePairs()
@@ -23,7 +26,7 @@ void ColliderSystem::BuildCandidatePairs()
 
 }
 
-AABB ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
+AABB ColliderSystem::CalculateWorldAABB(TransformComponent& _transform)
 {
 	XMFLOAT3 center = _transform.transform.GetWorldPosition();
 
