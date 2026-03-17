@@ -109,6 +109,11 @@ void Transform::UpdateMatrix()
     XMStoreFloat4x4(&matrix, m);
 
     dirty &= ~WORLD;
+    dirty &= ~POS;
+    dirty &= ~SCALE;
+    dirty &= ~ROTATE;
+    
+    dirty |= INVERSE;
 }
 
 void Transform::UpdateInvMatrix()
@@ -120,6 +125,33 @@ void Transform::UpdateInvMatrix()
     XMStoreFloat4x4(&invMatrix, XMMatrixInverse(nullptr, m));
 
     dirty &= ~INVERSE;
+}
+
+void Transform::UpdateFromParent(Transform const& parent)
+{
+    XMVECTOR parentScale = XMLoadFloat3(&parent.scale);
+    XMVECTOR localScale  = XMLoadFloat3(&scale);
+    XMVECTOR worldScale  = XMVectorMultiply(parentScale, localScale);
+    XMStoreFloat3(&scale, worldScale);
+    
+    XMVECTOR parentQuat = XMLoadFloat4(&parent.quat);
+    XMVECTOR localQuat  = XMLoadFloat4(&quat);
+    XMVECTOR worldQuat  = XMQuaternionMultiply(localQuat, parentQuat);
+    worldQuat           = XMQuaternionNormalize(worldQuat);
+    XMStoreFloat4(&quat, worldQuat);
+    
+    XMVECTOR localPos  = XMLoadFloat3(&pos);
+    XMVECTOR parentPos = XMLoadFloat3(&parent.pos);
+    
+    localPos = XMVectorMultiply(localPos, parentScale);
+    
+    localPos = XMVector3Rotate(localPos, parentQuat);
+    
+    XMVECTOR worldPos = XMVectorAdd(localPos, parentPos);
+    XMStoreFloat3(&pos, worldPos);
+    
+    UpdateRotationFromQuaternion();
+    dirty |= WORLD | INVERSE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

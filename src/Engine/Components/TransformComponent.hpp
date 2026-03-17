@@ -6,29 +6,18 @@
 
 struct TransformComponent
 {
-    Transform transform;
+    Transform local;
+    Transform world;
 
     EntityId parent;
-    
-    static constexpr uint64 MAX_CHILDREN = 16;
-    EntityId children[MAX_CHILDREN] = {};
-    uint64 count = 0;
-    
-    void push_back(EntityId cid) { children[count++] = cid; }
-    void remove(EntityId cid)
+    bool hasParent = false;
+
+    void SetParent(EntityId _parent)
     {
-        if (count == 0) return;
-        
-        for (int i = 0; i < count - 1; i++)
-        {
-            if (children[i] == cid)
-            {
-                children[i] = children[count - 1];
-            }
-        }
-        
-        count--;
+        parent = _parent;
+        hasParent = true;
     }
+    void RemoveParent() { hasParent = false; }
 };
 
 #endif

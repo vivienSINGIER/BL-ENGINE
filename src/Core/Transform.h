@@ -7,7 +7,7 @@ using namespace DirectX;
 
 #include "define.h"
 
-enum DIRTY_FLAG : uint32_t
+enum DIRTY_FLAG : uint32
 {
     WORLD =       0b00001,
     INVERSE =     0b00010,
@@ -35,8 +35,9 @@ public:
     void SetIdentity();
     void UpdateMatrix();
     void UpdateInvMatrix();
+    void UpdateFromParent(Transform const& parent);
 
-    uint32_t GetDirty() { return dirty; }
+    uint32 GetDirty() { return dirty; }
     
     // Pos
     
@@ -90,11 +91,11 @@ public:
 
     XMFLOAT4 quat = { 0.0f, 0.0f, 0.0f, 1.0f };
     XMFLOAT4X4 rotMatrix;
-
+    
     XMFLOAT4X4 matrix;
     XMFLOAT4X4 invMatrix;
 
-    uint32_t dirty = 0;
+    uint32 dirty = 0;
 };
 
 #endif
