@@ -7,7 +7,7 @@ bool TransformSystem::IsDirty(Transform& _transform, DIRTY_FLAG _flag)
     return (_transform.GetDirty() & _flag) == _flag;
 }
 
-void TransformSystem::OnUpdate(float _dt, TransformComponent& _t)
+void TransformSystem::OnUpdate(float _dt, EntityId _e, TransformComponent& _t)
 {
     bool isDirty = _t.transform.GetDirty();
     

@@ -21,10 +21,10 @@ struct Contact
 
 struct PartitionGrid
 {
-	float cellSize;
+	int cellSize;
 	int numCellsX;
 	int numCellsY;
-	UnorderedMap<XMINT2, Vector<EntityId>> cells;
+	Vector<Vector<Vector<EntityId>>> cells; 
 };
 
 class ColliderSystem : public System<ColliderComponent, TransformComponent>
@@ -34,12 +34,15 @@ public:
 	void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override;
 	void OnEndUpdate(float _dt) override;
 
-private:
+	void InitializePartitionGrid(XMINT2 _mapSize, int _cellSize);
 
-	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+private:
+	void ClearPartitionGrid();
 	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
 	void BuildCandidatePairs();
 	void NarrowPhase();
+
+	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
 
 	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);

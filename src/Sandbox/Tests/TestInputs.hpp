@@ -3,7 +3,7 @@
 
 #include "Test.h"
 #include "../Engine/Engine.h"
-#include <InputManager.h>
+#include <InputManager.h> 
 
 class TestInputs : public Test
 {

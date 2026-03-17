@@ -4,7 +4,7 @@
 #include "RessourceManager.h"
 #include "../Components/MeshRenderer.hpp"
 
-void MeshRendererSystem::OnUpdate(float _dt, MeshRenderer& _mesh, TransformComponent& _transform)
+void MeshRendererSystem::OnUpdate(float _dt, EntityId _e, MeshRenderer& _mesh, TransformComponent& _transform)
 {
     Device* pDevice = EngineManager::GetDevice();
 

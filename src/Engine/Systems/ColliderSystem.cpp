@@ -20,6 +20,22 @@ void ColliderSystem::OnEndUpdate(float _dt)
 	NarrowPhase();
 }
 
+void ColliderSystem::InitializePartitionGrid(XMINT2 _mapSize, int _cellSize)
+{
+	assert(_cellSize > 0 && "Cell size must be greater than zero.");
+	assert(_mapSize.x > 0 && _mapSize.y > 0 && "Map size must be greater than zero.");
+	assert(_mapSize.x % _cellSize == 0 && _mapSize.y % _cellSize == 0 && "Map size must be divisible by cell size.");
+
+	m_partitionGrid.cellSize = _cellSize;
+	m_partitionGrid.numCellsX = (_mapSize.x + _cellSize - 1) / _cellSize;
+	m_partitionGrid.numCellsY = (_mapSize.y + _cellSize - 1) / _cellSize;
+}
+
+void ColliderSystem::ClearPartitionGrid()
+{
+	m_partitionGrid.cells.clear();
+}
+
 AABB ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
 	XMFLOAT3 center = _transform.transform.GetWorldPosition();
@@ -71,22 +87,24 @@ void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, const AABB& aabb)
 	{
 		for (int y = cellYMin; y <= cellYMax; ++y)
 		{
-			XMINT2 cellKey = { x, y };
-			m_partitionGrid.cells[cellKey].push_back(entity);
+			m_partitionGrid.cells[x][y].push_back(entity);
 		}
 	}
 }
 
 void ColliderSystem::BuildCandidatePairs()
 {
-	for (auto& cell : m_partitionGrid.cells)
+	for (int x = 0; x < m_partitionGrid.cells.size(); x++)
 	{
-		Vector<EntityId>& entities = cell.second;
-		for (size_t i = 0; i < entities.size(); ++i)
+		for (int y = 0; y < m_partitionGrid.cells[x].size(); y++)
 		{
-			for (size_t j = i + 1; j < entities.size(); ++j)
+			Vector<EntityId>& entities = m_partitionGrid.cells[x][y];
+			for (size_t i = 0; i < entities.size(); ++i)
 			{
-				m_candidatePairs.emplace_back(entities[i], entities[j]);
+				for (size_t j = i + 1; j < entities.size(); ++j)
+				{
+					m_candidatePairs.emplace_back(entities[i], entities[j]);
+				}
 			}
 		}
 	}
