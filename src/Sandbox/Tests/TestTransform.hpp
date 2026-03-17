@@ -17,19 +17,19 @@ public:
         {
             TransformComponent& t = GetComponent<TransformComponent>();
 
-            if (t.transform.GetWorldPosition().x > 3.0f)
+            if (t.transform.GetPosition().x > 3.0f)
                 moveDir = -1.0f;
-            if (t.transform.GetWorldPosition().x < -3.0f)
+            if (t.transform.GetPosition().x < -3.0f)
                 moveDir = 1.0f;
 
-            if (t.transform.GetWorldScale().x > 3.0f)
+            if (t.transform.GetScale().x > 3.0f)
                 scaleFactor = 0.999f;
-            if (t.transform.GetWorldScale().x < 0.5f)
+            if (t.transform.GetScale().x < 0.5f)
                 scaleFactor = 1.001f;
             
-            t.transform.AddLocalYPR(XMFLOAT3(1.0f * dt, 1.0f * dt, 0.0f));
-            t.transform.MoveWorld(XMFLOAT3(moveDir * dt, 0.0f, 0.0f));
-            t.transform.ScaleWorld(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
+            t.transform.AddYPR(XMFLOAT3(1.0f * dt, 1.0f * dt, 0.0f));
+            t.transform.Move(XMFLOAT3(moveDir * dt, 0.0f, 0.0f));
+            t.transform.Scale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
 
             activetimer += dt;
             if (activetimer > 1.0f)
