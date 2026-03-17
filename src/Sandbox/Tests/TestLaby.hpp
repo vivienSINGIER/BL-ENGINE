@@ -33,8 +33,7 @@ public:
 		}
 	}
 
-    static void Recursive_division(std::vector<std::vector<char>>& _grid,
-        int _xMin, int _xMax, int _yMin, int _yMax)
+    static void Recursive_division(std::vector<std::vector<char>>& _grid,int _xMin, int _xMax, int _yMin, int _yMax)
     {
         if (_yMax - _yMin > _xMax - _xMin)
         {
@@ -99,6 +98,59 @@ public:
         _grid[(_xMin + _xMax) / 2][_yMax] = ' '; // droite
     }
 
+    static void BetweenDivisionH(std::vector<std::vector<char>>& _grid, int _x, int _y, int _width)
+    {
+        _grid[_x][_y] = ' ';
+        if (_x > 0 && _grid[_x - 1][_y] == 'X') _grid[_x - 1][_y] = ' ';
+        if (_x < _width - 1 && _grid[_x + 1][_y] == 'X') _grid[_x + 1][_y] = ' ';
+    }
+
+    static void BetweenDivisionV(std::vector<std::vector<char>>& _grid, int _x, int _y, int _height)
+    {
+        _grid[_x][_y] = ' ';
+        if (_y > 0 && _grid[_x][_y - 1] == 'X') _grid[_x][_y - 1] = ' ';
+        if (_y < _height - 1 && _grid[_x][_y + 1] == 'X') _grid[_x][_y + 1] = ' ';
+    }
+
+    static void PierceWallH(std::vector<std::vector<char>>& _grid, int _y, int _xStart, int _xEnd, int _heightGrid)
+    {
+        std::vector<int> positions;
+        for (int i = _xStart + 1; i < _xEnd; i += 2)
+            positions.push_back(i);
+
+        for (int k = positions.size() - 1; k > 0; k--)
+            std::swap(positions[k], positions[RandomInt(0, k)]);
+
+        for (int i : positions)
+        {
+            if (_grid[i][_y - 1] != 'X' && _grid[i][_y + 1] != 'X')
+            {
+                BetweenDivisionV(_grid, i, _y, _heightGrid);
+                return;
+            }
+        }
+        BetweenDivisionV(_grid, positions[0], _y, _heightGrid);
+    }
+
+    static void PierceWallV(std::vector<std::vector<char>>& _grid, int _x, int _yStart, int _yEnd, int _widthGrid)
+    {
+        std::vector<int> positions;
+        for (int j = _yStart + 1; j < _yEnd; j += 2)
+            positions.push_back(j);
+
+        for (int k = positions.size() - 1; k > 0; k--)
+            std::swap(positions[k], positions[RandomInt(0, k)]);
+
+        for (int j : positions)
+        {
+            if (_grid[_x - 1][j] != 'X' && _grid[_x + 1][j] != 'X')
+            {
+                BetweenDivisionH(_grid, _x, j, _widthGrid);
+                return;
+            }
+        }
+        BetweenDivisionH(_grid, _x, positions[0], _widthGrid);
+    }
 
     static void printGrid(std::vector<std::vector<char>>& _grid)
     {
@@ -177,7 +229,7 @@ public:
         if (cx % 2 == 0) cx--;
         if (cy % 2 == 0) cy--;
 
-        int rW = 3, rH = 3;
+        int rW = 5, rH = 5;
         int rxMin = cx - rW; if (rxMin % 2 == 1) rxMin--;
         int rxMax = cx + rW; if (rxMax % 2 == 1) rxMax++;
         int ryMin = cy - rH; if (ryMin % 2 == 1) ryMin--;
@@ -205,29 +257,17 @@ public:
         Recursive_division(grid, 0, rxMin, ryMin, ryMax);
         Recursive_division(grid, rxMax, m_widthGrid - 1, ryMin, ryMax);
 
-        // Percer APRES la generation
-        int midX = (rxMin + rxMax) / 2;
-        int midY = (ryMin + ryMax) / 2;
+        PierceWallH(grid, ryMin, 0, rxMin, m_heightGrid);
+        PierceWallH(grid, ryMin, rxMax, m_widthGrid - 1, m_heightGrid);
 
-        // Mur horizontal ryMin : une ouverture par zone (toutes les 2 cellules impaires)
-        for (int i = 1; i < m_widthGrid - 1; i += 2)
-            if (i != rxMin && i != rxMax)
-                grid[i][ryMin] = ' ';
+        PierceWallH(grid, ryMax, 0, rxMin, m_heightGrid);
+        PierceWallH(grid, ryMax, rxMax, m_widthGrid - 1, m_heightGrid);
 
-        // Mur horizontal ryMax
-        for (int i = 1; i < m_widthGrid - 1; i += 2)
-            if (i != rxMin && i != rxMax)
-                grid[i][ryMax] = ' ';
+        PierceWallV(grid, rxMin, 0, ryMin, m_widthGrid);
+        PierceWallV(grid, rxMin, ryMax, m_heightGrid - 1, m_widthGrid);
 
-        // Mur vertical rxMin
-        for (int j = 1; j < m_heightGrid - 1; j += 2)
-            if (j != ryMin && j != ryMax)
-                grid[rxMin][j] = ' ';
-
-        // Mur vertical rxMax
-        for (int j = 1; j < m_heightGrid - 1; j += 2)
-            if (j != ryMin && j != ryMax)
-                grid[rxMax][j] = ' ';
+        PierceWallV(grid, rxMax, 0, ryMin, m_widthGrid);
+        PierceWallV(grid, rxMax, ryMax, m_heightGrid - 1, m_widthGrid);
 
         Lobby(grid, rxMin, rxMax, ryMin, ryMax);
 
@@ -241,7 +281,7 @@ public:
 
 private:
 
-	static const int m_widthGrid = 21;
+	static const int m_widthGrid = 41;
     static const int m_heightGrid = 41;
 
 };
