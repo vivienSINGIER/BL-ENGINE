@@ -36,7 +36,7 @@ struct IScript
     virtual void Start() {}
     virtual void Update(float _dt) {}
     virtual void Destroy() {}
-
+    
     // TODO Add OnCollide & OnTrigger methods
 
     virtual ~IScript() = default;
