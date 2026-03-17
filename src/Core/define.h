@@ -47,6 +47,9 @@ using Map = std::map<Key, Value>;
 template <typename Type>
 using List = std::list<Type>;
 
+template <typename Type1, typename Type2>
+using Pair = std::pair<Type1, Type2>;
+
 const WString GetResPath();
 
 #define RES(path) (GetResPath() + L##path)

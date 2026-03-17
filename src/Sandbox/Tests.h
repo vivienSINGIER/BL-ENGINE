@@ -11,6 +11,6 @@
 #include "Tests/TestECS.hpp"
 #include "Tests/TestScripts.hpp"
 #include "Tests/TestTransform.hpp"
-
+#include "Tests/TestInputs.hpp"
 
 #endif

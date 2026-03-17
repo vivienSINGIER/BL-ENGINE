@@ -6,17 +6,28 @@
 #include "ArchetypeRegistry.h"
 #include "ComponentRegistry.hpp"
 
-struct QueryBase {
+struct QueryBase
+{
     ComponentMask      required;
     Vector<Archetype*> matched;
+    Vector<ComponentMask> orMasks;
     virtual ~QueryBase() = default;
-};
+}; 
 
 template<typename... Ts>
 struct Query : QueryBase
 {
-    Query() {
+    Query()
+    {
         (required.set(ComponentRegistry::Id<Ts>()), ...);
+    }
+
+    template<typename... orTs>
+    void Any()
+    {
+        ComponentMask mask;
+        (mask.set(ComponentRegistry::Id<orTs>()), ...);
+        orMasks.push_back(mask);
     }
 };
 
