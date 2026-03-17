@@ -1,32 +1,24 @@
 #include "ColliderSystem.h"
 
-void ColliderSystem::OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform)
+void ColliderSystem::OnStartUpdate(float _dt)
 {
-}
-
-void ColliderSystem::BroadPhase()
-{
+	m_vContacts.clear();
 	m_partitionGrid.cells.clear();
-	for (Archetype* arch : query.matched)
-	{
-		for (uint64 i = 0; i < arch->storage.count; i++)
-		{
-			arch->storage.Get<TransformComponent>(ComponentRegistry::Id<TransformComponent>(), i);
-		}
-	}
+	m_candidatePairs.clear();
 }
 
-void ColliderSystem::NarrowPhase()
+void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
 {
+	AABB aabb = CalculateWorldAABB(_collider, _transform);
+	InsertIntoPartitionGrid(_e, aabb);
 
 }
 
-void ColliderSystem::BuildCandidatePairs()
+void ColliderSystem::OnEndUpdate(float _dt)
 {
-
 }
 
-AABB ColliderSystem::CalculateWorldAABB(TransformComponent& _transform)
+AABB ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
 	XMFLOAT3 center = _transform.transform.GetWorldPosition();
 
@@ -77,8 +69,23 @@ void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, const AABB& aabb)
 	{
 		for (int y = cellYMin; y <= cellYMax; ++y)
 		{
-			XMFLOAT2 cellKey = { static_cast<float>(x), static_cast<float>(y) };
+			XMINT2 cellKey = { x, y };
 			m_partitionGrid.cells[cellKey].push_back(entity);
+		}
+	}
+}
+
+void ColliderSystem::BuildCandidatePairs()
+{
+	for (auto& cell : m_partitionGrid.cells)
+	{
+		Vector<EntityId>& entities = cell.second;
+		for (size_t i = 0; i < entities.size(); ++i)
+		{
+			for (size_t j = i + 1; j < entities.size(); ++j)
+			{
+				m_candidatePairs.emplace_back(entities[i], entities[j]);
+			}
 		}
 	}
 }

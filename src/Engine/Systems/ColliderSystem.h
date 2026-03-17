@@ -30,16 +30,15 @@ struct PartitionGrid
 class ColliderSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
-	void OnUpdate(float _dt, ColliderComponent& _collider, TransformComponent& _transform) override;
+	void OnStartUpdate(float _dt) override;
+	void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override;
+	void OnEndUpdate(float _dt) override;
 
 private:
-	void BroadPhase();
-	void NarrowPhase();
 
-	void BuildCandidatePairs();
-
-	AABB CalculateWorldAABB(TransformComponent& _transform);
+	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
 	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
+	void BuildCandidatePairs();
 
 	PartitionGrid m_partitionGrid;
 	Vector<Contact> m_vContacts;
