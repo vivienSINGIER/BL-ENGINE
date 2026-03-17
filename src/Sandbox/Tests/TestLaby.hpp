@@ -198,6 +198,22 @@ public:
         std::cerr << "Cellules inaccessibles : " << unreachable << "\n";
     }
 
+    static void Laby3d(std::vector<std::vector<char>>& _grid)
+    {
+		Scene* scene = SceneManager::GetSceneWithName("Default");
+
+        for(int x = 0; x < _grid.size(); x++)
+            for(int y = 0; y < _grid[0].size(); y++)
+                if(_grid[x][y] == 'X')
+                {
+					EntityId e = scene->world.CreateEntity();
+					scene->world.AddComponent<TransformComponent>(e);
+					MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+					m.geo = RessourceManager::GetGeometry("CUBE");
+					scene->world.GetComponent<TransformComponent>(e).transform.SetWorldPosition(XMFLOAT3(x, 0.0f, y));
+				}
+	}
+
     static void Run()
     {
 		srand(time(nullptr));
@@ -206,16 +222,12 @@ public:
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-
+		RessourceManager::AddGeometry("CUBE", GeometryFactory::BuildCube(EngineManager::GetDevice()));
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, -3.0f, -3.0f);
+        XMFLOAT3 pos = XMFLOAT3( 50.0f, 20.0f, 50.0f);
         cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        XMFLOAT3 target = XMFLOAT3(0.1f, 0.0f, 0.0f);
         cam.LookAt(target);
 
         EngineManager::GetDevice()->SetMainCamera(&cam);
@@ -270,6 +282,7 @@ public:
         PierceWallV(grid, rxMax, ryMax, m_heightGrid - 1, m_widthGrid);
 
         Lobby(grid, rxMin, rxMax, ryMin, ryMax);
+		Laby3d(grid);
 
 		system("cls");
         bfs_check(grid);
