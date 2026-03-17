@@ -39,7 +39,12 @@ private:
 	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
 	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
 	void BuildCandidatePairs();
+	void NarrowPhase();
 
+	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);
+	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
+	bool CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere);
+	
 	PartitionGrid m_partitionGrid;
 	Vector<Contact> m_vContacts;
 	Vector<std::pair<EntityId, EntityId>> m_candidatePairs;

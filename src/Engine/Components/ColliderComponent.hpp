@@ -2,6 +2,7 @@
 #define COLLIDER_COMPONENT_HPP_INCLUDED
 
 #include "define.h"
+#include "../Core/Transform.h"
 
 enum class ColliderType
 {
@@ -9,25 +10,11 @@ enum class ColliderType
 	Sphere
 };
 
-struct Box
-{
-	XMFLOAT3 halfExtents;
-};
-
-struct Sphere
-{
-	float radius;
-};
-
 struct ColliderComponent
 {
 	bool isTrigger;
 	ColliderType type;
-	union
-	{
-		Box box;
-		Sphere sphere;
-	};
+	Transform colliderTransform;
 };
 
 #endif // !COLLIDER_COMPONENT_HPP_INCLUDED
