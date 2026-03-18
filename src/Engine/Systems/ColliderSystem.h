@@ -36,6 +36,7 @@ private:
 	void BuildCandidatePairs();
 	void NarrowPhase();
 
+	void UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform);
 	void CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
 
 	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);

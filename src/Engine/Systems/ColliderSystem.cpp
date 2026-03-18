@@ -54,6 +54,17 @@ void ColliderSystem::ClearPartitionGrid()
 	}
 }
 
+void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform)
+{
+	_collider.colliderTransform.SetPosition(_transform.world.GetPosition());
+	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation())
+
+	_collider.boundingBox.center = _transform.world.GetPosition();
+	_collider.boundingBox.halfExtents.x = _collider.colliderTransform.GetScale().x * 0.5f;
+	_collider.boundingBox.halfExtents.y = _collider.colliderTransform.GetScale().y * 0.5f;
+	_collider.boundingBox.halfExtents.z = _collider.colliderTransform.GetScale().z * 0.5f;
+}
+
 void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
 	XMFLOAT3 center = _transform.world.GetPosition();

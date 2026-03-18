@@ -12,8 +12,9 @@ enum class ColliderType
 
 struct OBB
 {
-	XMFLOAT3 min = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 max = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3 center;
+	XMFLOAT3 axes[3];
+	XMFLOAT3 halfExtents;
 };
 
 struct  ColliderComponent
