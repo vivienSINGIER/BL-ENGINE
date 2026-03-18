@@ -18,5 +18,5 @@ void MeshRendererSystem::OnUpdate(float _dt, EntityId _e, MeshRenderer& _mesh, T
         return;
 
     pDevice->SetMaterial(mat);
-    pDevice->Draw(_mesh.geo, _transform.transform.GetWorldMatrix());
+    pDevice->Draw(_mesh.geo, _transform.world.GetMatrix());
 }

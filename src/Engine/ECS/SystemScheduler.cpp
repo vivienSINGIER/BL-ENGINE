@@ -8,15 +8,15 @@ void SystemScheduler::Run(float _dt)
 {
     for (int i = 0; i < Phase::Count; i++)
     {
-        if ((Phase)i == Phase::PreRender)
+        if (i == Phase::PreRender)
             EngineManager::GetInstance().GetWindow()->Clear();
         
-        for (ISystem* sys : m_phases[(Phase)i])
+        for (ISystem* sys : m_phases[i])
         {
             sys->Update(_dt);
         }
 
-        if ((Phase)i == Phase::PostRender)
+        if (i == Phase::PostRender)
             EngineManager::GetInstance().GetWindow()->Display();
     }
 }
