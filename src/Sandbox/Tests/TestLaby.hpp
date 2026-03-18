@@ -210,7 +210,7 @@ public:
 					scene->world.AddComponent<TransformComponent>(e);
 					MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
 					m.geo = RessourceManager::GetGeometry("CUBE");
-					scene->world.GetComponent<TransformComponent>(e).transform.SetWorldPosition(XMFLOAT3(x, 0.0f, y));
+					scene->world.GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(x, 0.0f, y));
 				}
 	}
 
