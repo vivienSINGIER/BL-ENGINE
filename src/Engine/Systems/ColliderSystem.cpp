@@ -57,7 +57,7 @@ void ColliderSystem::ClearPartitionGrid()
 void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform)
 {
 	_collider.colliderTransform.SetPosition(_transform.world.GetPosition());
-	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation())
+	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation());
 
 	_collider.boundingBox.center = _transform.world.GetPosition();
 	_collider.boundingBox.halfExtents.x = _collider.colliderTransform.GetScale().x * 0.5f;
