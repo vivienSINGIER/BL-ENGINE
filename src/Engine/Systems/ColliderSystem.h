@@ -21,9 +21,9 @@ struct Contact
 
 struct PartitionGrid
 {
-	int cellSize;
-	int numCellsX;
-	int numCellsY;
+	int cellSize = 0;
+	int numCellsX = 0;
+	int numCellsY = 0;
 	Vector<Vector<Vector<EntityId>>> cells; 
 };
 

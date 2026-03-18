@@ -1,10 +1,11 @@
 #include "ColliderSystem.h"
 #include "Utils.hpp"
+#include <iostream>
 
 void ColliderSystem::OnStartUpdate(float _dt)
 {
 	m_vContacts.clear();
-	m_partitionGrid.cells.clear();
+	ClearPartitionGrid();
 	m_candidatePairs.clear();
 }
 
@@ -29,11 +30,28 @@ void ColliderSystem::InitializePartitionGrid(XMINT2 _mapSize, int _cellSize)
 	m_partitionGrid.cellSize = _cellSize;
 	m_partitionGrid.numCellsX = (_mapSize.x + _cellSize - 1) / _cellSize;
 	m_partitionGrid.numCellsY = (_mapSize.y + _cellSize - 1) / _cellSize;
+
+	for (int x = 0; x < m_partitionGrid.numCellsX; x++)
+	{
+		Vector<Vector<EntityId>> vvEntitiesTemp;
+		for (int y = 0; y < m_partitionGrid.numCellsX; y++)
+		{
+			Vector<EntityId> vEntitiesTemp;
+			vvEntitiesTemp.push_back(vEntitiesTemp);
+		}
+		m_partitionGrid.cells.push_back(vvEntitiesTemp);
+	}
 }
 
 void ColliderSystem::ClearPartitionGrid()
 {
-	m_partitionGrid.cells.clear();
+	for (int x = 0; x < m_partitionGrid.numCellsX; x++)
+	{
+		for (int y = 0; y < m_partitionGrid.numCellsY; y++)
+		{
+			m_partitionGrid.cells[x][y].clear();
+		}
+	}
 }
 
 AABB ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
@@ -144,6 +162,7 @@ void ColliderSystem::NarrowPhase()
 		if (isColliding)
 		{
 			m_vContacts.push_back({ entityA, entityB });
+			std::cout << "collidion" << std::endl;
 		}
 	}
 }
