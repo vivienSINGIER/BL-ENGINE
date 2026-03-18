@@ -67,67 +67,23 @@ void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformCompo
 
 void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
-	XMFLOAT3 center = _transform.world.GetPosition();
-	XMFLOAT4X4 world = _transform.world.GetMatrix();
 
-	if (_collider.type == ColliderType::Box)
-	{
-		XMFLOAT3 half = _collider.colliderTransform.GetScale();
-		half.x *= 0.5f;
-		half.y *= 0.5f;
-		half.z *= 0.5f;
-
-		XMFLOAT3 halfExtents =
-		{
-			abs(world._11) * half.x + abs(world._12) * half.y + abs(world._13) * half.z,
-			abs(world._21) * half.x + abs(world._22) * half.y + abs(world._23) * half.z,
-			abs(world._31) * half.x + abs(world._32) * half.y + abs(world._33) * half.z,
-		};
-
-		_collider.boundingBox.min =  
-		{
-			center.x - halfExtents.x,
-			center.y - halfExtents.y,
-			center.z - halfExtents.z
-		};
-		_collider.boundingBox.max =
-		{
-			center.x + halfExtents.x,
-			center.y + halfExtents.y,
-			center.z + halfExtents.z
-		};
-	}
-	else if (_collider.type == ColliderType::Sphere)
-	{
-		_collider.boundingBox.min =
-		{
-			center.x - _collider.colliderTransform.GetScale().x * 0.5f,
-			center.y - _collider.colliderTransform.GetScale().y * 0.5f,
-			center.z - _collider.colliderTransform.GetScale().z * 0.5f
-		};
-		_collider.boundingBox.max =
-		{
-			center.x + _collider.colliderTransform.GetScale().x * 0.5f, 
-			center.y + _collider.colliderTransform.GetScale().y * 0.5f,
-			center.z + _collider.colliderTransform.GetScale().z * 0.5f
-		};
-	}
 }
 
 void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, ColliderComponent& _colliderComponent)
 {
-	int cellXMin = static_cast<int>(_colliderComponent.boundingBox.min.x / m_partitionGrid.cellSize);
-	int cellYMin = static_cast<int>(_colliderComponent.boundingBox.min.y / m_partitionGrid.cellSize);
-	int cellXMax = static_cast<int>(_colliderComponent.boundingBox.max.x / m_partitionGrid.cellSize);
-	int cellYMax = static_cast<int>(_colliderComponent.boundingBox.max.y / m_partitionGrid.cellSize);
+	//int cellXMin = static_cast<int>(_colliderComponent.boundingBox.min.x / m_partitionGrid.cellSize);
+	//int cellYMin = static_cast<int>(_colliderComponent.boundingBox.min.y / m_partitionGrid.cellSize);
+	//int cellXMax = static_cast<int>(_colliderComponent.boundingBox.max.x / m_partitionGrid.cellSize);
+	//int cellYMax = static_cast<int>(_colliderComponent.boundingBox.max.y / m_partitionGrid.cellSize);
 
-	for (int x = cellXMin; x <= cellXMax; ++x)
-	{
-		for (int y = cellYMin; y <= cellYMax; ++y)
-		{
-			m_partitionGrid.cells[x][y].push_back(entity);
-		}
-	}
+	//for (int x = cellXMin; x <= cellXMax; ++x)
+	//{
+	//	for (int y = cellYMin; y <= cellYMax; ++y)
+	//	{
+	//		m_partitionGrid.cells[x][y].push_back(entity);
+	//	}
+	//}
 }
 
 void ColliderSystem::BuildCandidatePairs()
@@ -194,13 +150,9 @@ bool ColliderSystem::CheckBoxToBox(ColliderComponent& _boxA, TransformComponent&
 	XMFLOAT3 sizeA = _boxA.colliderTransform.GetScale();
 	XMFLOAT3 sizeB = _boxB.colliderTransform.GetScale();
 
-	if (_boxA.boundingBox.max.x < _boxB.boundingBox.min.x || _boxA.boundingBox.min.x > _boxB.boundingBox.max.x) return false;
-	if (_boxA.boundingBox.max.y < _boxB.boundingBox.min.y || _boxA.boundingBox.min.y > _boxB.boundingBox.max.y) return false;
-	if (_boxA.boundingBox.max.z < _boxB.boundingBox.min.z || _boxA.boundingBox.min.z > _boxB.boundingBox.max.z) return false;
-
-	//if (posA.x + sizeA.x * 0.5f < posB.x - sizeB.x * 0.5f || posA.x - sizeA.x * 0.5f > posB.x + sizeB.x * 0.5f) return false;
-	//if (posA.y + sizeA.y * 0.5f < posB.y - sizeB.y * 0.5f || posA.y - sizeA.y * 0.5f > posB.y + sizeB.y * 0.5f) return false;
-	//if (posA.z + sizeA.z * 0.5f < posB.z - sizeB.z * 0.5f || posA.z - sizeA.z * 0.5f > posB.z + sizeB.z * 0.5f) return false;
+	//if (_boxA.boundingBox.max.x < _boxB.boundingBox.min.x || _boxA.boundingBox.min.x > _boxB.boundingBox.max.x) return false;
+	//if (_boxA.boundingBox.max.y < _boxB.boundingBox.min.y || _boxA.boundingBox.min.y > _boxB.boundingBox.max.y) return false;
+	//if (_boxA.boundingBox.max.z < _boxB.boundingBox.min.z || _boxA.boundingBox.min.z > _boxB.boundingBox.max.z) return false;
 
 	return true;
 }
