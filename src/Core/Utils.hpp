@@ -3,6 +3,26 @@
 
 #include "define.h"
 
+inline float Min(float a, float b)
+{
+    return (a < b) ? a : b;
+}
+
+inline float Max(float a, float b)
+{
+    return (a > b) ? a : b;
+}
+
+inline float Dot(XMFLOAT2 a, XMFLOAT2 b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+inline float Det(XMFLOAT2 a, XMFLOAT2 b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
 inline float Clamp(float v)
 {
     if ( v<0.0f )

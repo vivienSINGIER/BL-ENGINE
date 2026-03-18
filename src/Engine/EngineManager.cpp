@@ -8,6 +8,7 @@
 
 #include "../Render/Generic/Render.h"
 #include "../Render/Generic/Factories/ShaderFactory.hpp"
+
 EngineManager* EngineManager::s_pInstance = nullptr;
 
 EngineManager::EngineManager()

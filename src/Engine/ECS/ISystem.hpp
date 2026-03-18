@@ -28,7 +28,7 @@ struct System : public ISystem
     virtual void OnInit() {};
     
     virtual void OnStartUpdate(float _dt) {};
-    virtual void OnUpdate(float _dt, TComponents&... _components) {};
+    virtual void OnUpdate(float _dt, EntityId _e,  TComponents&... _components) {};
     virtual void OnEndUpdate(float _dt) {};
 
     virtual void Update(float _dt)
@@ -41,7 +41,7 @@ struct System : public ISystem
                 if (world->IsActive(arch->entities.at(i)) == false) continue;
                 if (arch->storage.IsRowActive(i, query.required) == false) continue;
                 
-                OnUpdate(_dt, arch->storage.Get<TComponents>(ComponentRegistry::Id<TComponents>(), i)...);
+                OnUpdate(_dt, arch->entities.at(i), arch->storage.Get<TComponents>(ComponentRegistry::Id<TComponents>(), i)...);
             }
         }
         OnEndUpdate(_dt);
@@ -53,7 +53,7 @@ struct System : public ISystem
 template <typename TScript>
 struct ScriptSystem : System<TScript>
 {
-    void OnUpdate(float _dt, TScript& _script)
+    void OnUpdate(float _dt, EntityId _e, TScript& _script)
     {
         if (_script.m_isStarted == false)
         {

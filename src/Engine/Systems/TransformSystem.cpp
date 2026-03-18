@@ -29,7 +29,7 @@ void TransformSystem::UpdateMatrix(TransformComponent& _t)
     }
 }
 
-void TransformSystem::OnUpdate(float _dt, TransformComponent& _t)
+void TransformSystem::OnUpdate(float _dt, EntityId _e, TransformComponent& _t)
 {
     UpdateMatrix(_t);
 }
