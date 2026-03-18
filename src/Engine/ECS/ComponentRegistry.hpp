@@ -13,7 +13,7 @@ public:
         return id;
     }
 
-private:
+private: 
     static ComponentId NextId()
     {
         static ComponentId counter = 0;

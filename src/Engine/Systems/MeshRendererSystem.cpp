@@ -4,7 +4,7 @@
 #include "RessourceManager.h"
 #include "../Components/MeshRenderer.hpp"
 
-void MeshRendererSystem::OnUpdate(float _dt, MeshRenderer& _mesh, TransformComponent& _transform)
+void MeshRendererSystem::OnUpdate(float _dt, EntityId _e, MeshRenderer& _mesh, TransformComponent& _transform)
 {
     Device* pDevice = EngineManager::GetDevice();
 
@@ -18,5 +18,5 @@ void MeshRendererSystem::OnUpdate(float _dt, MeshRenderer& _mesh, TransformCompo
         return;
 
     pDevice->SetMaterial(mat);
-    pDevice->Draw(_mesh.geo, _transform.transform.GetWorldMatrix());
+    pDevice->Draw(_mesh.geo, _transform.world.GetMatrix());
 }

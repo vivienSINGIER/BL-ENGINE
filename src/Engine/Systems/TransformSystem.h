@@ -7,10 +7,11 @@
 class TransformSystem : public System<TransformComponent>
 {
 public:
-    void OnUpdate(float _dt, TransformComponent& _t) override;
+    void OnUpdate(float _dt, EntityId _e, TransformComponent& _t) override;
 
 private:
-    bool IsDirty(Transform& _transform, DIRTY_FLAG _flag);
+    bool IsDirty(Transform& _transform, uint32 _flag);
+    void UpdateMatrix(TransformComponent& _t);
 };
 
 #endif

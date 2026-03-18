@@ -21,7 +21,7 @@ public:
     
     
 private:
-    Map<Phase, Vector<ISystem*>> m_phases;
+    Array<Vector<ISystem*>, Phase::Count> m_phases;
 };
 
 #include "SystemScheduler.inl"

@@ -15,6 +15,7 @@ constexpr EntityId MakeEntity(uint32 _id, uint32 _gen)
 struct EntityRecord
 {
     Archetype* archetype = nullptr;
+    bool isActive = true;
     uint32 row = 0;
     uint32 gen = 0;
 };

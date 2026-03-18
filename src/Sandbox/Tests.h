@@ -13,5 +13,7 @@
 #include "Tests/TestTransform.hpp"
 #include "Tests/TestInputs.hpp"
 #include "Tests/TestLaby.hpp" 
+#include "Tests/TestCollision.hpp"
+
 
 #endif

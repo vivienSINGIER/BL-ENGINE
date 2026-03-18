@@ -72,6 +72,34 @@ bool World::HasComponent(EntityId _e)
 }
 
 template <typename T>
+void World::SetActiveComponent(EntityId _e, bool _value)
+{
+    assert(m_entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+
+    ComponentId cid = ComponentRegistry::Id<T>();
+    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(cid) && "Component not present");
+
+    src->storage.SetActive(cid, rec.row, _value);
+}
+
+template <typename T>
+bool World::IsActiveComponent(EntityId _e)
+{
+    assert(m_entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+
+    ComponentId cid = ComponentRegistry::Id<T>();
+    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(cid) && "Component not present");
+
+    return src->storage.GetActive(cid, rec.row);
+}
+
+template <typename T>
 T& World::AddScript(EntityId _e)
 {
     if (!HasComponent<ScriptRegistry>(_e))
@@ -115,6 +143,18 @@ template <typename T>
 bool World::HasScript(EntityId _e)
 {
     return HasComponent<T>(_e);
+}
+
+template <typename T>
+void World::SetActiveScript(EntityId _e, bool _value)
+{
+    return SetActiveComponent<T>(_e, _value);
+}
+
+template <typename T>
+bool World::IsActiveScript(EntityId _e)
+{
+    return IsActiveComponent<T>(_e);
 }
 
 template <typename ... Args>

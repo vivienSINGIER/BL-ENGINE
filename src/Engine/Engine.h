@@ -15,9 +15,11 @@
 // ----------- COMPONENTS -----------
 #include "Components/MeshRenderer.hpp"
 #include "Components/TransformComponent.hpp"
+#include "Components/ColliderComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"
 #include "Systems/TransformSystem.h"
+#include "Systems/ColliderSystem.h"
 
 #endif

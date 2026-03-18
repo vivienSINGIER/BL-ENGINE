@@ -1,50 +1,35 @@
 #include "TransformSystem.h"
 
 
-bool TransformSystem::IsDirty(Transform& _transform, DIRTY_FLAG _flag)
+bool TransformSystem::IsDirty(Transform& _transform, uint32 _flag)
 {
-    uint8 dirty = _transform.GetDirty();
-    return (_transform.GetDirty() & _flag) == _flag;
+    uint32 dirty = _transform.GetDirty();
+    return (dirty & _flag);
 }
 
-void TransformSystem::OnUpdate(float _dt, TransformComponent& _t)
+void TransformSystem::UpdateMatrix(TransformComponent& _t)
 {
-    bool isDirty = _t.transform.GetDirty();
-    
-    if (IsDirty(_t.transform, WORLD_POS))
+    if (_t.hasParent == true)
     {
-        _t.transform.localPos = _t.transform.worldPos;
+        TransformComponent& p = world->GetComponent<TransformComponent>(_t.parent);
+        UpdateMatrix(p);
+        
+        if (IsDirty(_t.local, POS | SCALE | ROTATE) || IsDirty(p.local, WORLD))
+        {
+            _t.world = _t.local;
+            _t.world.UpdateFromParent(p.world);
+            _t.local.dirty |= WORLD;
+        }
     }
-    else if (IsDirty(_t.transform, LOCAL_POS))
+    else if (IsDirty(_t.local, POS | SCALE | ROTATE))
     {
-        _t.transform.worldPos = _t.transform.localPos;
+        _t.world = _t.local;
+        _t.world.UpdateMatrix();
+        _t.local.dirty |= WORLD;
     }
+}
 
-    if (IsDirty(_t.transform, WORLD_SCALE))
-    {
-        _t.transform.localScale = _t.transform.worldScale;
-    }
-    else if (IsDirty(_t.transform, LOCAL_SCALE))
-    {
-        _t.transform.worldScale = _t.transform.localScale;
-    }
-
-    if (IsDirty(_t.transform, WORLD_ROTATE))
-    {
-        _t.transform.localQuat = _t.transform.worldQuat;
-        _t.transform.UpdateLocalRotationFromQuaternion();
-    }
-    else if (IsDirty(_t.transform, LOCAL_ROTATE))
-    {
-        _t.transform.worldQuat = _t.transform.localQuat;
-        _t.transform.UpdateWorldRotationFromQuaternion();
-    }
-
-    if (isDirty)
-    {
-        _t.transform.UpdateWorldMatrix();
-        _t.transform.dirty = WORLD | INVERSE;
-    }
-
-    int o = 0;
+void TransformSystem::OnUpdate(float _dt, EntityId _e, TransformComponent& _t)
+{
+    UpdateMatrix(_t);
 }

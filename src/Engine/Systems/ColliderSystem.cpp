@@ -1,0 +1,199 @@
+#include "ColliderSystem.h"
+#include "Utils.hpp"
+#include <iostream>
+
+void ColliderSystem::OnStartUpdate(float _dt)
+{
+	m_vContacts.clear();
+	ClearPartitionGrid();
+	m_candidatePairs.clear();
+}
+
+void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
+{
+	CalculateWorldAABB(_collider, _transform);
+	InsertIntoPartitionGrid(_e, _collider);
+}
+
+void ColliderSystem::OnEndUpdate(float _dt)
+{
+	BuildCandidatePairs();
+	NarrowPhase();
+}
+
+void ColliderSystem::InitializePartitionGrid(XMINT2 _mapSize, int _cellSize)
+{
+	assert(_cellSize > 0 && "Cell size must be greater than zero.");
+	assert(_mapSize.x > 0 && _mapSize.y > 0 && "Map size must be greater than zero.");
+	assert(_mapSize.x % _cellSize == 0 && _mapSize.y % _cellSize == 0 && "Map size must be divisible by cell size.");
+
+	m_partitionGrid.cellSize = _cellSize;
+	m_partitionGrid.numCellsX = (_mapSize.x + _cellSize - 1) / _cellSize;
+	m_partitionGrid.numCellsY = (_mapSize.y + _cellSize - 1) / _cellSize;
+
+	for (int x = 0; x < m_partitionGrid.numCellsX; x++)
+	{
+		Vector<Vector<EntityId>> vvEntitiesTemp;
+		for (int y = 0; y < m_partitionGrid.numCellsX; y++)
+		{
+			Vector<EntityId> vEntitiesTemp;
+			vvEntitiesTemp.push_back(vEntitiesTemp);
+		}
+		m_partitionGrid.cells.push_back(vvEntitiesTemp);
+	}
+}
+
+void ColliderSystem::ClearPartitionGrid()
+{
+	for (int x = 0; x < m_partitionGrid.numCellsX; x++)
+	{
+		for (int y = 0; y < m_partitionGrid.numCellsY; y++)
+		{
+			m_partitionGrid.cells[x][y].clear();
+		}
+	}
+}
+
+void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform)
+{
+	_collider.colliderTransform.SetPosition(_transform.world.GetPosition());
+	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation());
+
+	_collider.boundingBox.center = _transform.world.GetPosition();
+	_collider.boundingBox.halfExtents.x = _collider.colliderTransform.GetScale().x * 0.5f;
+	_collider.boundingBox.halfExtents.y = _collider.colliderTransform.GetScale().y * 0.5f;
+	_collider.boundingBox.halfExtents.z = _collider.colliderTransform.GetScale().z * 0.5f;
+}
+
+void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
+{
+
+}
+
+void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, ColliderComponent& _colliderComponent)
+{
+	//int cellXMin = static_cast<int>(_colliderComponent.boundingBox.min.x / m_partitionGrid.cellSize);
+	//int cellYMin = static_cast<int>(_colliderComponent.boundingBox.min.y / m_partitionGrid.cellSize);
+	//int cellXMax = static_cast<int>(_colliderComponent.boundingBox.max.x / m_partitionGrid.cellSize);
+	//int cellYMax = static_cast<int>(_colliderComponent.boundingBox.max.y / m_partitionGrid.cellSize);
+
+	//for (int x = cellXMin; x <= cellXMax; ++x)
+	//{
+	//	for (int y = cellYMin; y <= cellYMax; ++y)
+	//	{
+	//		m_partitionGrid.cells[x][y].push_back(entity);
+	//	}
+	//}
+}
+
+void ColliderSystem::BuildCandidatePairs()
+{
+	for (int x = 0; x < m_partitionGrid.cells.size(); x++)
+	{
+		for (int y = 0; y < m_partitionGrid.cells[x].size(); y++)
+		{
+			Vector<EntityId>& entities = m_partitionGrid.cells[x][y];
+			for (size_t i = 0; i < entities.size(); ++i)
+			{
+				for (size_t j = i + 1; j < entities.size(); ++j)
+				{
+					m_candidatePairs.emplace_back(entities[i], entities[j]);
+				}
+			}
+		}
+	}
+}
+
+void ColliderSystem::NarrowPhase()
+{
+	for (auto& pair : m_candidatePairs)
+	{
+		EntityId entityA = pair.first;
+		EntityId entityB = pair.second;
+
+		ColliderComponent& colliderA = world->GetComponent<ColliderComponent>(entityA);
+		ColliderComponent& colliderB = world->GetComponent<ColliderComponent>(entityB);
+		TransformComponent& transformA = world->GetComponent<TransformComponent>(entityA);
+		TransformComponent& transformB = world->GetComponent<TransformComponent>(entityB);
+
+		bool isColliding = false;
+
+		if (colliderA.type == ColliderType::Box && colliderB.type == ColliderType::Box)
+		{
+			isColliding = CheckBoxToBox(colliderA, transformA, colliderB, transformB);
+		}
+		else if (colliderA.type == ColliderType::Sphere && colliderB.type == ColliderType::Sphere)
+		{
+			isColliding = CheckSphereToSphere(colliderA, transformA, colliderB, transformB);
+		}
+		else if ((colliderA.type == ColliderType::Box && colliderB.type == ColliderType::Sphere) ||
+				 (colliderA.type == ColliderType::Sphere && colliderB.type == ColliderType::Box))
+		{
+			if (colliderA.type == ColliderType::Box)
+				isColliding = CheckBoxToSphere(colliderA, transformA, colliderB, transformB);
+			else
+				isColliding = CheckBoxToSphere(colliderB, transformB, colliderA, transformA);
+		}
+
+		if (isColliding)
+		{
+			m_vContacts.push_back({ entityA, entityB });
+			std::cout << "collidion" << std::endl;
+		}
+	}
+}
+
+bool ColliderSystem::CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB)
+{
+	XMFLOAT3 posA = _transformA.world.GetPosition();
+	XMFLOAT3 posB = _transformB.world.GetPosition();
+	XMFLOAT3 sizeA = _boxA.colliderTransform.GetScale();
+	XMFLOAT3 sizeB = _boxB.colliderTransform.GetScale();
+
+	//if (_boxA.boundingBox.max.x < _boxB.boundingBox.min.x || _boxA.boundingBox.min.x > _boxB.boundingBox.max.x) return false;
+	//if (_boxA.boundingBox.max.y < _boxB.boundingBox.min.y || _boxA.boundingBox.min.y > _boxB.boundingBox.max.y) return false;
+	//if (_boxA.boundingBox.max.z < _boxB.boundingBox.min.z || _boxA.boundingBox.min.z > _boxB.boundingBox.max.z) return false;
+
+	return true;
+}
+
+bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB)
+{
+	XMFLOAT3 posA = _transformA.world.GetPosition();
+	XMFLOAT3 posB = _transformB.world.GetPosition();
+	float radiusA = _sphereA.colliderTransform.GetScale().x * 0.5f;
+	float radiusB = _sphereB.colliderTransform.GetScale().x * 0.5f;
+
+	float dx = posA.x - posB.x;
+	float dy = posA.y - posB.y;
+	float dz = posA.z - posB.z;
+
+	float d = dx * dx + dy * dy + dz * dz;
+	if (d > (radiusA + radiusB) * (radiusA + radiusB))
+		return false;
+
+	return true;
+}
+
+bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere)
+{
+	XMFLOAT3 boxPos = _transformBox.world.GetPosition();
+	XMFLOAT3 boxSize = _box.colliderTransform.GetScale();
+
+	XMFLOAT3 spherePos = _transformSphere.world.GetPosition();
+	float sphereRadius = _sphere.colliderTransform.GetScale().x * 0.5f;
+
+	float closestX = Max(boxPos.x - boxSize.x * 0.5f, Min(spherePos.x, boxPos.x + boxSize.x * 0.5f));
+	float closestY = Max(boxPos.y - boxSize.y * 0.5f, Min(spherePos.y, boxPos.y + boxSize.y * 0.5f));
+	float closestZ = Max(boxPos.z - boxSize.z * 0.5f, Min(spherePos.z, boxPos.z + boxSize.z * 0.5f));
+
+	float dx = closestX - spherePos.x;
+	float dy = closestY - spherePos.y;
+	float dz = closestZ - spherePos.z;
+
+	float d = dx * dx + dy * dy + dz * dz;
+	if (d > sphereRadius * sphereRadius)
+		return false;
+
+	return true;
+}

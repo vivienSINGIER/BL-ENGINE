@@ -7,18 +7,15 @@ using namespace DirectX;
 
 #include "define.h"
 
-enum DIRTY_FLAG : uint32_t
+enum DIRTY_FLAG : uint32
 {
-    WORLD =             0b00000001,
-    INVERSE =           0b00000010,
-    LOCAL_POS =         0b00000100,
-    WORLD_POS =         0b00001000,
-    LOCAL_SCALE =       0b00010000,
-    WORLD_SCALE =       0b00100000,
-    LOCAL_ROTATE =      0b01000000,
-    WORLD_ROTATE =      0b10000000,
+    WORLD =       0b00001,
+    INVERSE =     0b00010,
+    POS =         0b00100,
+    SCALE =       0b01000,
+    ROTATE =      0b10000,
 
-    ALL =               0b11111111
+    ALL =         0b11111
 };
 
 class Transform
@@ -32,95 +29,73 @@ public:
     Transform& operator=(const Transform& other);
     Transform& operator=(Transform&& other) noexcept;
     
-    XMFLOAT4X4& GetWorldMatrix();
+    XMFLOAT4X4& GetMatrix();
     XMFLOAT4X4& GetInvMatrix();
 
     void SetIdentity();
-    void UpdateWorldMatrix();
+    void UpdateMatrix();
     void UpdateInvMatrix();
+    void UpdateFromParent(Transform const& parent);
 
-    uint32_t GetDirty() { return dirty; }
+    uint32 GetDirty() { return dirty; }
     
     // Pos
     
-    XMFLOAT3& GetLocalPosition() { return localPos; };
-    XMFLOAT3& GetWorldPosition() { return worldPos; };
+    XMFLOAT3& GetPosition() { return pos; };
     
-    void SetLocalPosition(XMFLOAT3 const& position);
-    void SetWorldPosition(XMFLOAT3 const& position);
-    void MoveLocal(XMFLOAT3 const& delta);
-    void MoveLocal(XMFLOAT3 const& dir, float distance);
-    void MoveWorld(XMFLOAT3 const& delta);
-    void MoveWorld(XMFLOAT3 const& dir, float distance);
+    void SetPosition(XMFLOAT3 const& position);
+    void Move(XMFLOAT3 const& delta);
+    void Move(XMFLOAT3 const& dir, float distance);
 
     // Scale
    
-    const XMFLOAT3& GetLocalScale() { return localScale; };
-    const XMFLOAT3& GetWorldScale() { return worldScale; };
+    const XMFLOAT3& GetScale() { return scale; };
     
-    void SetLocalScale(XMFLOAT3 const& scale);
-    void SetLocalScale(float scale);
-    void ScaleLocal(XMFLOAT3 const& scale);
-    void ScaleLocal(float scale);
-    
-    void SetWorldScale(XMFLOAT3 const& scale);
-    void SetWorldScale(float scale);
-    void ScaleWorld(XMFLOAT3 const& scale);
-    void ScaleWorld(float scale);
+    void SetScale(XMFLOAT3 const& scale);
+    void SetScale(float scale);
+    void Scale(XMFLOAT3 const& scale);
+    void Scale(float scale);
 
     // Rotate
 
-    const XMFLOAT3& GetForward()    { return mForward; }
-    const XMFLOAT3& GetRight()      { return mRight; }
-    const XMFLOAT3& GetUp()         { return mUp; }
+    const XMFLOAT3& GetForward()    { return forward; }
+    const XMFLOAT3& GetRight()      { return right; }
+    const XMFLOAT3& GetUp()         { return up; }
 
-    XMFLOAT4& GetLocalRotation()   { return localQuat; }
-    XMFLOAT4& GetWorldRotation()   { return worldQuat; }
+    XMFLOAT4& GetRotation()   { return quat; }
 
-    XMMATRIX GetLocalRotMatrix()   { return XMLoadFloat4x4(&localRot); }
-    XMMATRIX GetWorldRotMatrix()     { return XMLoadFloat4x4(&worldRot); }
+    XMMATRIX GetRotMatrix()   { return XMLoadFloat4x4(&rotMatrix); }
 
     void LookAt(XMFLOAT3 const& target);
     void LookTo(XMFLOAT3 const& dir);
     void LookToCamera(XMFLOAT3 const& dir);
     
-    void SetLocalRotationMatrix(XMFLOAT4X4 const& rotation);
-    void SetLocalRotationQuaternion(XMFLOAT4 const& quat);
+    void SetRotationMatrix(XMFLOAT4X4 const& rotation);
+    void SetRotationQuaternion(XMFLOAT4 const& quat);
     
-    void ResetLocalRotation();
-    void ResetWorldRotation();
+    void ResetRotation();
     
-    void SetLocalYPR(XMFLOAT3 const& ypr);
-    void AddLocalYPR(XMFLOAT3 const& ypr);
-    void SetWorldYPR(XMFLOAT3 const& ypr);
-    void AddWorldYPR(XMFLOAT3 const& ypr);
+    void SetYPR(XMFLOAT3 const& ypr);
+    void AddYPR(XMFLOAT3 const& ypr);
 
-    void UpdateLocalRotationFromAxes();
-    void UpdateLocalRotationFromQuaternion();
-    void UpdateLocalRotationFromMatrix();
-    void UpdateWorldRotationFromAxes();
-    void UpdateWorldRotationFromQuaternion();
-    void UpdateWorldRotationFromMatrix();
+    void UpdateRotationFromAxes();
+    void UpdateRotationFromQuaternion();
+    void UpdateRotationFromMatrix();
     
-    XMFLOAT3 localPos   = { 0.0f, 0.0f, 0.0f };
-    XMFLOAT3 localScale = { 1.0f, 1.0f, 1.0f };
-    XMFLOAT3 worldPos   = { 0.0f, 0.0f, 0.0f };
-    XMFLOAT3 worldScale = { 1.0f, 1.0f, 1.0f };
+    XMFLOAT3 pos   = { 0.0f, 0.0f, 0.0f };
+    XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
 
-    XMFLOAT3 mForward;
-    XMFLOAT3 mUp;
-    XMFLOAT3 mRight;
+    XMFLOAT3 forward;
+    XMFLOAT3 up;
+    XMFLOAT3 right;
 
-    XMFLOAT4 localQuat = { 0.0f, 0.0f, 0.0f, 1.0f };
-    XMFLOAT4X4 localRot;
+    XMFLOAT4 quat = { 0.0f, 0.0f, 0.0f, 1.0f };
+    XMFLOAT4X4 rotMatrix;
     
-    XMFLOAT4 worldQuat = { 0.0f, 0.0f, 0.0f, 1.0f };
-    XMFLOAT4X4 worldRot;
-
-    XMFLOAT4X4 worldMatrix;
+    XMFLOAT4X4 matrix;
     XMFLOAT4X4 invMatrix;
 
-    uint32_t dirty = 0;
+    uint32 dirty = 0;
 };
 
 #endif

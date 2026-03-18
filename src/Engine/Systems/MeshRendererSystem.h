@@ -8,7 +8,7 @@ struct MeshRenderer;
 
 struct MeshRendererSystem : System<MeshRenderer, TransformComponent>
 {
-    void OnUpdate(float _dt, MeshRenderer& _mesh, TransformComponent& _transform) override;
+    void OnUpdate(float _dt, EntityId _e ,MeshRenderer& _mesh, TransformComponent& _transform) override;
 };
 
 #endif
