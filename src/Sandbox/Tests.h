@@ -12,5 +12,6 @@
 #include "Tests/TestScripts.hpp"
 #include "Tests/TestTransform.hpp"
 #include "Tests/TestInputs.hpp"
+#include "Tests/TestCamera.hpp"
 
 #endif

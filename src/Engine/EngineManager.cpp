@@ -62,7 +62,7 @@ void EngineManager::Run()
         m_deltaTime = m_chrono.Reset();
         
         m_pWindow->Update();
-
+        InputManager::HandleInput();
         m_pSceneManager->GetCurrentScene()->Update(m_deltaTime);
     }
 }

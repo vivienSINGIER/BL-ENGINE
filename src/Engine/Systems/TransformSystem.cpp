@@ -18,14 +18,14 @@ void TransformSystem::UpdateMatrix(TransformComponent& _t)
         {
             _t.world = _t.local;
             _t.world.UpdateFromParent(p.world);
-            _t.local.dirty |= WORLD;
+            _t.local.dirty = WORLD;
         }
     }
     else if (IsDirty(_t.local, POS | SCALE | ROTATE))
     {
         _t.world = _t.local;
         _t.world.UpdateMatrix();
-        _t.local.dirty |= WORLD;
+        _t.local.dirty = WORLD;
     }
 }
 

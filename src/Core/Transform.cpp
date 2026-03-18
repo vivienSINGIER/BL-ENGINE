@@ -107,12 +107,12 @@ void Transform::UpdateMatrix()
 
     XMMATRIX m = XMMatrixAffineTransformation(s, XMVectorZero(), r, p);
     XMStoreFloat4x4(&matrix, m);
-
-    dirty &= ~WORLD;
+    
     dirty &= ~POS;
     dirty &= ~SCALE;
     dirty &= ~ROTATE;
-    
+
+    dirty |= WORLD;
     dirty |= INVERSE;
 }
 

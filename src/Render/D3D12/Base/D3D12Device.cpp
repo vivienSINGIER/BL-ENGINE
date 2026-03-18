@@ -106,8 +106,9 @@ void D3D12Device::BeginDraw(RenderTarget* _pRenderTarget, DepthStencil* _pDepthS
 
 void D3D12Device::Draw(Geometry* _geo, XMFLOAT4X4& _mat)
 {
-    assert(m_pMainCamera != nullptr && "No camera selected");
     assert(m_pCurrMaterial != nullptr && "No material selected");
+
+    if (m_pMainCamera == nullptr) return;
 
     if (m_pMainCamera->IsInFrustum(_geo->GetBounds(), _mat) == false)
         return;
