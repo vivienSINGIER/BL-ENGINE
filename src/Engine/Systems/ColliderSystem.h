@@ -5,12 +5,6 @@
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 
-struct AABB
-{
-	XMFLOAT3 min;
-	XMFLOAT3 max;
-};
-
 struct Contact 
 {
 	EntityId a;
@@ -38,11 +32,11 @@ public:
 
 private:
 	void ClearPartitionGrid();
-	void InsertIntoPartitionGrid(EntityId entity, const AABB& aabb);
+	void InsertIntoPartitionGrid(EntityId _e, ColliderComponent& _collider);
 	void BuildCandidatePairs();
 	void NarrowPhase();
 
-	AABB CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+	void CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
 
 	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);

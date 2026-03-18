@@ -53,7 +53,7 @@ struct System : public ISystem
 template <typename TScript>
 struct ScriptSystem : System<TScript>
 {
-    void OnUpdate(float _dt, TScript& _script)
+    void OnUpdate(float _dt, EntityId _e, TScript& _script)
     {
         if (_script.m_isStarted == false)
         {
