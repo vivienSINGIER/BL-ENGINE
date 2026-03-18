@@ -5,9 +5,8 @@
 #include "Components/CameraComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
-class CameraSystem : public System<CameraComponent, TransformComponent>
+struct CameraSystem : public System<CameraComponent, TransformComponent>
 {
-public:
     void OnUpdate(float _dt, CameraComponent& _camera, TransformComponent& _transform) override;
 };
 
