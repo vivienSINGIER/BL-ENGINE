@@ -8,7 +8,13 @@
 struct LightSystem : public System<LightComponent, TransformComponent>
 {
 public:
-    void OnUpdate(float _dt, LightComponent& _light, TransformComponent& _transform) override;    
+    void OnStartUpdate(float _dt) override;
+    void OnUpdate(float _dt, EntityId _e, LightComponent& _l, TransformComponent& _t) override;
+    void OnEndUpdate(float _dt) override;
+
+private:
+    Vector<LightDescriptor> lightDescriptors = Vector<LightDescriptor>();
+    int count = 0;
 };
 
 #endif

@@ -14,5 +14,6 @@
 #include "Tests/TestInputs.hpp"
 #include "Tests/TestCamera.hpp"
 #include "Tests/TestCollision.hpp"
+#include "Tests/TestLights.hpp"
 
 #endif

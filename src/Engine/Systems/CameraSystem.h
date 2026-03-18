@@ -7,7 +7,7 @@
 
 struct CameraSystem : public System<CameraComponent, TransformComponent>
 {
-    void OnUpdate(float _dt, CameraComponent& _camera, TransformComponent& _transform) override;
+    void OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, TransformComponent& _transform) override;
 };
 
 #endif

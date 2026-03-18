@@ -3,7 +3,7 @@
 #include "../../Render/Generic/Render.h"
 #include "../EngineManager.h"
 
-void CameraSystem::OnUpdate(float _dt, CameraComponent& _camera, TransformComponent& _transform)
+void CameraSystem::OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, TransformComponent& _transform)
 {
     if (_camera.camera == nullptr) return;
     

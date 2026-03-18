@@ -47,10 +47,10 @@ public:
     {
         void Update(float dt) override
         {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-
-            transform.SetPosition(collider.boundingBox.min);
+            // ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
+            // Transform& transform = world->GetComponent<TransformComponent>(entity).local;
+            //
+            // transform.SetPosition(collider.boundingBox.min);
         }
     };
 
@@ -58,10 +58,10 @@ public:
     {
         void Update(float dt) override
         {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-
-            transform.SetPosition(collider.boundingBox.max);
+            // ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
+            // Transform& transform = world->GetComponent<TransformComponent>(entity).local;
+            //
+            // transform.SetPosition(collider.boundingBox.max);
         }
     };
 
