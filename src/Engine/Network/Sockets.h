@@ -1,5 +1,5 @@
-#ifndef SOCKETS_DEFINED
-#define SOCKETS_DEFINED
+#ifndef SOCKETS_H_DEFINED
+#define SOCKETS_H_DEFINED
 
 #include <string>
 #include <WinSock2.h>
