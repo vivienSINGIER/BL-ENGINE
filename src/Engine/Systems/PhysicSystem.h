@@ -16,7 +16,7 @@ public:
 private:
 	void ResolveOverlap(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform);
 
-	XMFLOAT3 m_gravityForce;
+	XMFLOAT3 m_gravityAccel = XMFLOAT3(0.0f, -9.81f, 0.0f);
 };
 
 #endif // !PHYSIC_SYSTEM_H_DEFINED

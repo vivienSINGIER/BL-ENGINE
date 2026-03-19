@@ -17,7 +17,7 @@ public:
 
             if (InputManager::IsKeyPressed(A))
             {
-                transform.AddYPR(XMFLOAT3(-XM_PIDIV4 * dt, 0.0f, 0.0f));
+                transform.AddYPR(XMFLOAT3(0.0f, -XM_PIDIV4 * dt, 0.0f));
             }
 
             if (InputManager::IsKeyDown(G))
@@ -86,7 +86,7 @@ public:
         physic.useGravity = false;
 		MeshRenderer& m2 = scene->world.AddComponent<MeshRenderer>(e2);
 		m2.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(1.0f, 0.0f, 0.0f));
+        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(0.0f, 2.0f, 0.0f));
         scene->world.AddScript<MoveScript>(e2);
 
         Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
@@ -94,7 +94,7 @@ public:
         mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, -5.0f, -1.0f);
+        XMFLOAT3 pos = XMFLOAT3(0.0f, 1.0f, -5.0f);
         cam.SetPos(pos); 
         XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
         cam.LookAt(target);

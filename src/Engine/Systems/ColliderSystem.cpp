@@ -11,6 +11,8 @@ void ColliderSystem::OnStartUpdate(float _dt)
 void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
 {
 	_collider.contact.other = -1; //Valeur par defaut
+	_collider.contact.penetration = 0.0f;
+	_collider.contact.normal = { 0.0f, 0.0f, 0.0f };
 	CalculateWorldAABB(_collider, _transform);
 	InsertIntoPartitionGrid(_e, _collider);
 }
@@ -195,6 +197,9 @@ void ColliderSystem::NarrowPhase()
 
 bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex)
 {
+	if (Dot(axis, axis) < 1e-6f)
+		return true;
+
 	XMFLOAT3 n = Normalize(axis);
 	XMFLOAT3 centerDelta = Subtract(b.center, a.center);
 
@@ -204,7 +209,7 @@ bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis, float& _minDi
 
 	if (_minDistance > distance && distance > 0.0f)
 	{
-		_minDistance = distance;
+		_minDistance = ra + rb - distance;
 		_minAxeIndex = _currAxeIndex;
 	}
 
@@ -245,12 +250,15 @@ bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& 
 	if (_boxA.isTrigger || _boxB.isTrigger) //Pas de calcul de contact si trigger
 		return true;
 
-	//cette normale devient la normale de contact
 	XMFLOAT3 normal = Normalize(axes[minAxeIndex]);
+	XMFLOAT3 centerDelta = Subtract(_boxB.obb.center, _boxA.obb.center);
+
+	if (Dot(centerDelta, normal) < 0.0f)
+		normal = Inverse(normal);
+
 	_boxA.contact.normal = Inverse(normal);
 	_boxB.contact.normal = normal;
 
-	//la plus petite overlap devient la pénétration
 	_boxA.contact.penetration = minDistance;
 	_boxB.contact.penetration = minDistance;
 
@@ -268,23 +276,33 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 	float dy = posA.y - posB.y;
 	float dz = posA.z - posB.z;
 
-	float d = dx * dx + dy * dy + dz * dz;
-	if (d > (radiusA + radiusB) * (radiusA + radiusB))
+	float d2 = dx * dx + dy * dy + dz * dz;
+	if (d2 > (radiusA + radiusB) * (radiusA + radiusB))
 		return false;
 
 	if (_sphereA.isTrigger || _sphereB.isTrigger) //Pas de calcul de contact si trigger
 		return true;
 
-	//normale = direction entre centres
-	XMFLOAT3 normal = Normalize(Subtract(posB, posA));
-	_sphereA.contact.normal = normal;
-	_sphereB.contact.normal = Inverse(normal);
+	if (d2 < 1e-6f)
+	{
+		//Normale arbitraire si les centres sont presque au même endroit
+		_sphereA.contact.normal = { 0, 1, 0 }; 
+		_sphereB.contact.normal = { 0, -1, 0 };
 
-	//pénétration = rA + rB - distance
-	float penetration = radiusA + radiusB - sqrt(d);
-	_sphereA.contact.penetration = penetration;
-	_sphereB.contact.penetration = penetration;
+		float penetration = radiusA + radiusB;
+		_sphereA.contact.penetration = penetration;
+		_sphereB.contact.penetration = penetration;
+	}
+	else
+	{
+		XMFLOAT3 normal = Normalize(Subtract(posB, posA));
+		_sphereA.contact.normal = Inverse(normal);
+		_sphereB.contact.normal = normal;
 
+		float penetration = radiusA + radiusB - sqrt(d2);
+		_sphereA.contact.penetration = penetration;
+		_sphereB.contact.penetration = penetration;
+	}
 	return true;
 }
 
@@ -306,8 +324,8 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 	distZ = Clamp(distZ, -obb.halfExtents.z, obb.halfExtents.z);
 
 	XMFLOAT3 temp = Mul(obb.axes[0], distX);
-	XMFLOAT3 temp1 = Mul(obb.axes[1], distX);
-	XMFLOAT3 temp2 = Mul(obb.axes[2], distX);
+	XMFLOAT3 temp1 = Mul(obb.axes[1], distY);
+	XMFLOAT3 temp2 = Mul(obb.axes[2], distZ);
 
 	closest = Add(closest, temp);
 	closest = Add(closest, temp1);
@@ -316,7 +334,7 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 	XMFLOAT3 delta = Subtract(spherePosition, closest);
 	float d2 = Dot(delta, delta);
 
-	if (d2 >= sphereRadius * sphereRadius)
+	if (d2 > sphereRadius * sphereRadius)
 		return false;
 
 	if (_box.isTrigger || _sphere.isTrigger) //Pas de calcul de contact si trigger
@@ -324,8 +342,8 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 
 	//normale = sphère - point proche
 	XMFLOAT3 normal = Normalize(Subtract(spherePosition, closest));
-	_box.contact.normal = normal;
-	_sphere.contact.normal = Inverse(normal);
+	_box.contact.normal = Inverse(normal);
+	_sphere.contact.normal = normal;
 
 	//pénétration = rayon - distance
 	float penetration = sphereRadius - sqrt(d2);
