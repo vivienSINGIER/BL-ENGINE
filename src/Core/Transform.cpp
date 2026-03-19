@@ -107,12 +107,12 @@ void Transform::UpdateMatrix()
 
     XMMATRIX m = XMMatrixAffineTransformation(s, XMVectorZero(), r, p);
     XMStoreFloat4x4(&matrix, m);
-
-    dirty &= ~WORLD;
+    
     dirty &= ~POS;
     dirty &= ~SCALE;
     dirty &= ~ROTATE;
-    
+
+    dirty |= WORLD;
     dirty |= INVERSE;
 }
 
@@ -227,54 +227,36 @@ static void ExtractAxesFromMatrix(const XMFLOAT4X4& m,
 
 void Transform::LookTo(XMFLOAT3 const& dir)
 {
-    // XMVECTOR forward = XMVector3Normalize(XMLoadFloat3(&dir));
-    // XMVECTOR up      = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    //
-    // XMVECTOR right  = XMVector3Normalize(XMVector3Cross(up, forward));
-    // XMVECTOR newUp  = XMVector3Cross(forward, right);
-    //
-    // XMMATRIX rotationMatrix;
-    // rotationMatrix.r[0] = XMVectorSetW(right,   0.0f);
-    // rotationMatrix.r[1] = XMVectorSetW(newUp,   0.0f);
-    // rotationMatrix.r[2] = XMVectorSetW(forward, 0.0f);
-    // rotationMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-    //
-    // XMVECTOR quat = XMQuaternionRotationMatrix(rotationMatrix);
-    //
-    // XMStoreFloat4(&localQuat, quat);
-    //
-    // XMVECTOR scaleVec = XMLoadFloat3(&worldScale);
-    // XMVECTOR posVec   = XMLoadFloat3(&worldPos);
-    // XMMATRIX worldMat = XMMatrixAffineTransformation(scaleVec, XMVectorZero(), quat, posVec);
-    // XMStoreFloat4x4(&worldMatrix, worldMat);
-    //
-    // XMStoreFloat4x4(&worldRot, rotationMatrix);
-    // XMStoreFloat4x4(&localRot, rotationMatrix);
-    //
-    // ExtractAxesFromMatrix(worldRot, mRight, mUp, mForward);/*
-    // ExtractAxesFromMatrix(worldRot, worldRight, worldUp, worldForward);*/
-    //
-    // dirty |= WORLD_ROTATE;
-}
+    XMVECTOR eye = XMLoadFloat3(&pos);
+    XMVECTOR to  = XMLoadFloat3(&dir);
+    XMVECTOR up  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-void Transform::LookToCamera(XMFLOAT3 const& dir)
-{
-    // XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    // XMMATRIX m  = XMMatrixLookToLH(XMLoadFloat3(&worldPos), XMLoadFloat3(&dir), up);
-    // XMStoreFloat4x4(&worldMatrix, m);
-    // UpdateLocalRotationFromMatrix();
-    //
-    // dirty |= WORLD_ROTATE;
+    XMMATRIX view = XMMatrixLookToLH(eye, to, up);
+    XMMATRIX rot  = XMMatrixTranspose(view);
+    
+    rot.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+
+    XMStoreFloat4x4(&rotMatrix, rot);
+    UpdateRotationFromMatrix();
+
+    dirty |= ROTATE;
 }
 
 void Transform::LookAt(XMFLOAT3 const& target)
 {
-    // XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    // XMMATRIX m  = XMMatrixLookAtLH(XMLoadFloat3(&worldPos), XMLoadFloat3(&target), up);
-    // XMStoreFloat4x4(&worldMatrix, m);
-    // UpdateLocalRotationFromMatrix();
-    //
-    // dirty |= WORLD_ROTATE;
+    XMVECTOR eye = XMLoadFloat3(&pos);
+    XMVECTOR to  = XMLoadFloat3(&target);
+    XMVECTOR up  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+    XMMATRIX view = XMMatrixLookAtLH(eye, to, up);
+    XMMATRIX rot  = XMMatrixTranspose(view);
+    
+    rot.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+
+    XMStoreFloat4x4(&rotMatrix, rot);
+    UpdateRotationFromMatrix();
+
+    dirty |= ROTATE;
 }
 
 void Transform::SetRotationMatrix(XMFLOAT4X4 const& rotation)
@@ -362,13 +344,8 @@ void Transform::UpdateRotationFromQuaternion()
 
 void Transform::UpdateRotationFromMatrix()
 {
-    XMMATRIX worldMat = XMLoadFloat4x4(&matrix);
-    
-    XMVECTOR scale, rotQuat, trans;
-    XMMatrixDecompose(&scale, &rotQuat, &trans, worldMat);
-    
+    XMVECTOR rotQuat = XMQuaternionRotationMatrix(XMLoadFloat4x4(&rotMatrix));
     XMStoreFloat4(&quat, rotQuat);
-    XMStoreFloat4x4(&rotMatrix, XMMatrixRotationQuaternion(rotQuat));
 
     ExtractAxesFromMatrix(rotMatrix, right, up, forward);
 

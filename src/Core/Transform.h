@@ -68,7 +68,6 @@ public:
 
     void LookAt(XMFLOAT3 const& target);
     void LookTo(XMFLOAT3 const& dir);
-    void LookToCamera(XMFLOAT3 const& dir);
     
     void SetRotationMatrix(XMFLOAT4X4 const& rotation);
     void SetRotationQuaternion(XMFLOAT4 const& quat);
