@@ -13,22 +13,27 @@ inline float Max(float a, float b)
     return (a > b) ? a : b;
 }
 
-inline XMFLOAT3 Add(XMFLOAT3& a, XMFLOAT3& b)
+inline XMFLOAT3 Add(const XMFLOAT3& a, const XMFLOAT3& b)
 {
     return { a.x + b.x, a.y + b.y, a.z + b.z };
 }
 
-inline XMFLOAT3 Subtract(XMFLOAT3& a, XMFLOAT3& b)
+inline XMFLOAT3 Subtract(const XMFLOAT3& a, const XMFLOAT3& b)
 {
     return { a.x - b.x, a.y - b.y, a.z - b.z };
 }
 
-inline XMFLOAT3 Mul(XMFLOAT3& v, float s)
+inline XMFLOAT3 Mul(const XMFLOAT3& v, float s)
 {
     return { v.x * s, v.y * s, v.z * s };
 }
 
-inline XMFLOAT3 Normalize(XMFLOAT3& v)
+inline XMFLOAT3 Mul(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return { a.x * b.x, a.y * b.y, a.z * b.z };
+}
+
+inline XMFLOAT3 Normalize(const XMFLOAT3& v)
 {
     XMVECTOR vec = XMLoadFloat3(&v);
     vec = XMVector3Normalize(vec);
@@ -37,7 +42,7 @@ inline XMFLOAT3 Normalize(XMFLOAT3& v)
     return out;
 }
 
-inline XMFLOAT3 Cross(XMFLOAT3& a, XMFLOAT3& b)
+inline XMFLOAT3 Cross(const XMFLOAT3& a, const XMFLOAT3& b)
 {
     return 
     {
@@ -47,12 +52,12 @@ inline XMFLOAT3 Cross(XMFLOAT3& a, XMFLOAT3& b)
     };
 }
 
-inline float NormSquared(XMFLOAT3& v)
+inline float NormSquared(const XMFLOAT3& v)
 {
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
-inline float Dot(XMFLOAT3& a, XMFLOAT3& b)
+inline float Dot(const XMFLOAT3& a, const XMFLOAT3& b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }

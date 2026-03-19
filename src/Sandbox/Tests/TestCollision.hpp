@@ -40,6 +40,12 @@ public:
             {
                 transform.AddYPR(XMFLOAT3(-XM_PIDIV4 * dt, 0.0f, 0.0f));
             }
+
+            if (InputManager::IsKeyPressed(W))
+            {
+                XMFLOAT3 scale = transform.GetScale();
+                transform.SetScale(XMFLOAT3(scale.x + 0.5f * dt, scale.y, scale.z));
+            }
         }
     };
 

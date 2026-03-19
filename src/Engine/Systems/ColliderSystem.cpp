@@ -59,8 +59,8 @@ void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformCompo
 	_collider.colliderTransform.SetPosition(_transform.world.GetPosition());
 	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation());
 
-	const XMFLOAT3 pos = _transform.world.GetPosition();
-	const XMFLOAT3 scale = _collider.colliderTransform.GetScale();
+	XMFLOAT3 pos = _transform.world.GetPosition();
+	XMFLOAT3 scale = Mul(_collider.colliderTransform.GetScale(), _transform.world.GetScale());
 
 	_collider.obb.center = pos;
 	_collider.obb.halfExtents = { scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f };
@@ -187,6 +187,7 @@ void ColliderSystem::NarrowPhase()
 		if (isColliding)
 		{
 			m_vContacts.push_back({ entityA, entityB });
+			std::cout << "Collision" << std::endl;
 		}
 	}
 }
