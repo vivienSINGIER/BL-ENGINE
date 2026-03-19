@@ -3,54 +3,86 @@
 #include <cstdint>
 #include "Engine.h"
 
-enum class PacketType
+enum class PacketType : uint8
 {
-	Update,
-	Spawn,
-	AddComponent,
-	RemoveComponent,
-	Delete,
-	InputUpdate,
 	Connect,
 	ConnectAck,
+	Ack,
+	
+	Spawn,
+	Delete,
+	
+	AddComponent,
+	RemoveComponent,
+	Update,
+	
+	InputUpdate,
 	Chat,
-	Ack
 };
-
 
 struct PacketHeader
 {
-	uint32_t tick;
-	PacketType type;
-	EntityId entityId;
-	uint16 ackId;
+	uint32      tick;
+	uint16      ackId;
+	PacketType  type;
+	EntityId    entityId;
 };
 
-struct AckPacket
+struct StatePacket
 {
-	PacketHeader header;
-	uint16 ackId;
-};
-
-struct Packet
-{
-	PacketHeader header;
-	ComponentMask componentMask;
-	uint8 data[512];
-	uint32 dataSize;
+	PacketHeader    header;
+	ComponentMask   componentMask;
+	uint32          dataSize;
+	uint8           data[512];
 };
 
 struct InputEntry
 {
-	uint8 keyCode;
-	InputState state;
+	uint8       keyCode;
+	InputState  state;
 };
 
 struct InputPacket
 {
-	PacketHeader header;
-	uint32 inputCount;
-	InputEntry inputs[32];
+	PacketHeader    header;
+	uint32          inputCount;
+	InputEntry      inputs[32];
+};
+
+struct ChatPacket
+{
+	PacketHeader    header;
+	uint32          messageLength;
+	char            message[256];
+};
+
+struct Packet
+{
+	union
+	{
+		PacketHeader    header;
+		StatePacket     state;
+		InputPacket     input;
+		ChatPacket      chat;
+	};
+
+	Packet() { memset(this, 0, sizeof(Packet)); }
+	
+	uint32 Size() const
+	{
+		switch (header.type)
+		{
+		case PacketType::Spawn:
+		case PacketType::Update:
+		case PacketType::AddComponent:
+		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + sizeof(uint32) + state.dataSize;
+		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
+		case PacketType::Chat:              return sizeof(PacketHeader) + sizeof(uint32) + chat.messageLength;
+		default:                            return sizeof(PacketHeader);
+		}
+	}
+
+	char* Data() { return reinterpret_cast<char*>(this); }
 };
 
 #endif // !PACKET_HPP_DEFINED
