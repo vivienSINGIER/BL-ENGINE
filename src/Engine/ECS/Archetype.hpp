@@ -11,8 +11,8 @@ struct Archetype
     ComponentStorage storage;
     Vector<EntityId> entities;
     
-    Array<Archetype*, MAX_COMPONENTS> EdgeAdd{};
-    Array<Archetype*, MAX_COMPONENTS> EdgeRemove{};
+    Array<Archetype*, MAX_COMPONENTS> edgeAdd{};
+    Array<Archetype*, MAX_COMPONENTS> edgeRemove{};
 
     Archetype(ComponentMask _mask) : mask(_mask) {}
 };

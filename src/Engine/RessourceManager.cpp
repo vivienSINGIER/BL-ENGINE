@@ -14,62 +14,100 @@ RessourceManager::~RessourceManager()
 {
 }
 
-void RessourceManager::AddGeometry(String _name, Geometry* _pGeo)
+uint32 RessourceManager::AddGeometry(String _name, Geometry* _pGeo)
 {
-    if (_pGeo == nullptr) return;
-
-    s_pInstance->m_mGeometries[_name] = _pGeo;
+    assert(s_pInstance->m_mGeometryIndices.contains(_name) == false && "Geometry already exists");
+    
+    s_pInstance->m_vGeometries.push_back(_pGeo);
+    s_pInstance->m_mGeometryIndices[_name] = s_pInstance->m_vGeometries.size() - 1;
+    return s_pInstance->m_mGeometryIndices[_name];
 }
 
 Geometry* RessourceManager::GetGeometry(String _name)
 {
-    if (s_pInstance->m_mGeometries.contains(_name) == false) return nullptr;
+    if (s_pInstance->m_mGeometryIndices.contains(_name) == false) return nullptr;
 
-    return s_pInstance->m_mGeometries[_name];
+    return s_pInstance->m_vGeometries[s_pInstance->m_mGeometryIndices[_name]];
 }
 
-void RessourceManager::AddShader(String _name, Shader* _pShader)
+uint32 RessourceManager::AddShader(String _name, Shader* _pShader)
 {
-    if (_pShader == nullptr) return;
-
-    s_pInstance->m_mShaders[_name] = _pShader;
+    assert(s_pInstance->m_mShaderIndices.contains(_name) == false && "Shader already exists");
+    
+    s_pInstance->m_vShaders.push_back(_pShader);
+    s_pInstance->m_mShaderIndices[_name] = s_pInstance->m_vShaders.size() - 1;
+    return s_pInstance->m_mShaderIndices[_name];
 }
 
 Shader* RessourceManager::GetShader(String _name)
 {
-    if (s_pInstance->m_mShaders.contains(_name) == false) return nullptr;
+    if (s_pInstance->m_mShaderIndices.contains(_name) == false) return nullptr;
 
-    return s_pInstance->m_mShaders[_name];
+    return s_pInstance->m_vShaders[s_pInstance->m_mShaderIndices[_name]];
 }
 
-void RessourceManager::AddFont(String _name, RenderFont* _pFont)
+uint32 RessourceManager::AddFont(String _name, RenderFont* _pFont)
 {
-    if (_pFont == nullptr) return;
-
-    s_pInstance->m_mFonts[_name] = _pFont;
+    assert(s_pInstance->m_mFontIndices.contains(_name) == false && "Font already exists");
+    
+    s_pInstance->m_vFonts.push_back(_pFont);
+    s_pInstance->m_mFontIndices[_name] = s_pInstance->m_vFonts.size() - 1;
+    return s_pInstance->m_mFontIndices[_name];
 }
 
 RenderFont* RessourceManager::GetFont(String _name)
 {
-    if (s_pInstance->m_mFonts.contains(_name) == false) return nullptr;
+    if (s_pInstance->m_mFontIndices.contains(_name) == false) return nullptr;
 
-    return s_pInstance->m_mFonts[_name];
+    return s_pInstance->m_vFonts[s_pInstance->m_mFontIndices[_name]];
 }
 
-void RessourceManager::AddMaterial(String _name, Material* pMat)
+uint32 RessourceManager::AddTexture(String _name, Texture* _pTexture)
 {
-    if (pMat == nullptr) return;
+    assert(s_pInstance->m_mTextureIndices.contains(_name) == false && "Texture already exists");
+    
+    s_pInstance->m_vTextures.push_back(_pTexture);
+    s_pInstance->m_mTextureIndices[_name] = s_pInstance->m_vTextures.size() - 1;
+    return s_pInstance->m_mTextureIndices[_name];
+}
 
-    //if (m_mMaterials.contains(name)) return;
+Texture* RessourceManager::GetTexture(String _name)
+{
+    if (s_pInstance->m_mTextureIndices.contains(_name) == false) return nullptr;
 
-    s_pInstance->m_mMaterials[_name] = pMat;
+    return s_pInstance->m_vTextures[s_pInstance->m_mTextureIndices[_name]];
+}
+
+uint32 RessourceManager::AddCamera(String _name)
+{
+    assert(s_pInstance->m_mCameraIndices.contains(_name) == false && "Camera already exists");
+    
+    s_pInstance->m_vCameras.push_back(new Camera());
+    s_pInstance->m_mCameraIndices[_name] = s_pInstance->m_vCameras.size() - 1;
+    return s_pInstance->m_mCameraIndices[_name];
+}
+
+Camera* RessourceManager::GetCamera(String _name)
+{
+    if (s_pInstance->m_mCameraIndices.contains(_name) == false) return nullptr;
+
+    return s_pInstance->m_vCameras[s_pInstance->m_mCameraIndices[_name]];
+}
+
+uint32 RessourceManager::AddMaterial(String _name, Material* pMat)
+{
+    assert(s_pInstance->m_mMaterialIndices.contains(_name) == false && "Material already exists");
+    
+    s_pInstance->m_vMaterials.push_back(pMat);
+    s_pInstance->m_mMaterialIndices[_name] = s_pInstance->m_vMaterials.size() - 1;
+    return s_pInstance->m_mMaterialIndices[_name];
 }
 
 Material* RessourceManager::GetMaterial(String _name)
 {
-    if (s_pInstance->m_mMaterials.contains(_name) == false) return nullptr;
+    if (s_pInstance->m_mMaterialIndices.contains(_name) == false) return nullptr;
 
-    return s_pInstance->m_mMaterials[_name];
+    return s_pInstance->m_vMaterials[s_pInstance->m_mMaterialIndices[_name]];
 }
 
 #endif

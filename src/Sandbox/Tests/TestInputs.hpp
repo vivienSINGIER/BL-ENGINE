@@ -15,7 +15,7 @@ public:
         {
 			InputManager::HandleInput();
 
-            if (InputManager::IsKeyDown(Z))
+            if (InputManager::IsKeyPressed(Z))
             {
 				std::cout << "Z is pressed" << std::endl;
             }

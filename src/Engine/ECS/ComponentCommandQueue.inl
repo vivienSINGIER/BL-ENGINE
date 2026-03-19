@@ -1,0 +1,38 @@
+﻿#ifndef COMPONENT_COMMANDQUEUE_INL_DEFINED
+#define COMPONENT_COMMANDQUEUE_INL_DEFINED
+
+#include "ComponentCommandQueue.h"
+
+template <typename T>
+T& ComponentCommandQueue::EmplaceAdd(EntityId _e, T const& _val)
+{
+    Command cmd;
+    cmd.entity = _e;
+    cmd.component = ComponentRegistry::Id<T>();
+    cmd.size = sizeof(T);
+    cmd.offset = m_offset;
+        
+    T* ptr = reinterpret_cast<T*>(m_componentSideBuffer + m_offset);
+    memcpy(ptr, &_val, sizeof(T));
+
+    cmd.applyFunc = [](ComponentId _cid, const void* _data, ComponentStorage& _storage) -> void
+    {
+        _storage.Push<T>(_cid, *static_cast<const T*>(_data));
+    };
+
+    m_offset += cmd.size;
+    m_toAdd.emplace(m_toAdd.begin(), cmd);
+        
+    return *ptr;
+}
+
+template <typename T>
+void ComponentCommandQueue::EmplaceRemove(EntityId _e)
+{
+    Command cmd;
+    cmd.entity = _e;
+    cmd.component = ComponentRegistry::Id<T>();
+    m_toRemove.emplace(m_toRemove.begin(), cmd);
+}
+
+#endif

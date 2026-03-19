@@ -10,6 +10,12 @@ enum class ColliderType
 	Sphere
 };
 
+struct AABB
+{
+	XMFLOAT3 min;
+	XMFLOAT3 max;
+};
+
 struct OBB
 {
 	XMFLOAT3 center;
@@ -22,7 +28,8 @@ struct  ColliderComponent
 	bool isTrigger;
 	ColliderType type;
 	Transform colliderTransform;
-	OBB boundingBox;
+	OBB obb;
+	AABB aabb;
 };
 
 #endif // !COLLIDER_COMPONENT_HPP_INCLUDED

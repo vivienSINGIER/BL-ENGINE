@@ -11,7 +11,7 @@ using json = nlohmann::json;
 struct GeometryFactory
 {
 private:
-	 static Vector<Vertex> CalculateNormalsAndTangents(Vector<Vertex>& _vertices, Vector<uint32>& _indices)
+	static Vector<Vertex> CalculateNormalsAndTangentsSeamless(Vector<Vertex>& _vertices, Vector<uint32>& _indices)
 	 {
 	 	struct AccumData
 	     {
@@ -99,7 +99,7 @@ private:
 	 	return _vertices;
 	 }
 
-	static Vector<Vertex> CalculateNormalsAndTangentsCustom(Vector<Vertex>& _vertices, const Vector<uint32>& _indices)
+	static Vector<Vertex> CalculateNormalsAndTangents(Vector<Vertex>& _vertices, const Vector<uint32>& _indices)
 	{
 		// 1. Utiliser un vecteur simple au lieu d'une map (beaucoup plus rapide)
 		struct Accum { XMVECTOR n = XMVectorZero(); XMVECTOR t = XMVectorZero(); };
@@ -510,7 +510,7 @@ public:
     		indices[i + 2] = fixPole(i2, i0, i1);
     	}
     	
-    	vertices = CalculateNormalsAndTangents(vertices, indices);
+    	vertices = CalculateNormalsAndTangentsSeamless(vertices, indices);
 
 		pGeometry->SetVertexData(vertices.data(), vertices.size());
 		pGeometry->SetIndexData(indices.data(), indices.size());
@@ -592,7 +592,7 @@ public:
 	        indices.push_back(baseIndex + i + 1);
 	    }
 
-	    vertices = CalculateNormalsAndTangents(vertices, indices);
+	    vertices = CalculateNormalsAndTangentsSeamless(vertices, indices);
 
     	Geometry* geo = _pDevice->CreateGeometry(_isDynamic);
 	    geo->SetVertexData(vertices.data(), vertices.size());
@@ -614,7 +614,7 @@ public:
     	if (_isTop == false)
     		std::reverse(indices.begin(), indices.end());
 
-    	vertices = CalculateNormalsAndTangents(vertices, indices);
+    	vertices = CalculateNormalsAndTangentsSeamless(vertices, indices);
 
 		Geometry* geo = _pDevice->CreateGeometry(_isDynamic);
     	
@@ -719,7 +719,7 @@ public:
     		}
     	}
 
-    	vertices = CalculateNormalsAndTangents(vertices, indices);
+    	vertices = CalculateNormalsAndTangentsSeamless(vertices, indices);
 
     	Geometry* geo = _pDevice->CreateGeometry(_isDynamic);
     	
@@ -801,7 +801,7 @@ public:
 
     	fclose(file);
 
-    	vertices = CalculateNormalsAndTangentsCustom(vertices, indices);
+    	vertices = CalculateNormalsAndTangents(vertices, indices);
 
     	pGeo->SetVertexData(vertices.data(), vertices.size());
     	pGeo->SetIndexData(indices.data(), indices.size());
@@ -852,7 +852,7 @@ public:
     	Vector<uint32> indices;
 
     	LoadJsonObj(object, vertices, indices);
-    	vertices = CalculateNormalsAndTangentsCustom(vertices, indices);
+    	vertices = CalculateNormalsAndTangents(vertices, indices);
     	
     	pGeo->SetVertexData(vertices.data(), vertices.size());
     	pGeo->SetIndexData(indices.data(), indices.size());

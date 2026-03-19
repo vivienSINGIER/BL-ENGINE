@@ -40,6 +40,12 @@ public:
             {
                 transform.AddYPR(XMFLOAT3(-XM_PIDIV4 * dt, 0.0f, 0.0f));
             }
+
+            if (InputManager::IsKeyPressed(W))
+            {
+                XMFLOAT3 scale = transform.GetScale();
+                transform.SetScale(XMFLOAT3(scale.x + 0.5f * dt, scale.y, scale.z));
+            }
         }
     };
 
@@ -50,7 +56,7 @@ public:
             ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
             Transform& transform = world->GetComponent<TransformComponent>(entity).local;
 
-            //transform.SetPosition(collider.boundingBox.min);
+            transform.SetPosition(collider.aabb.min);
         }
     };
 
@@ -61,7 +67,7 @@ public:
             ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
             Transform& transform = world->GetComponent<TransformComponent>(entity).local;
 
-            //transform.SetPosition(collider.boundingBox.max);
+            transform.SetPosition(collider.aabb.max);
         }
     };
 
@@ -71,7 +77,7 @@ public:
         Scene* scene = SceneManager::GetSceneWithName("Default");
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::Update);
+		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
         sys->InitializePartitionGrid(XMINT2(100, 100), 10);
 
         EntityId e = scene->world.CreateEntity();
