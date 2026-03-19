@@ -34,7 +34,7 @@ void ColliderSystem::InitializePartitionGrid(XMINT2 _mapSize, int _cellSize)
 	for (int x = 0; x < m_partitionGrid.numCellsX; x++)
 	{
 		Vector<Vector<EntityId>> vvEntitiesTemp;
-		for (int y = 0; y < m_partitionGrid.numCellsX; y++)
+		for (int y = 0; y < m_partitionGrid.numCellsY; y++)
 		{
 			Vector<EntityId> vEntitiesTemp;
 			vvEntitiesTemp.push_back(vEntitiesTemp);
@@ -59,31 +59,80 @@ void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformCompo
 	_collider.colliderTransform.SetPosition(_transform.world.GetPosition());
 	_collider.colliderTransform.SetRotationQuaternion(_transform.world.GetRotation());
 
-	_collider.boundingBox.center = _transform.world.GetPosition();
-	_collider.boundingBox.halfExtents.x = _collider.colliderTransform.GetScale().x * 0.5f;
-	_collider.boundingBox.halfExtents.y = _collider.colliderTransform.GetScale().y * 0.5f;
-	_collider.boundingBox.halfExtents.z = _collider.colliderTransform.GetScale().z * 0.5f;
+	const XMFLOAT3 pos = _transform.world.GetPosition();
+	const XMFLOAT3 scale = _collider.colliderTransform.GetScale();
+
+	_collider.obb.center = pos;
+	_collider.obb.halfExtents = { scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f };
+
+	XMMATRIX rot = XMMatrixRotationQuaternion(XMLoadFloat4(&_transform.world.GetRotation()));
+
+	XMVECTOR axisX = XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rot);
+	XMVECTOR axisY = XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot);
+	XMVECTOR axisZ = XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rot);
+
+	XMStoreFloat3(&_collider.obb.axes[0], XMVector3Normalize(axisX));
+	XMStoreFloat3(&_collider.obb.axes[1], XMVector3Normalize(axisY));
+	XMStoreFloat3(&_collider.obb.axes[2], XMVector3Normalize(axisZ));
 }
 
 void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform)
 {
+	UpdateCollider(_collider, _transform);
 
+	if (_collider.type == ColliderType::Sphere)
+	{
+		const XMFLOAT3 c = _transform.world.GetPosition();
+		const float r = _collider.colliderTransform.GetScale().x * 0.5f;
+
+		_collider.aabb.min = { c.x - r, c.y - r, c.z - r };
+		_collider.aabb.max = { c.x + r, c.y + r, c.z + r };
+		return;
+	}
+
+	OBB& obb = _collider.obb;
+
+	XMFLOAT3 ex = Mul(obb.axes[0], obb.halfExtents.x);
+	XMFLOAT3 ey = Mul(obb.axes[1], obb.halfExtents.y);
+	XMFLOAT3 ez = Mul(obb.axes[2], obb.halfExtents.z);
+
+	float wx = abs(ex.x) + abs(ey.x) + abs(ez.x);
+	float wy = abs(ex.y) + abs(ey.y) + abs(ez.y);
+	float wz = abs(ex.z) + abs(ey.z) + abs(ez.z);
+
+	_collider.aabb.min = { obb.center.x - wx, obb.center.y - wy, obb.center.z - wz };
+	_collider.aabb.max = { obb.center.x + wx, obb.center.y + wy, obb.center.z + wz };
+}
+
+float ColliderSystem::OBBRadius(OBB& obb, XMFLOAT3& axis)
+{
+	float result = 0.0f;
+	result += obb.halfExtents.x * abs(Dot(axis, obb.axes[0]));
+	result += obb.halfExtents.y * abs(Dot(axis, obb.axes[1]));
+	result += obb.halfExtents.z * abs(Dot(axis, obb.axes[2]));
+
+	return result;
 }
 
 void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, ColliderComponent& _colliderComponent)
 {
-	//int cellXMin = static_cast<int>(_colliderComponent.boundingBox.min.x / m_partitionGrid.cellSize);
-	//int cellYMin = static_cast<int>(_colliderComponent.boundingBox.min.y / m_partitionGrid.cellSize);
-	//int cellXMax = static_cast<int>(_colliderComponent.boundingBox.max.x / m_partitionGrid.cellSize);
-	//int cellYMax = static_cast<int>(_colliderComponent.boundingBox.max.y / m_partitionGrid.cellSize);
+	int cellXMin = static_cast<int>(floorf(_colliderComponent.aabb.min.x / m_partitionGrid.cellSize));
+	int cellYMin = static_cast<int>(floorf(_colliderComponent.aabb.min.y / m_partitionGrid.cellSize));
+	int cellXMax = static_cast<int>(floorf(_colliderComponent.aabb.max.x / m_partitionGrid.cellSize));
+	int cellYMax = static_cast<int>(floorf(_colliderComponent.aabb.max.y / m_partitionGrid.cellSize));
 
-	//for (int x = cellXMin; x <= cellXMax; ++x)
-	//{
-	//	for (int y = cellYMin; y <= cellYMax; ++y)
-	//	{
-	//		m_partitionGrid.cells[x][y].push_back(entity);
-	//	}
-	//}
+	cellXMin = Clamp(cellXMin, 0, m_partitionGrid.numCellsX - 1);
+	cellYMin = Clamp(cellYMin, 0, m_partitionGrid.numCellsY - 1);
+	cellXMax = Clamp(cellXMax, 0, m_partitionGrid.numCellsX - 1);
+	cellYMax = Clamp(cellYMax, 0, m_partitionGrid.numCellsY - 1);
+
+	for (int x = cellXMin; x <= cellXMax; ++x)
+	{
+		for (int y = cellYMin; y <= cellYMax; ++y)
+		{
+			m_partitionGrid.cells[x][y].push_back(entity);
+		}
+	}
 }
 
 void ColliderSystem::BuildCandidatePairs()
@@ -120,7 +169,7 @@ void ColliderSystem::NarrowPhase()
 
 		if (colliderA.type == ColliderType::Box && colliderB.type == ColliderType::Box)
 		{
-			isColliding = CheckBoxToBox(colliderA, transformA, colliderB, transformB);
+			isColliding = CheckOBBToOBB(colliderA, colliderB);
 		}
 		else if (colliderA.type == ColliderType::Sphere && colliderB.type == ColliderType::Sphere)
 		{
@@ -138,21 +187,48 @@ void ColliderSystem::NarrowPhase()
 		if (isColliding)
 		{
 			m_vContacts.push_back({ entityA, entityB });
-			std::cout << "collidion" << std::endl;
 		}
 	}
 }
 
-bool ColliderSystem::CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB)
+bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis)
 {
-	XMFLOAT3 posA = _transformA.world.GetPosition();
-	XMFLOAT3 posB = _transformB.world.GetPosition();
-	XMFLOAT3 sizeA = _boxA.colliderTransform.GetScale();
-	XMFLOAT3 sizeB = _boxB.colliderTransform.GetScale();
+	XMFLOAT3 n = Normalize(axis);
+	XMFLOAT3 centerDelta = Subtract(b.center, a.center);
 
-	//if (_boxA.boundingBox.max.x < _boxB.boundingBox.min.x || _boxA.boundingBox.min.x > _boxB.boundingBox.max.x) return false;
-	//if (_boxA.boundingBox.max.y < _boxB.boundingBox.min.y || _boxA.boundingBox.min.y > _boxB.boundingBox.max.y) return false;
-	//if (_boxA.boundingBox.max.z < _boxB.boundingBox.min.z || _boxA.boundingBox.min.z > _boxB.boundingBox.max.z) return false;
+	float distance = abs(Dot(centerDelta, n));
+	float ra = OBBRadius(a, n);
+	float rb = OBBRadius(b, n);
+
+	return distance <= (ra + rb);
+}
+
+bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& _boxB)
+{
+	//Test SAT
+	XMFLOAT3 axes[15] =
+	{
+		_boxA.obb.axes[0], _boxA.obb.axes[1], _boxA.obb.axes[2],
+		_boxB.obb.axes[0], _boxB.obb.axes[1], _boxB.obb.axes[2],
+
+		Cross(_boxA.obb.axes[0], _boxB.obb.axes[0]),
+		Cross(_boxA.obb.axes[0], _boxB.obb.axes[1]),
+		Cross(_boxA.obb.axes[0], _boxB.obb.axes[2]),
+
+		Cross(_boxA.obb.axes[1], _boxB.obb.axes[0]),
+		Cross(_boxA.obb.axes[1], _boxB.obb.axes[1]),
+		Cross(_boxA.obb.axes[1], _boxB.obb.axes[2]),
+
+		Cross(_boxA.obb.axes[2], _boxB.obb.axes[0]),
+		Cross(_boxA.obb.axes[2], _boxB.obb.axes[1]),
+		Cross(_boxA.obb.axes[2], _boxB.obb.axes[2])
+	};
+
+	for (int i = 0; i < 15; ++i)
+	{
+		if (OverlapOnAxis(_boxA.obb, _boxB.obb, axes[i]) == false)
+			return false;
+	}
 
 	return true;
 }
@@ -177,23 +253,31 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 
 bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere)
 {
-	XMFLOAT3 boxPos = _transformBox.world.GetPosition();
-	XMFLOAT3 boxSize = _box.colliderTransform.GetScale();
-
+	OBB& obb = _box.obb;
 	XMFLOAT3 spherePos = _transformSphere.world.GetPosition();
 	float sphereRadius = _sphere.colliderTransform.GetScale().x * 0.5f;
 
-	float closestX = Max(boxPos.x - boxSize.x * 0.5f, Min(spherePos.x, boxPos.x + boxSize.x * 0.5f));
-	float closestY = Max(boxPos.y - boxSize.y * 0.5f, Min(spherePos.y, boxPos.y + boxSize.y * 0.5f));
-	float closestZ = Max(boxPos.z - boxSize.z * 0.5f, Min(spherePos.z, boxPos.z + boxSize.z * 0.5f));
+	XMFLOAT3 d = Subtract(spherePos, obb.center);
+	XMFLOAT3 closest = obb.center;
 
-	float dx = closestX - spherePos.x;
-	float dy = closestY - spherePos.y;
-	float dz = closestZ - spherePos.z;
+	float distX = Dot(d, obb.axes[0]);
+	float distY = Dot(d, obb.axes[1]);
+	float distZ = Dot(d, obb.axes[2]);
 
-	float d = dx * dx + dy * dy + dz * dz;
-	if (d > sphereRadius * sphereRadius)
-		return false;
+	distX = Clamp(distX, -obb.halfExtents.x, obb.halfExtents.x);
+	distY = Clamp(distY, -obb.halfExtents.y, obb.halfExtents.y);
+	distZ = Clamp(distZ, -obb.halfExtents.z, obb.halfExtents.z);
 
-	return true;
+	XMFLOAT3 temp = Mul(obb.axes[0], distX);
+	XMFLOAT3 temp1 = Mul(obb.axes[1], distX);
+	XMFLOAT3 temp2 = Mul(obb.axes[2], distX);
+
+	closest = Add(closest, temp);
+	closest = Add(closest, temp1);
+	closest = Add(closest, temp2);
+
+	XMFLOAT3 delta = Subtract(spherePos, closest);
+	float d2 = Dot(delta, delta);
+
+	return d2 <= sphereRadius * sphereRadius;
 }

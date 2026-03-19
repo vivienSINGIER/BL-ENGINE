@@ -50,7 +50,7 @@ public:
             ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
             Transform& transform = world->GetComponent<TransformComponent>(entity).local;
 
-            transform.SetPosition(collider.boundingBox.min);
+            transform.SetPosition(collider.aabb.min);
         }
     };
 
@@ -61,7 +61,7 @@ public:
             ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
             Transform& transform = world->GetComponent<TransformComponent>(entity).local;
 
-            transform.SetPosition(collider.boundingBox.max);
+            transform.SetPosition(collider.aabb.max);
         }
     };
 
