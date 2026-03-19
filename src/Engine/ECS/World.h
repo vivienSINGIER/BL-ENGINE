@@ -9,6 +9,7 @@
 #include "EntityManager.h"
 #include "Query.hpp"
 #include "SystemScheduler.h"
+#include "ComponentCommandQueue.h"
 
 struct IScript;
 
@@ -52,6 +53,7 @@ private:
     ArchetypeRegistry m_archetypeRegistry;
     SystemScheduler m_systemScheduler;
     Vector<QueryBase*> m_queries;
+    ComponentCommandQueue m_commandQueue;
     
     UnorderedMap<ComponentId, std::function<IScript*(EntityId, World&)>> m_scriptSystems;
     
@@ -63,6 +65,8 @@ private:
     Archetype* GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add);
 
     static void TryMatchQuery(QueryBase* _query, Archetype* _arch);
+
+    friend class ComponentCommandQueue;
 };
 
 #include "World.inl"
