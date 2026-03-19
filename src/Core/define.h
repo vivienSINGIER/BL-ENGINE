@@ -11,6 +11,7 @@
 
 #include <DirectXMath.h>
 #include <map>
+#include <queue>
 
 using namespace DirectX;
 
@@ -34,6 +35,9 @@ using Vector  = std::vector<Type>;
 
 template <typename Type, uint64 Count>
 using Array  = std::array<Type, Count>;
+
+template <typename Type>
+using Queue = std::queue<Type>;
 
 template <typename... Type>
 using Tuple   = std::tuple<Type...>;
