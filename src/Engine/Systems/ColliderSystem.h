@@ -10,6 +10,7 @@ struct Contact
 	EntityId a;
 	EntityId b;
 	XMFLOAT3 normal;
+	XMFLOAT3 point;
 	float penetration;
 };
 
