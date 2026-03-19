@@ -77,7 +77,7 @@ public:
         Scene* scene = SceneManager::GetSceneWithName("Default");
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::Update);
+		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
         sys->InitializePartitionGrid(XMINT2(100, 100), 10);
 
         EntityId e = scene->world.CreateEntity();
