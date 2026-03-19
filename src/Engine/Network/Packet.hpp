@@ -10,10 +10,20 @@ enum class PacketType
 	AddComponent,
 	RemoveComponent,
 	Delete,
-	InputUpdate
+	InputUpdate,
+	Connect,
+	ConnectAck,
+	Chat,
+	Ack
 };
 
-enum class InputState : uint8_t
+struct AckPacket
+{
+	PacketHeader header;
+	uint16 ackId;
+};
+
+enum class InputState : uint8
 {
 	Down = 0,
 	Pressed = 1,
@@ -25,26 +35,27 @@ struct PacketHeader
 	uint32_t tick;
 	PacketType type;
 	EntityId entityId;
+	uint16 ackId;
 };
 
-struct PacketBody
+struct Packet
 {
 	PacketHeader header;
 	ComponentMask componentMask;
-	uint8_t data[512];
-	uint32_t dataSize;
+	uint8 data[512];
+	uint32 dataSize;
 };
 
 struct InputEntry
 {
-	uint8_t keyCode;
+	uint8 keyCode;
 	InputState state;
 };
 
 struct InputPacket
 {
 	PacketHeader header;
-	uint32_t inputCount;
+	uint32 inputCount;
 	InputEntry inputs[32];
 };
 

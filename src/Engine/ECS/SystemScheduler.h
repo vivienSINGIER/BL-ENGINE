@@ -19,7 +19,6 @@ public:
     
     void Run(float _dt);
     
-    
 private:
     Array<Vector<ISystem*>, Phase::Count> m_phases;
 };

@@ -4,16 +4,25 @@
 #include "World.h"
 #include "Query.hpp"
 
+enum NetworkFlag : uint8
+{
+    None = 0,
+    ServerOnly = 1 << 0,
+    ClientOnly = 1 << 1,
+};
+
 struct  ISystem
 {
+    uint8 networkFlags = NetworkFlag::None;
+
     virtual void Update(float _dt) = 0;
     virtual void OnRegister(World& _world) = 0;
-    
+
     virtual ~ISystem() = default;
 };
 
 template <typename... TComponents>
-struct System : public ISystem
+struct System : public ISystem 
 {
     Query<TComponents...> query;
     World* world;

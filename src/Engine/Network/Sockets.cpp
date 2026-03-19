@@ -6,6 +6,7 @@
 Sockets::Sockets(Type _type)
 {
 	m_type = _type;
+	m_addr = {};
 
 	if (m_type == TCP)
 		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

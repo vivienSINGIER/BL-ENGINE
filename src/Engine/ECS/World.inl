@@ -171,9 +171,10 @@ void World::NotifyScripts(EntityId _e, void(IScript::*_fn)(Args...), Args... arg
 }
 
 template <typename T, typename ... Args>
-T* World::RegisterSystem(Phase _phase, Args&&... args)
+T* World::RegisterSystem(Phase _phase, uint8 _flag, Args&&... args)
 {
     T* sys = m_systemScheduler.AddSystem<T>(_phase, std::forward<Args>(args)...);
+    sys->networkFlags = _flag;
     sys->OnRegister(*this);
     return sys;
 }

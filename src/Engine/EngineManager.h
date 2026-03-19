@@ -22,14 +22,15 @@ public:
 
     static EngineManager& GetInstance();
     
-    void Initialize(UINT _width, UINT _height, WString _title);
+    void Initialize(UINT _width, UINT _height, WString _title, uint8 _flag = NetworkFlag::None);
     void Run();
     void Exit();
     
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }
     static Device* GetDevice() { return GetInstance().m_pDevice; }
-    
+	static NetworkFlag GetNetworkFlag() { return GetInstance().m_networkFlag; }
+
 private:
     static EngineManager* s_pInstance;
 
@@ -45,6 +46,8 @@ private:
     RessourceManager* m_pRessourceManager;
     
     float m_DeltaTime = 0.0f;
+
+	NetworkFlag m_networkFlag = NetworkFlag::None;
 };
 
 #endif
