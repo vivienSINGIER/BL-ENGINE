@@ -62,6 +62,11 @@ inline float Dot(const XMFLOAT3& a, const XMFLOAT3& b)
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+inline XMFLOAT3 Inverse(const XMFLOAT3& v)
+{
+    return XMFLOAT3(-v.x, -v.y, -v.z);
+}
+
 inline float Clamp(float v)
 {
     if ( v<0.0f )

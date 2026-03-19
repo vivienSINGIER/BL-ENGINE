@@ -9,27 +9,6 @@ public:
         void Update(float dt) override
         {
             Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-            InputManager::HandleInput();
-
-            if (InputManager::IsKeyPressed(Z))
-            {
-                transform.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * dt));
-            }
-
-            if (InputManager::IsKeyPressed(Q))
-            {
-                transform.Move(XMFLOAT3(-1.0f * dt, 0.0f, 0.0f));
-            }
-
-            if (InputManager::IsKeyPressed(S))
-            {
-                transform.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * dt));
-            }
-
-            if (InputManager::IsKeyPressed(D))
-            {
-                transform.Move(XMFLOAT3(1.0f * dt, 0.0f, 0.0f));
-            }
 
             if (InputManager::IsKeyPressed(E))
             {
@@ -39,6 +18,15 @@ public:
             if (InputManager::IsKeyPressed(A))
             {
                 transform.AddYPR(XMFLOAT3(-XM_PIDIV4 * dt, 0.0f, 0.0f));
+            }
+
+            if (InputManager::IsKeyDown(G))
+            {
+                PhysicComponent& physic = world->GetComponent<PhysicComponent>(entity);
+                if (physic.useGravity)
+                    physic.useGravity = false;
+                else
+                    physic.useGravity = true;
             }
 
             if (InputManager::IsKeyPressed(W))
@@ -78,11 +66,13 @@ public:
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
 		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
+        scene->world.RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
         sys->InitializePartitionGrid(XMINT2(100, 100), 10);
 
         EntityId e = scene->world.CreateEntity();
         scene->world.AddComponent<TransformComponent>(e);
 		scene->world.AddComponent<ColliderComponent>(e);
+        scene->world.AddComponent<PhysicComponent>(e);
         MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
 		scene->world.GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
@@ -91,30 +81,17 @@ public:
 		EntityId e2 = scene->world.CreateEntity();
 		scene->world.AddComponent<TransformComponent>(e2);
 		scene->world.AddComponent<ColliderComponent>(e2);
+        PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e2);
+        physic.type = BodyType::Dynamic;
+        physic.useGravity = false;
 		MeshRenderer& m2 = scene->world.AddComponent<MeshRenderer>(e2);
 		m2.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
+        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(1.0f, 0.0f, 0.0f));
         scene->world.AddScript<MoveScript>(e2);
 
         Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
         RessourceManager::AddMaterial("debug", mat);
         mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
-
-        EntityId debug = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(debug);
-        MeshRenderer& m3 = scene->world.AddComponent<MeshRenderer>(debug);
-        m3.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        m3.material = mat;
-        scene->world.GetComponent<TransformComponent>(debug).local.SetScale(0.1f);
-        scene->world.AddScript<DebugScript>(debug);
-
-        EntityId debug2 = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(debug2);
-        MeshRenderer& m4 = scene->world.AddComponent<MeshRenderer>(debug2);
-        m4.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        m4.material = mat;
-        scene->world.GetComponent<TransformComponent>(debug2).local.SetScale(0.1f);
-        scene->world.AddScript<DebugScript2>(debug2);
 
         Camera cam;
         XMFLOAT3 pos = XMFLOAT3(0.0f, -5.0f, -1.0f);

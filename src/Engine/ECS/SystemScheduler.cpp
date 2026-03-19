@@ -12,18 +12,19 @@ void SystemScheduler::Run(float _dt)
         if (i == Phase::PreRender)
             EngineManager::GetInstance().GetWindow()->Clear();
 
+        if (i == Phase::FixedUpdate)
+        {
+            while (m_accumulator >= 0.016666667f)
+            {
+                for (ISystem* sys : m_phases[i])
+                    sys->Update(0.016666667f);
+                m_accumulator -= 0.016666667f;
+            }
+        }
+
         for (ISystem* sys : m_phases[i])
         {
-            if (i == Phase::FixedUpdate)
-            {
-                while (m_accumulator >= 0.016666667f)
-                {
-                    sys->Update(0.016666667f);
-                    m_accumulator -= 0.016666667f;
-                }
-            }
-            else
-                sys->Update(_dt);
+            sys->Update(_dt);
         }
 
         if (i == Phase::PostRender)

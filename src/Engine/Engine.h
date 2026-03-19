@@ -26,5 +26,6 @@
 #include "Systems/CameraSystem.h"
 #include "Systems/ColliderSystem.h"
 #include "Systems/LightSystem.h"
+#include "Systems/PhysicSystem.h"
 
 #endif
