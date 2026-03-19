@@ -2,7 +2,7 @@
 #define SOCKETS_H_DEFINED
 
 #include <string>
-#include <WinSock2.h>
+#include "define.h"
 #include "Engine/Network/SocketMethods.h"
 
 enum Type

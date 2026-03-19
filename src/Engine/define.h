@@ -3,8 +3,12 @@
 
 #include "Core/define.h"
 
+#include <WS2tcpip.h>
+#include <winsock2.h>
+
 #include <bitset>
 #include <cassert>
+
 
 #define MAX_COMPONENTS 256
 

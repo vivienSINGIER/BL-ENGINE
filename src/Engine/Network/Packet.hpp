@@ -17,24 +17,18 @@ enum class PacketType
 	Ack
 };
 
-struct AckPacket
-{
-	PacketHeader header;
-	uint16 ackId;
-};
-
-enum class InputState : uint8
-{
-	Down = 0,
-	Pressed = 1,
-	Up = 2
-};
 
 struct PacketHeader
 {
 	uint32_t tick;
 	PacketType type;
 	EntityId entityId;
+	uint16 ackId;
+};
+
+struct AckPacket
+{
+	PacketHeader header;
 	uint16 ackId;
 };
 

@@ -6,7 +6,6 @@
 #include "Packet.hpp"
 #include "CriticalSection.h"
 
-
 struct PendingPacket
 {
 	Packet packet;

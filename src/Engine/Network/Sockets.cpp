@@ -1,7 +1,6 @@
 #include "Engine/Network/Sockets.h"
 #include <iostream>
 #include <sstream>
-#include <WS2tcpip.h>
 
 Sockets::Sockets(Type _type)
 {
@@ -79,7 +78,7 @@ bool Sockets::ConnectUDP(const std::string& _ip, int _port)
 	server.sin_port = htons(_port);
 
 	if (inet_pton(AF_INET, _ip.c_str(), &server.sin_addr) <= 0)
-		return false;  // NE PAS écraser avec INADDR_ANY ici
+		return false;  // NE PAS ï¿½craser avec INADDR_ANY ici
 
 	if (bind(m_socket, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
 		return false;
