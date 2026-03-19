@@ -12,21 +12,7 @@ T& World::AddComponent(EntityId _e, T const& _val)
 {
     assert(m_entityManager.IsAlive(_e) && "Can't add component to dead entity");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
-    Archetype* src = rec.archetype;
-
-    assert(!src->mask.test(cid) && "Component already present");
-
-    Archetype* dst = GetOrCreateEdge(src, cid, true);
-
-    MoveEntity(_e, rec, src, dst);
-
-    dst->storage.Push<T>(cid, _val);
-
-    rec = m_entityManager.GetRecord(_e);
-    T& stored = dst->storage.Get<T>(cid, rec.row);
-    return stored;
+    return m_commandQueue.EmplaceAdd<T>(_e, _val);
 }
 
 template <typename T>
@@ -34,14 +20,7 @@ void World::RemoveComponent(EntityId _e)
 {
     assert(m_entityManager.IsAlive(_e) && "Can't remove component from dead entity");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
-    Archetype* src = rec.archetype;
-
-    assert(src->mask.test(cid) && "Component not present");
-
-    Archetype* dst = GetOrCreateEdge(src, cid, false);
-    MoveEntity(_e, rec, src, dst);
+    m_commandQueue.EmplaceRemove<T>(_e);
 }
 
 template <typename T>
@@ -102,20 +81,21 @@ bool World::IsActiveComponent(EntityId _e)
 template <typename T>
 T& World::AddScript(EntityId _e)
 {
+    ScriptRegistry* reg = nullptr;
     if (!HasComponent<ScriptRegistry>(_e))
-        AddComponent<ScriptRegistry>(_e);
+        reg = &AddComponent<ScriptRegistry>(_e);
+    else
+        reg = &GetComponent<ScriptRegistry>(_e);
 
-    AddComponent<T>(_e);
+    T& script = AddComponent<T>(_e);
 
     CheckScriptSystem<T>();
     
-    T& script = GetComponent<T>(_e);
     script.world = this;
     script.entity = _e;
 
     ComponentId cid = ComponentRegistry::Id<T>();
-    ScriptRegistry& reg = GetComponent<ScriptRegistry>(_e);
-    reg.push_back(cid);
+    reg->push_back(cid);
 
     script.Awake();
 
