@@ -34,51 +34,92 @@ public:
         }
     };
 
+    struct TestScript : public IScript
+    {
+        void Update(float dt) override
+        {
+            TransformComponent& t = GetComponent<TransformComponent>();
+
+            if (InputManager::IsKeyPressed(Z))
+                t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * dt));
+            if (InputManager::IsKeyPressed(S))
+                t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * dt));
+            if (InputManager::IsKeyPressed(Q))
+                t.local.Move(XMFLOAT3(-1.0f * dt, 0.0f, 0.0f));
+            if (InputManager::IsKeyPressed(D))
+                t.local.Move(XMFLOAT3(1.0f * dt, 0.0f, 0.0f));
+            if (InputManager::IsKeyPressed(SPACE))
+                t.local.Move(XMFLOAT3(0.0f, 1.0f * dt, 0.0f));
+            if (InputManager::IsKeyPressed(LCONTROL))
+                t.local.Move(XMFLOAT3(0.0f, -1.0f * dt, 0.0f));
+        }
+    };
+
     static void Run()
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Collision");
         Scene* scene = SceneManager::GetSceneWithName("Default");
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
+        scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
+        scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
 		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
         scene->world.RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
         sys->InitializePartitionGrid(XMINT2(100, 100), 10);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-		scene->world.AddComponent<ColliderComponent>(e);
-        scene->world.AddComponent<PhysicComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-		scene->world.GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
-        scene->world.GetComponent<TransformComponent>(e).local.AddYPR(XMFLOAT3(0.0f, 0.0f, 0.0f));
-
-		EntityId e2 = scene->world.CreateEntity();
-		scene->world.AddComponent<TransformComponent>(e2);
-		scene->world.AddComponent<ColliderComponent>(e2);
-        PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e2);
-        physic.type = BodyType::Dynamic;
-        physic.useGravity = false;
-		MeshRenderer& m2 = scene->world.AddComponent<MeshRenderer>(e2);
-		m2.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(0.0f, 2.0f, 0.0f));
-        scene->world.AddScript<MoveScript>(e2);
-
         Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
         RessourceManager::AddMaterial("debug", mat);
-        mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
+        mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f));
 
-        Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, 1.0f, -5.0f);
-        cam.SetPos(pos); 
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        EntityId ground = scene->world.CreateEntity();
+        TransformComponent& tGround = scene->world.AddComponent<TransformComponent>(ground);
+        scene->world.AddComponent<ColliderComponent>(ground);
+        scene->world.AddComponent<PhysicComponent>(ground);
+        MeshRenderer& mGround = scene->world.AddComponent<MeshRenderer>(ground);
+        mGround.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        mGround.material = mat;
+        tGround.local.SetPosition(XMFLOAT3(0.0f, -1.0f, 0.0f));
+        tGround.local.SetScale(XMFLOAT3(50.0f, 1.0f, 50.f));
 
-        EngineManager::GetDevice()->SetMainCamera(&cam);
+        EntityId e = scene->world.CreateEntity();
+        TransformComponent& transform = scene->world.AddComponent<TransformComponent>(e);
+		scene->world.AddComponent<ColliderComponent>(e);
+        PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e);
+        physic.type = BodyType::Dynamic;
+        physic.mass = 10.f;
+        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        transform.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+
+		EntityId e1 = scene->world.CreateEntity();
+		TransformComponent& t1 = scene->world.AddComponent<TransformComponent>(e1);
+		scene->world.AddComponent<ColliderComponent>(e1);
+        PhysicComponent& physic1 = scene->world.AddComponent<PhysicComponent>(e1);
+        physic1.type = BodyType::Dynamic;
+        physic1.useGravity = false;
+        physic1.mass = 1.0f;
+        physic1.forces = XMFLOAT3(-100.0f, 0.0f, 0.0f);
+		MeshRenderer& m1 = scene->world.AddComponent<MeshRenderer>(e1);
+		m1.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        t1.local.SetPosition(XMFLOAT3(5.0f, 0.0f, 0.0f));
+        scene->world.AddScript<MoveScript>(e1);
+
+        EntityId e2 = scene->world.CreateEntity();
+        TransformComponent& t2 = scene->world.AddComponent<TransformComponent>(e2);
+        t2.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
+        CameraComponent& cam = scene->world.AddComponent<CameraComponent>(e2);
+        cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
+        cam.isMainCamera = true;
+        scene->world.AddScript<TestScript>(e2);
+
+        EntityId light = scene->world.CreateEntity();
+        TransformComponent& tLight = scene->world.AddComponent<TransformComponent>(light);
+        tLight.local.SetPosition(XMFLOAT3(2.0f, 2.0f, 0.0f));
+        LightComponent& l = scene->world.AddComponent<LightComponent>(light);
+        l.SetPoint(1.0f, 10.0f, 1);
 
         EngineManager::GetInstance().Run();
     }
-
 };
 
 #endif 

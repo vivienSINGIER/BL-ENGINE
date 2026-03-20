@@ -1,6 +1,5 @@
 #include "ColliderSystem.h"
 #include "Utils.hpp"
-#include <iostream>
 
 void ColliderSystem::OnStartUpdate(float _dt)
 {
@@ -211,8 +210,6 @@ void ColliderSystem::NarrowPhase()
 				colliderB.contact[colliderB.contactCount] = m_contactHolderB;
 				colliderB.contactCount += 1;
 			}
-			
-			std::cout << "Collision" << std::endl;
 		}
 		ResetContactHolders();
 	}

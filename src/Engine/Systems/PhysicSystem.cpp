@@ -1,5 +1,6 @@
 #include "PhysicSystem.h"
 #include "Utils.hpp"
+#include <iostream>
 
 void PhysicSystem::OnStartUpdate(float _dt)
 {
@@ -12,7 +13,7 @@ void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, Co
 
 	ResolveContacts(_physic, _collider, _transform);
 
-	XMFLOAT3 acceleration = Mul(_physic.forces, _physic.massInverse);
+	XMFLOAT3 acceleration = Mul(_physic.forces, 1.0f / _physic.mass);
 
 	if (_physic.useGravity)
 		acceleration = Add(acceleration, m_gravityAccel);
@@ -25,6 +26,8 @@ void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, Co
 	_physic.forces = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
 	_transform.local.Move(move);
+
+	std::cout << _transform.world.GetPosition().x << " " << _transform.world.GetPosition().y << " " << _transform.world.GetPosition().z << std::endl;
 }
 
 void PhysicSystem::OnEndUpdate(float _dt)
@@ -44,7 +47,10 @@ void PhysicSystem::ResolveContacts(PhysicComponent& _physic, ColliderComponent& 
 		float velNormAxe = Dot(_physic.velocity, contact.normal);
 		if (velNormAxe < 0.0f)
 		{
-			_physic.velocity = Subtract(_physic.velocity, Mul(contact.normal, velNormAxe));
+			XMFLOAT3 contactForce = Mul(contact.normal, velNormAxe);
+			XMFLOAT3 transferForce = Mul(contactForce, _physic.mass);
+			otherPhysic.AddForce(transferForce);
+			_physic.velocity = Subtract(_physic.velocity, Mul(contactForce, _physic.mass));
 		}
 	}
 	_collider.contactCount = 0;
@@ -52,11 +58,11 @@ void PhysicSystem::ResolveContacts(PhysicComponent& _physic, ColliderComponent& 
 
 XMFLOAT3 PhysicSystem::ResolveOverlap(PhysicComponent& _physic, PhysicComponent& _otherPhysic, Contact& _contact)
 {
-	float invMassA = _physic.massInverse;
-	float invMassB = _otherPhysic.massInverse;
+	float invMassA = 1.0f / _physic.mass;
+	float invMassB = 1.0f / _otherPhysic.mass;
 	float totalInvMass = invMassA + invMassB;
 
-	float slop = 0.0001f; 
+	float slop = 0.00001f; 
 	float correctionDepth = Max(0.0f, _contact.penetration - slop);
 
 	XMFLOAT3 move = { 0.0f, 0.0f, 0.0f };
@@ -74,6 +80,6 @@ XMFLOAT3 PhysicSystem::ResolveOverlap(PhysicComponent& _physic, PhysicComponent&
 	}
 
 	move = Mul(_contact.normal, moveAmount);
-	move = Mul(move, correctionDepth);
+	//move = Mul(move, correctionDepth);
 	return move;
 }

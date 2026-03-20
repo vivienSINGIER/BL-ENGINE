@@ -13,7 +13,6 @@ enum class BodyType
 struct PhysicComponent
 {
     float mass = 1.0f;
-    float massInverse = 1.0f;
 
     XMFLOAT3 velocity = { 0,0,0 };
     XMFLOAT3 acceleration = { 0,0,0 };
@@ -25,7 +24,7 @@ struct PhysicComponent
 
     inline void AddForce(XMFLOAT3& v)
     {
-        Add(forces, v);
+        forces = Add(forces, v);
     }
 
     inline void ToggleGravity()
