@@ -5,6 +5,7 @@
 
 class Client : public INetworkBase
 {
+public:
     Client();
     
     void Init();
@@ -13,6 +14,8 @@ class Client : public INetworkBase
     
     void SendPackets() override;
 
+    void Connect(sockaddr_in _addr);
+
 private:
     static DWORD WINAPI ReceiveThread(LPVOID _lpParam);
 
@@ -20,8 +23,6 @@ private:
     
     bool m_isConnected;
     bool m_isRunning;
-    
-    void TryConnexion(String const& _ip, int _port = 1888);
 };
 
 #endif // !CLIENT_H_DEFINED

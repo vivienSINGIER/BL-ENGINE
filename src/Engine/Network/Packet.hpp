@@ -31,6 +31,12 @@ struct PacketHeader
 	EntityId    entityId;
 };
 
+struct ConnectPacket
+{
+	PacketHeader header;
+	sockaddr_in addr;
+};
+
 struct ComponentEntry
 {
 	uint32	ComponentId;
@@ -72,6 +78,7 @@ struct Packet
 	union
 	{
 		PacketHeader    header;
+		ConnectPacket   connect;
 		StatePacket     state;
 		InputPacket     input;
 		ChatPacket      chat;
@@ -85,8 +92,9 @@ struct Packet
 		{
 		case PacketType::Spawn:
 		case PacketType::Update:
-		case PacketType::AddComponent:
-		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + sizeof(uint32) + state.dataSize;
+		case PacketType::Connect:			return sizeof(ConnectPacket);
+		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
+		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
 		case PacketType::Chat:              return sizeof(PacketHeader) + sizeof(uint32) + chat.messageLength;
 		default:                            return sizeof(PacketHeader);

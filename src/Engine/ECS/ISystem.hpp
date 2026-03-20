@@ -6,14 +6,14 @@
 
 enum NetworkFlag : uint8
 {
-    None = 0,
-    ServerOnly = 1 << 0,
-    ClientOnly = 1 << 1,
+    NONE = 0,
+    SERVER = 1 << 0,
+    CLIENT = 1 << 1,
 };
 
 struct  ISystem
 {
-    uint8 networkFlags = NetworkFlag::None;
+    uint8 networkFlags = NetworkFlag::NONE;
 
     virtual void Update(float _dt) = 0;
     virtual void OnRegister(World& _world) = 0;

@@ -132,7 +132,7 @@ void InputManager::HandleInput()
             if (currentState == DOWN_STATE || currentState == PRESSED_STATE)
                 s_keyboardStates[inputKey] = UP_STATE;
             else
-                s_keyboardStates[inputKey] = NONE;
+                s_keyboardStates[inputKey] = NONE_STATE;
         }
     }
     
@@ -156,7 +156,7 @@ void InputManager::HandleInput()
             if (currentState == DOWN_STATE || currentState == PRESSED_STATE)
                 s_mouseStates[inputButton] = UP_STATE;
             else
-                s_mouseStates[inputButton] = NONE;
+                s_mouseStates[inputButton] = NONE_STATE;
         }
     }
 }

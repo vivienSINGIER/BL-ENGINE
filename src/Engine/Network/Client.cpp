@@ -45,6 +45,11 @@ void Client::SendPackets()
     m_packets.clear();
 }
 
+void Client::Connect(sockaddr_in _addr)
+{
+    m_serverAddress = _addr;
+}
+
 DWORD Client::ReceiveThread(LPVOID _lpParam)
 {
     Client* client = static_cast<Client*>(_lpParam);

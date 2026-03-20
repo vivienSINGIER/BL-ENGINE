@@ -6,12 +6,12 @@
 
 void SystemScheduler::Run(float _dt)
 {
-    NetworkFlag flag = EngineManager::GetNetworkFlag();
+    uint8 flag = EngineManager::GetNetworkFlag();
 
     m_accumulator += _dt;
     for (int i = 0; i < Phase::Count; i++)
     {
-        if (i == Phase::PreRender && (flag & ServerOnly) == ServerOnly)
+        if (i == Phase::PreRender && (flag & SERVER) == SERVER)
             EngineManager::GetInstance().GetWindow()->Clear();
 
         for (ISystem* sys : m_phases[i])
@@ -28,7 +28,7 @@ void SystemScheduler::Run(float _dt)
                 sys->Update(_dt);
         }
 
-        if (i == Phase::PostRender && (flag & ServerOnly) == ServerOnly)
+        if (i == Phase::PostRender && (flag & SERVER) == SERVER)
             EngineManager::GetInstance().GetWindow()->Display();
     }
 }

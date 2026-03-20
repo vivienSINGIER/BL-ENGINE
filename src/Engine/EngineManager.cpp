@@ -8,6 +8,8 @@
 
 #include "../Render/Generic/Render.h"
 #include "../Render/Generic/Factories/ShaderFactory.hpp"
+#include "Network/Client.h"
+#include "Network/Server.h"
 
 EngineManager* EngineManager::s_pInstance = nullptr;
 
@@ -53,6 +55,9 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
 
 	m_networkFlag = static_cast<NetworkFlag>(_flag);
 
+    if ((_flag & NetworkFlag::CLIENT) == NetworkFlag::CLIENT)
+        m_pClient = new Client();
+    
 	InputManager::Initialize(m_pWindow->GetHWND());
 }
 
@@ -73,6 +78,22 @@ void EngineManager::Run()
 void EngineManager::Exit()
 {
     delete m_pRessourceManager;
+}
+
+void EngineManager::HostServer(int _port)
+{
+    m_pServer = new Server();
+    m_networkFlag |= NetworkFlag::SERVER;
+
+    // TODO Check & Force server and connexion success
+    
+    m_pServer->Initialize("127.0.0.1", _port);
+
+    Packet packet;
+    packet.header.type = PacketType::Connect;
+    packet.connect.addr = m_pClient->GetSocket()->GetAddr();
+    
+    m_pClient->SendReliablePacket(packet, m_pServer->GetSocket()->GetAddr());
 }
 
 #endif

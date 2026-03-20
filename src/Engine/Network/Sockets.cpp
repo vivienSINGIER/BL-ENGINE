@@ -68,6 +68,29 @@ String Sockets::GetIP(sockaddr_in _addr)
 	return String(ipStr);
 }
 
+Array<int, 4> Sockets::GetIP4(sockaddr_in _addr)
+{
+	String ipStr = GetIP(_addr);
+	Array<int, 4> result;
+	int count = 0;
+
+	String temp;
+	for (char c : ipStr)
+	{
+		if (c == '.')
+		{
+			result[count] = std::stoi(temp);
+			temp.clear();
+			count++;
+		}
+	}
+	result[count] = std::stoi(temp);
+	temp.clear();
+	count++;
+
+	return result;
+}
+
 int Sockets::GetPort(sockaddr_in _addr)
 {
 	return ntohs(_addr.sin_port);

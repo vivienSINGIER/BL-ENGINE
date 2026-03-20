@@ -58,7 +58,7 @@ enum InputMouse
 
 enum InputState : UINT8
 {
-    NONE            = 0,
+    NONE_STATE            = 0,
     DOWN_STATE      = 1 << 0,
     PRESSED_STATE   = 1 << 1,
     UP_STATE        = 1 << 2

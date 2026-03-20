@@ -29,6 +29,7 @@ public:
 	
 	Sockets* GetSocket() const { return m_socket; }
 	Vector<Packet>& GetReceived();
+	void ClearReceived();
 	
 	virtual ~INetworkBase() = default;
 	

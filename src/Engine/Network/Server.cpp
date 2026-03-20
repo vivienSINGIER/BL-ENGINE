@@ -33,15 +33,17 @@ void Server::SendPackets()
 	}
 }
 
-ClientInfo* Server::FindClient(EntityId _id)
+ClientInfo* Server::FindClient(const sockaddr_in& _addr)
 {
-	for (int i = 0; i < m_clients.size(); i++)
+	String ip = Sockets::GetIP(_addr);
+	int port = Sockets::GetPort(_addr);
+
+	for (ClientInfo& cInfo : m_clients)
 	{
-		if (m_clients[i].clientId == _id)
-		{
-			return &m_clients[i];
-		}
+		if (cInfo.ip == ip && cInfo.port == port)
+			return &cInfo;
 	}
+	
 	return nullptr;
 }
 
@@ -51,13 +53,12 @@ void Server::Initialize(std::string _ip, int _port)
 	m_isRunning = true;
 }
 
-void Server::AddClient(const sockaddr_in& _addr, EntityId _id)
+void Server::AddClient(const sockaddr_in& _addr)
 {
 	ClientInfo client;
 	client.udpAddr = _addr;
 	client.ip = GetSocket()->GetIP(_addr);
 	client.port = GetSocket()->GetPort(_addr);
-	client.clientId = _id;
 	m_clients.push_back(client);
 }
 

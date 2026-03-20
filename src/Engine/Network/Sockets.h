@@ -23,6 +23,7 @@ public:
 
 	sockaddr_in GetAddr() const { return m_addr; }
 	static String GetIP(sockaddr_in _addr);
+	static Array<int, 4> GetIP4(sockaddr_in _addr);
 	static int GetPort(sockaddr_in _addr);
 
 private:

@@ -9,7 +9,6 @@ struct ClientInfo
 	sockaddr_in udpAddr;
 	String ip;
 	int port;
-	EntityId clientId;
 };
 
 class Server : public INetworkBase
@@ -18,11 +17,11 @@ public:
 	Server();
 	void Update(float _dt) override;
 	void SendPackets() override;
-	ClientInfo* FindClient(EntityId _id);
 	void Initialize(std::string _ip, int _port);
 	void Shutdown() { m_isRunning = false; }
 
-	void AddClient(const sockaddr_in& _addr, EntityId _id);
+	ClientInfo* FindClient(const sockaddr_in& _addr);
+	void AddClient(const sockaddr_in& _addr);
 
 private:
 	static DWORD WINAPI ReceiveThread(LPVOID lpParam);

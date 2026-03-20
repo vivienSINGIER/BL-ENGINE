@@ -19,6 +19,7 @@
 #include "Components/CameraComponent.hpp"
 #include "Components/ColliderComponent.hpp"
 #include "Components/LightComponent.hpp"
+#include "Components/NetworkComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"
@@ -26,5 +27,6 @@
 #include "Systems/CameraSystem.h"
 #include "Systems/ColliderSystem.h"
 #include "Systems/LightSystem.h"
+#include "Systems/NetworkSystem.h"
 
 #endif

@@ -28,6 +28,13 @@ Vector<Packet>& INetworkBase::GetReceived()
     return m_packets;
 }
 
+void INetworkBase::ClearReceived()
+{
+    m_packetProtection.Enter();
+    m_receivedPackets.clear();
+    m_packetProtection.Leave();
+}
+
 void INetworkBase::TickAck(float _deltaTime)
 {
     int i = 0;

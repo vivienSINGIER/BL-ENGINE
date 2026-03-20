@@ -10,6 +10,7 @@
 #include "Query.hpp"
 #include "SystemScheduler.h"
 #include "ComponentCommandQueue.h"
+#include "ISystem.hpp"
 
 struct IScript;
 
@@ -42,7 +43,7 @@ public:
     template <typename... Args> void NotifyScripts(EntityId _e, void (IScript::*fn)(Args...), Args... args);
     
     template <typename T, typename... Args>
-    T* RegisterSystem(Phase _phase, uint8 _flag = NetworkFlag::None, Args&&... args);
+    T* RegisterSystem(Phase _phase, uint8 _flag = NetworkFlag::NONE, Args&&... args);
     void Update(float _dt);
 
     void RegisterQuery(QueryBase* _query);
