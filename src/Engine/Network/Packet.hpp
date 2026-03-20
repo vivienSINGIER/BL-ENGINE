@@ -28,12 +28,20 @@ struct PacketHeader
 	EntityId    entityId;
 };
 
+struct ComponentEntry
+{
+	uint32 ComponentId;
+	uint32 size;
+	Byte data[1024];
+};
+
 struct StatePacket
 {
 	PacketHeader    header;
 	ComponentMask   componentMask;
-	uint32          dataSize;
-	uint8           data[512];
+	uint32 dataSize;
+	uint8 componentCount;
+	ComponentEntry components[10];
 };
 
 struct InputEntry
