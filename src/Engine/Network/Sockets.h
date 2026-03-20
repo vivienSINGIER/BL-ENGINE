@@ -17,15 +17,17 @@ public:
 	Sockets(Type _type);
 	~Sockets();
 
-	bool Connect(const std::string& _ip, int _port);
+	bool Connect(const String& _ip, int _port);
 	int Send(const char* _data, unsigned int len, sockaddr_in& target);
 	int Receive(char* _buffer, unsigned int len, sockaddr_in& target);
 
 	sockaddr_in GetAddr() const { return m_addr; }
+	static String GetIP(sockaddr_in _addr);
+	static int GetPort(sockaddr_in _addr);
 
 private:
-	bool ConnectTCP(const std::string& _ip, int _port);
-	bool ConnectUDP(const std::string& _ip, int _port);
+	bool ConnectTCP(const String& _ip, int _port);
+	bool ConnectUDP(const String& _ip, int _port);
 	int SendTCP(const char* _data, unsigned int len);
 	int SendUDP(const char* _data, unsigned int len, sockaddr_in& target);
 	int ReceiveTCP(char* _buffer, unsigned int len);

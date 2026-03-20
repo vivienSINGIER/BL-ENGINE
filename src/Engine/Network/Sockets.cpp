@@ -25,7 +25,7 @@ Sockets::~Sockets()
 	SocketsMethods::CloseSocket(m_socket);
 }
 
-bool Sockets::Connect(const std::string& _ip, int _port)
+bool Sockets::Connect(const String& _ip, int _port)
 {
 	if (m_type == TCP)
 	{
@@ -61,7 +61,19 @@ int Sockets::Receive(char* _buffer, unsigned int len, sockaddr_in& target)
 	}
 }
 
-bool Sockets::ConnectTCP(const std::string& _ip, int _port)
+String Sockets::GetIP(sockaddr_in _addr)
+{
+	char ipStr[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &_addr.sin_addr, ipStr, sizeof(ipStr));
+	return String(ipStr);
+}
+
+int Sockets::GetPort(sockaddr_in _addr)
+{
+	return ntohs(_addr.sin_port);
+}
+
+bool Sockets::ConnectTCP(const String& _ip, int _port)
 {
 	sockaddr_in server;
 	if (inet_pton(AF_INET, _ip.c_str(), &server.sin_addr) <= 0)
@@ -71,7 +83,7 @@ bool Sockets::ConnectTCP(const std::string& _ip, int _port)
 	return connect(m_socket, (sockaddr*)&server, sizeof(server)) == 0;
 }
 
-bool Sockets::ConnectUDP(const std::string& _ip, int _port)
+bool Sockets::ConnectUDP(const String& _ip, int _port)
 {
 	sockaddr_in server = {};
 	server.sin_family = AF_INET;

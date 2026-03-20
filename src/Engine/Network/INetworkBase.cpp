@@ -17,6 +17,11 @@ void INetworkBase::SendReliablePacket(Packet _packet, sockaddr_in _target)
     m_pendingPackets.push_back(pending);
 }
 
+void INetworkBase::RegisterPacket(Packet _packet)
+{
+    m_packets.push_back(_packet);
+}
+
 void INetworkBase::TickAck(float _deltaTime)
 {
     int i = 0;
