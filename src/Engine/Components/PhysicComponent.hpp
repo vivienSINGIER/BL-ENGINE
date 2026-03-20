@@ -2,6 +2,7 @@
 #define PHYSIC_COMPONENT_HPP_DEFINED
 
 #include "define.h"
+#include "../Core/Utils.hpp"
 
 enum class BodyType
 {
@@ -21,6 +22,19 @@ struct PhysicComponent
 
     BodyType type;
     bool useGravity = false;
+
+    inline void AddForce(XMFLOAT3& v)
+    {
+        Add(forces, v);
+    }
+
+    inline void ToggleGravity()
+    {
+        if (useGravity)
+            useGravity = false;
+        else
+            useGravity = true;
+    }
 };
 
 #endif // !PHYSIC_COMPONENT_HPP_DEFINED

@@ -10,9 +10,6 @@ void ColliderSystem::OnStartUpdate(float _dt)
 
 void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
 {
-	_collider.contact.other = -1; //Valeur par defaut
-	_collider.contact.penetration = 0.0f;
-	_collider.contact.normal = { 0.0f, 0.0f, 0.0f };
 	CalculateWorldAABB(_collider, _transform);
 	InsertIntoPartitionGrid(_e, _collider);
 }
@@ -106,6 +103,19 @@ void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformC
 	_collider.aabb.max = { obb.center.x + wx, obb.center.y + wy, obb.center.z + wz };
 }
 
+void ColliderSystem::ResetContactHolders()
+{
+	m_contactHolderA.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_contactHolderA.other = -1;
+	m_contactHolderA.penetration = 0.0f;
+	m_contactHolderA.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+	m_contactHolderB.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_contactHolderB.other = -1;
+	m_contactHolderB.penetration = 0.0f;
+	m_contactHolderB.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
+}
+
 float ColliderSystem::OBBRadius(OBB& obb, XMFLOAT3& axis)
 {
 	float result = 0.0f;
@@ -188,10 +198,23 @@ void ColliderSystem::NarrowPhase()
 
 		if (isColliding)
 		{
-			colliderA.contact.other = entityB;
-			colliderB.contact.other = entityA;
+			m_contactHolderA.other = entityB;
+			m_contactHolderB.other = entityA;
+
+			if (colliderA.contactCount < 5)
+			{
+				colliderA.contact[colliderA.contactCount] = m_contactHolderA;
+				colliderA.contactCount += 1;
+			}
+			if (colliderB.contactCount < 5)
+			{
+				colliderB.contact[colliderB.contactCount] = m_contactHolderB;
+				colliderB.contactCount += 1;
+			}
+			
 			std::cout << "Collision" << std::endl;
 		}
+		ResetContactHolders();
 	}
 }
 
@@ -256,11 +279,11 @@ bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& 
 	if (Dot(centerDelta, normal) < 0.0f)
 		normal = Inverse(normal);
 
-	_boxA.contact.normal = Inverse(normal);
-	_boxB.contact.normal = normal;
+	m_contactHolderA.normal = Inverse(normal);
+	m_contactHolderB.normal = normal;
 
-	_boxA.contact.penetration = minDistance;
-	_boxB.contact.penetration = minDistance;
+	m_contactHolderA.penetration = minDistance;
+	m_contactHolderB.penetration = minDistance;
 
 	return true;
 }
@@ -286,22 +309,22 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 	if (d2 < 1e-6f)
 	{
 		//Normale arbitraire si les centres sont presque au même endroit
-		_sphereA.contact.normal = { 0, 1, 0 }; 
-		_sphereB.contact.normal = { 0, -1, 0 };
+		m_contactHolderA.normal = { 0, 1, 0 };
+		m_contactHolderB.normal = { 0, -1, 0 };
 
 		float penetration = radiusA + radiusB;
-		_sphereA.contact.penetration = penetration;
-		_sphereB.contact.penetration = penetration;
+		m_contactHolderA.penetration = penetration;
+		m_contactHolderB.penetration = penetration;
 	}
 	else
 	{
 		XMFLOAT3 normal = Normalize(Subtract(posB, posA));
-		_sphereA.contact.normal = Inverse(normal);
-		_sphereB.contact.normal = normal;
+		m_contactHolderA.normal = Inverse(normal);
+		m_contactHolderB.normal = normal;
 
 		float penetration = radiusA + radiusB - sqrt(d2);
-		_sphereA.contact.penetration = penetration;
-		_sphereB.contact.penetration = penetration;
+		m_contactHolderA.penetration = penetration;
+		m_contactHolderB.penetration = penetration;
 	}
 	return true;
 }
@@ -342,13 +365,13 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 
 	//normale = sphère - point proche
 	XMFLOAT3 normal = Normalize(Subtract(spherePosition, closest));
-	_box.contact.normal = Inverse(normal);
-	_sphere.contact.normal = normal;
+	m_contactHolderA.normal = Inverse(normal);
+	m_contactHolderB.normal = normal;
 
 	//pénétration = rayon - distance
 	float penetration = sphereRadius - sqrt(d2);
-	_box.contact.penetration = penetration;
-	_sphere.contact.penetration = penetration;
+	m_contactHolderA.penetration = penetration;
+	m_contactHolderB.penetration = penetration;
 
 	return true;
 }

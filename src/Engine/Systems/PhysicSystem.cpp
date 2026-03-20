@@ -10,13 +10,7 @@ void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, Co
 {
 	if (_physic.type == BodyType::Static) return;
 
-	ResolveOverlap(_physic, _collider, _transform);
-
-	float velNormAxe = Dot(_physic.velocity, _collider.contact.normal);
-	if (velNormAxe < 0.0f)
-	{
-		_physic.velocity = Subtract(_physic.velocity, Mul(_collider.contact.normal, velNormAxe));
-	}
+	ResolveContacts(_physic, _collider, _transform);
 
 	XMFLOAT3 acceleration = Mul(_physic.forces, _physic.massInverse);
 
@@ -38,33 +32,48 @@ void PhysicSystem::OnEndUpdate(float _dt)
 
 }
 
-void PhysicSystem::ResolveOverlap(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform)
+void PhysicSystem::ResolveContacts(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform)
 {
-	EntityId other = _collider.contact.other;
-	if (other == -1) return;
-	PhysicComponent& otherPhysic = world->GetComponent<PhysicComponent>(other);
+	for (int i = 0; i < _collider.contactCount; i++)
+	{
+		Contact& contact = _collider.contact[i];
+		PhysicComponent& otherPhysic = world->GetComponent<PhysicComponent>(contact.other);
+
+		_transform.local.Move(ResolveOverlap(_physic, otherPhysic, contact));
+
+		float velNormAxe = Dot(_physic.velocity, contact.normal);
+		if (velNormAxe < 0.0f)
+		{
+			_physic.velocity = Subtract(_physic.velocity, Mul(contact.normal, velNormAxe));
+		}
+	}
+	_collider.contactCount = 0;
+}
+
+XMFLOAT3 PhysicSystem::ResolveOverlap(PhysicComponent& _physic, PhysicComponent& _otherPhysic, Contact& _contact)
+{
 	float invMassA = _physic.massInverse;
-	float invMassB = otherPhysic.massInverse;
+	float invMassB = _otherPhysic.massInverse;
 	float totalInvMass = invMassA + invMassB;
 
-	float slop = 0.001f; 
-	float correctionDepth = Max(0.0f, _collider.contact.penetration - slop);
+	float slop = 0.0001f; 
+	float correctionDepth = Max(0.0f, _contact.penetration - slop);
 
 	XMFLOAT3 move = { 0.0f, 0.0f, 0.0f };
 	float moveAmount = 0.0f;
 
-	if (otherPhysic.type == BodyType::Static)
+	if (_otherPhysic.type == BodyType::Static)
 	{
 		//Deplacement total si autre entité static
-		moveAmount = _collider.contact.penetration;
+		moveAmount = _contact.penetration;
 	}
 	else
 	{
 		//Deplacement de moitié si autre entité dynamique
-		moveAmount = _collider.contact.penetration * invMassA / totalInvMass;
+		moveAmount = _contact.penetration * invMassA / totalInvMass;
 	}
 
-	move = Mul(_collider.contact.normal, moveAmount);
-	//move = Mul(move, correctionDepth);
-	_transform.local.Move(move);
+	move = Mul(_contact.normal, moveAmount);
+	move = Mul(move, correctionDepth);
+	return move;
 }

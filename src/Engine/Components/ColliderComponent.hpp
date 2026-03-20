@@ -36,7 +36,8 @@ struct  ColliderComponent
 	bool isTrigger;
 	ColliderType type;
 	Transform colliderTransform;
-	Contact contact;
+	Array<Contact, 5> contact = Array<Contact, 5>();
+	int contactCount;
 	OBB obb;
 	AABB aabb;
 };

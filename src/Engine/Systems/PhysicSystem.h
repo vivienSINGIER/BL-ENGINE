@@ -14,7 +14,8 @@ public:
 	void OnEndUpdate(float _dt) override;
 
 private:
-	void ResolveOverlap(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform);
+	void ResolveContacts(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform);
+	XMFLOAT3 ResolveOverlap(PhysicComponent& _physic, PhysicComponent& _otherPhysic, Contact& _contact);
 
 	XMFLOAT3 m_gravityAccel = XMFLOAT3(0.0f, -9.81f, 0.0f);
 };

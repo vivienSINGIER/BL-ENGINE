@@ -23,10 +23,7 @@ public:
             if (InputManager::IsKeyDown(G))
             {
                 PhysicComponent& physic = world->GetComponent<PhysicComponent>(entity);
-                if (physic.useGravity)
-                    physic.useGravity = false;
-                else
-                    physic.useGravity = true;
+                physic.ToggleGravity();
             }
 
             if (InputManager::IsKeyPressed(W))
@@ -34,28 +31,6 @@ public:
                 XMFLOAT3 scale = transform.GetScale();
                 transform.SetScale(XMFLOAT3(scale.x + 0.5f * dt, scale.y, scale.z));
             }
-        }
-    };
-
-    struct DebugScript : public IScript
-    {
-        void Update(float dt) override
-        {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-
-            transform.SetPosition(collider.aabb.min);
-        }
-    };
-
-    struct DebugScript2 : public IScript
-    {
-        void Update(float dt) override
-        {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-
-            transform.SetPosition(collider.aabb.max);
         }
     };
 

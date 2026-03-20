@@ -30,6 +30,7 @@ private:
 
 	void UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform);
 	void CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+	void ResetContactHolders();
 
 	bool CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& _boxB);
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
@@ -40,6 +41,9 @@ private:
 
 	PartitionGrid m_partitionGrid;
 	Vector<std::pair<EntityId, EntityId>> m_candidatePairs;
+
+	Contact m_contactHolderA;
+	Contact m_contactHolderB;
 };
 
 #endif // !COLLIDER_SYSTEM_H_DEFINED
