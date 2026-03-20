@@ -3,6 +3,8 @@
 #include <cstdint>
 #include "Engine.h"
 
+#define MAGIC_WORD 0b1010101111001101
+
 enum class PacketType : uint8
 {
 	Connect,
@@ -22,6 +24,7 @@ enum class PacketType : uint8
 
 struct PacketHeader
 {
+	uint16		magicWord = MAGIC_WORD;
 	uint32      tick;
 	uint16      ackId;
 	PacketType  type;
@@ -30,18 +33,18 @@ struct PacketHeader
 
 struct ComponentEntry
 {
-	uint32 ComponentId;
-	uint32 size;
-	Byte data[1024];
+	uint32	ComponentId;
+	uint32	size;
+	Byte	data[1024];
 };
 
 struct StatePacket
 {
 	PacketHeader    header;
 	ComponentMask   componentMask;
-	uint32 dataSize;
-	uint8 componentCount;
-	ComponentEntry components[10];
+	uint32			dataSize;
+	uint8			componentCount;
+	ComponentEntry	components[10];
 };
 
 struct InputEntry

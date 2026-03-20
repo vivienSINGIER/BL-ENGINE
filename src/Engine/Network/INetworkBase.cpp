@@ -13,8 +13,19 @@ void INetworkBase::SendReliablePacket(Packet _packet, sockaddr_in _target)
     pending.ackId      = ACK_COUNT++;
     pending.timer      = 0.0f;
     pending.retryCount = 0;
+    pending.canResend = true;
 
     m_pendingPackets.push_back(pending);
+}
+
+void INetworkBase::RegisterPacket(Packet _packet)
+{
+    m_packets.push_back(_packet);
+}
+
+Vector<Packet>& INetworkBase::GetReceived()
+{
+    return m_packets;
 }
 
 void INetworkBase::TickAck(float _deltaTime)
