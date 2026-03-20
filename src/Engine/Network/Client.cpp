@@ -27,11 +27,12 @@ void Client::Update(float _dt)
 
 void Client::SendPackets()
 {
-    for (PendingPacket pending : m_pendingPackets)
+    for (PendingPacket& pending : m_pendingPackets)
     {
         if (pending.canResend)
         {
-            GetSocket()->Send(pending.packet.Data(), BUFFER_SIZE, pending.target);
+            GetSocket()->Send(pending.packet.Data(), pending.packet.Size(), pending.target);
+            pending.canResend = false;
         }
     }
     
@@ -40,7 +41,7 @@ void Client::SendPackets()
 
     for (Packet packet : m_packets)
     {
-        GetSocket()->Send(packet.Data(), BUFFER_SIZE, m_serverAddress);
+        GetSocket()->Send(packet.Data(), packet.Size(), m_serverAddress);
     }
     m_packets.clear();
 }
@@ -57,11 +58,12 @@ DWORD Client::ReceiveThread(LPVOID _lpParam)
     sockaddr_in sender;
     while (client->m_isRunning)
     {
+		memset(buffer, 0, BUFFER_SIZE);
         int bytesRead = client->GetSocket()->Receive(buffer, BUFFER_SIZE, sender);
         if (bytesRead > 0)
         {
             Packet packet;
-            memcpy(&packet, buffer, BUFFER_SIZE);
+            memcpy(&packet, buffer, bytesRead);
 
             client->m_packetProtection.Enter();
             client->m_receivedPackets.push_back(packet);

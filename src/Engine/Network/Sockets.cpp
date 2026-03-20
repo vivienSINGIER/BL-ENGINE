@@ -15,14 +15,14 @@ Sockets::Sockets(Type _type)
 	if (m_socket == INVALID_SOCKET)
 	{
 		std::ostringstream error;
-		error << "Erreur initialisation socket [" << SocketsMethods::GetError << "]";
+		error << "Erreur initialisation socket [" << SocketsMethods::GetError() << "]";
 		throw std::runtime_error(error.str());
 	}
 }
 
 Sockets::~Sockets()
 {
-	SocketsMethods::CloseSocket(m_socket);
+	SocketsMethods::CloseSocket(static_cast<int>(m_socket));
 }
 
 bool Sockets::Connect(const String& _ip, int _port)

@@ -3,6 +3,8 @@
 #define _SOCKET int
 #define INVALID_SOCKET ((int)-1)
 
+#pragma comment(lib, "Ws2_32.lib")
+
 namespace SocketsMethods
 {
     bool Start();

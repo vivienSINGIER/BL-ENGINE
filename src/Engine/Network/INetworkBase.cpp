@@ -2,6 +2,9 @@
 
 INetworkBase::INetworkBase()
 {
+    if (!SocketsMethods::Start())
+        throw std::runtime_error("WSAStartup échoué");
+    
     m_socket = new Sockets(UDP);
 }
 
@@ -25,7 +28,7 @@ void INetworkBase::RegisterPacket(Packet _packet)
 
 Vector<Packet>& INetworkBase::GetReceived()
 {
-    return m_packets;
+    return m_receivedPackets;
 }
 
 void INetworkBase::ClearReceived()
@@ -60,7 +63,7 @@ void INetworkBase::TickAck(float _deltaTime)
     }
 }
 
-void INetworkBase::OnAckReceived(uint16 _ackId, sockaddr_in _sender)
+void INetworkBase::OnAckReceived(uint16 _ackId, sockaddr_in _sender, bool isConnectAck)
 {
     bool isSelf = false;
     int i = 0; 

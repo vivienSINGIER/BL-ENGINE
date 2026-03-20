@@ -4,13 +4,6 @@
 #include "World.h"
 #include "Query.hpp"
 
-enum NetworkFlag : uint8
-{
-    NONE = 0,
-    SERVER = 1 << 0,
-    CLIENT = 1 << 1,
-};
-
 struct  ISystem
 {
     uint8 networkFlags = NetworkFlag::NONE;

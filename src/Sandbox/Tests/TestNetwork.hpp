@@ -16,13 +16,14 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
+        EngineManager::GetInstance().HostServer();
+        
         scene->world.RegisterSystem<TransformSystem>(Phase::Update);
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
         scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
         scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
         scene->world.RegisterSystem<NetworkSystem>(Phase::Update);
 
-        EngineManager::GetInstance().HostServer();
         
         EngineManager::GetInstance().Run();
     }

@@ -32,13 +32,20 @@ void NetworkSystem::OnEndUpdate(float _dt)
 
 void NetworkSystem::HandleClientReceive()
 {
-    
+    Vector<Packet>& vReceived = m_client->GetReceived();
+
+    m_client->GetCritSection().Enter();
+    for (Packet& received : vReceived)
+    {
+        
+    }
 }
 
 void NetworkSystem::HandleServerReceive()
 {
     Vector<Packet>& vReceived = m_server->GetReceived();
 
+    m_server->GetCritSection().Enter();
     for (Packet& received : vReceived)
     {
         switch (received.header.type)
@@ -57,6 +64,7 @@ void NetworkSystem::HandleServerReceive()
                 break;
         }
     }
+    m_server->GetCritSection().Leave();
 }
 
 

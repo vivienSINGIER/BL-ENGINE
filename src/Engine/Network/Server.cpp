@@ -51,6 +51,7 @@ void Server::Initialize(std::string _ip, int _port)
 {
 	m_socket->Connect(_ip, _port);
 	m_isRunning = true;
+	CreateThread(NULL, 0, ReceiveThread, this, 0, NULL);
 }
 
 void Server::AddClient(const sockaddr_in& _addr)
@@ -69,11 +70,12 @@ DWORD WINAPI Server::ReceiveThread(LPVOID lpParam)
 	sockaddr_in sender;
 	while (server->m_isRunning)
 	{
-		int bytesRead = server->GetSocket()->Receive(buffer, sizeof(Packet), sender);
+		memset(buffer, 0, BUFFER_SIZE);
+		int bytesRead = server->GetSocket()->Receive(buffer, BUFFER_SIZE, sender);
 		if (bytesRead > 0)
 		{
 			Packet packet;
-			memcpy(&packet, buffer, BUFFER_SIZE);
+			memcpy(&packet, buffer, bytesRead);
 
 			server->m_packetProtection.Enter();
 			server->m_receivedPackets.push_back(packet);

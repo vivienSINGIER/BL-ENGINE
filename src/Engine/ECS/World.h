@@ -10,9 +10,15 @@
 #include "Query.hpp"
 #include "SystemScheduler.h"
 #include "ComponentCommandQueue.h"
-#include "ISystem.hpp"
 
 struct IScript;
+
+enum NetworkFlag : uint8
+{
+    NONE = 0,
+    SERVER = 1 << 0,
+    CLIENT = 1 << 1,
+};
 
 class World 
 {
