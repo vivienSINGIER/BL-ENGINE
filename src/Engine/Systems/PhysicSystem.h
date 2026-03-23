@@ -5,19 +5,25 @@
 #include "../Components/TransformComponent.hpp"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/PhysicComponent.hpp"
+#include "../ContactManager.hpp"
 
-class PhysicSystem : public System<PhysicComponent, ColliderComponent, TransformComponent>
+class PhysicSystem : public System<PhysicComponent, TransformComponent>
 {
 public:
 	void OnStartUpdate(float _dt) override;
-	void OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform) override;
+	void OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, TransformComponent& _transform) override;
 	void OnEndUpdate(float _dt) override;
 
-private:
-	void ResolveContacts(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform);
-	XMFLOAT3 ResolveOverlap(PhysicComponent& _physic, PhysicComponent& _otherPhysic, Contact& _contact);
+	void SetContactManager(ContactManager* _contactManager) { m_pContactManager = _contactManager; }
 
-	XMFLOAT3 m_gravityAccel = XMFLOAT3(0.0f, -9.81f, 0.0f);
+private:
+	void ResolveAllOverlaps();
+	void ResolveAllImpulses();
+
+	void ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
+	void ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
+
+	ContactManager* m_pContactManager = nullptr;
 };
 
 #endif // !PHYSIC_SYSTEM_H_DEFINED

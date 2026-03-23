@@ -63,9 +63,12 @@ public:
         scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
         scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
         scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
-		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
-        scene->world.RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
-        sys->InitializePartitionGrid(XMINT2(100, 100), 10);
+		scene->world.RegisterSystem<PhysicIntegrateSystem>(Phase::FixedUpdate);
+		ColliderSystem* colSys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
+        colSys->InitializePartitionGrid(XMINT2(100, 100), 10);
+        colSys->SetContactManager(EngineManager::GetContactManager());
+        PhysicSystem* physSys = scene->world.RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
+		physSys->SetContactManager(EngineManager::GetContactManager());
 
         Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
         RessourceManager::AddMaterial("debug", mat);
@@ -74,7 +77,8 @@ public:
         EntityId ground = scene->world.CreateEntity();
         TransformComponent& tGround = scene->world.AddComponent<TransformComponent>(ground);
         scene->world.AddComponent<ColliderComponent>(ground);
-        scene->world.AddComponent<PhysicComponent>(ground);
+        PhysicComponent& physicGround = scene->world.AddComponent<PhysicComponent>(ground);
+		physicGround.massInverse = 0.0f;
         MeshRenderer& mGround = scene->world.AddComponent<MeshRenderer>(ground);
         mGround.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         mGround.material = mat;
@@ -86,7 +90,9 @@ public:
 		scene->world.AddComponent<ColliderComponent>(e);
         PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e);
         physic.type = BodyType::Dynamic;
-        physic.mass = 10.f;
+        physic.mass = 1.0f;
+		physic.massInverse = 1.0f;
+        physic.useGravity = true;
         MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         transform.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
@@ -96,9 +102,10 @@ public:
 		scene->world.AddComponent<ColliderComponent>(e1);
         PhysicComponent& physic1 = scene->world.AddComponent<PhysicComponent>(e1);
         physic1.type = BodyType::Dynamic;
-        physic1.useGravity = false;
-        physic1.mass = 1.0f;
-        physic1.forces = XMFLOAT3(-100.0f, 0.0f, 0.0f);
+        physic1.mass = 10.0f;
+		physic1.massInverse = 0.1f;
+        physic1.forces = XMFLOAT3(-500.0f, 0.0f, 0.0f);
+		physic1.useGravity = true;
 		MeshRenderer& m1 = scene->world.AddComponent<MeshRenderer>(e1);
 		m1.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         t1.local.SetPosition(XMFLOAT3(5.0f, 0.0f, 0.0f));

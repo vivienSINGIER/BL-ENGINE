@@ -27,5 +27,6 @@
 #include "Systems/ColliderSystem.h"
 #include "Systems/LightSystem.h"
 #include "Systems/PhysicSystem.h"
+#include "Systems/PhysicIntegrateSystem.h"	
 
 #endif

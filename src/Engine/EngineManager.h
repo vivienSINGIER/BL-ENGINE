@@ -13,6 +13,7 @@ class Window;
 class Scene;
 class Camera;
 class RessourceManager;
+class ContactManager;
 
 class EngineManager
 {
@@ -29,6 +30,7 @@ public:
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }
     static Device* GetDevice() { return GetInstance().m_pDevice; }
+    static ContactManager* GetContactManager() { return GetInstance().m_pContactManager; }
     
 private:
     static EngineManager* s_pInstance;
@@ -43,6 +45,8 @@ private:
     
     SceneManager* m_pSceneManager;
     RessourceManager* m_pRessourceManager;
+
+	ContactManager* m_pContactManager;
     
     float m_DeltaTime = 0.0f;
 };

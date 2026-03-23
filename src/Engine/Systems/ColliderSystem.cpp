@@ -5,6 +5,7 @@ void ColliderSystem::OnStartUpdate(float _dt)
 {
 	ClearPartitionGrid();
 	m_candidatePairs.clear();
+	m_pContactManager->Clear();
 }
 
 void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
@@ -102,17 +103,13 @@ void ColliderSystem::CalculateWorldAABB(ColliderComponent& _collider, TransformC
 	_collider.aabb.max = { obb.center.x + wx, obb.center.y + wy, obb.center.z + wz };
 }
 
-void ColliderSystem::ResetContactHolders()
+void ColliderSystem::ResetContactHolder()
 {
-	m_contactHolderA.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	m_contactHolderA.other = -1;
-	m_contactHolderA.penetration = 0.0f;
-	m_contactHolderA.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
-	m_contactHolderB.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	m_contactHolderB.other = -1;
-	m_contactHolderB.penetration = 0.0f;
-	m_contactHolderB.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_contactHolder.a = -1;
+	m_contactHolder.b = -1;
+	m_contactHolder.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_contactHolder.penetration = 0.0f;
+	m_contactHolder.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
 float ColliderSystem::OBBRadius(OBB& obb, XMFLOAT3& axis)
@@ -192,26 +189,20 @@ void ColliderSystem::NarrowPhase()
 			if (colliderA.type == ColliderType::Box)
 				isColliding = CheckBoxToSphere(colliderA, transformA, colliderB, transformB);
 			else
+			{
 				isColliding = CheckBoxToSphere(colliderB, transformB, colliderA, transformA);
+				if (isColliding)
+					m_contactHolder.normal = Inverse(m_contactHolder.normal);
+			}
 		}
 
 		if (isColliding)
 		{
-			m_contactHolderA.other = entityB;
-			m_contactHolderB.other = entityA;
-
-			if (colliderA.contactCount < 5)
-			{
-				colliderA.contact[colliderA.contactCount] = m_contactHolderA;
-				colliderA.contactCount += 1;
-			}
-			if (colliderB.contactCount < 5)
-			{
-				colliderB.contact[colliderB.contactCount] = m_contactHolderB;
-				colliderB.contactCount += 1;
-			}
+			m_contactHolder.a = entityA;
+			m_contactHolder.b = entityB;
+			m_pContactManager->AddContact(m_contactHolder);
 		}
-		ResetContactHolders();
+		ResetContactHolder();
 	}
 }
 
@@ -227,9 +218,14 @@ bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis, float& _minDi
 	float ra = OBBRadius(a, n);
 	float rb = OBBRadius(b, n);
 
-	if (_minDistance > distance && distance > 0.0f)
+	float overlap = ra + rb - distance;
+
+	if (overlap < 0.0f)
+		return false;
+
+	if (overlap < _minDistance)
 	{
-		_minDistance = ra + rb - distance;
+		_minDistance = overlap;
 		_minAxeIndex = _currAxeIndex;
 	}
 
@@ -276,11 +272,8 @@ bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& 
 	if (Dot(centerDelta, normal) < 0.0f)
 		normal = Inverse(normal);
 
-	m_contactHolderA.normal = Inverse(normal);
-	m_contactHolderB.normal = normal;
-
-	m_contactHolderA.penetration = minDistance;
-	m_contactHolderB.penetration = minDistance;
+	m_contactHolder.normal = normal;
+	m_contactHolder.penetration = minDistance;
 
 	return true;
 }
@@ -306,22 +299,18 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 	if (d2 < 1e-6f)
 	{
 		//Normale arbitraire si les centres sont presque au même endroit
-		m_contactHolderA.normal = { 0, 1, 0 };
-		m_contactHolderB.normal = { 0, -1, 0 };
+		m_contactHolder.normal = { 0, -1, 0 };
 
 		float penetration = radiusA + radiusB;
-		m_contactHolderA.penetration = penetration;
-		m_contactHolderB.penetration = penetration;
+		m_contactHolder.penetration = penetration;
 	}
 	else
 	{
 		XMFLOAT3 normal = Normalize(Subtract(posB, posA));
-		m_contactHolderA.normal = Inverse(normal);
-		m_contactHolderB.normal = normal;
+		m_contactHolder.normal = normal;
 
 		float penetration = radiusA + radiusB - sqrt(d2);
-		m_contactHolderA.penetration = penetration;
-		m_contactHolderB.penetration = penetration;
+		m_contactHolder.penetration = penetration;
 	}
 	return true;
 }
@@ -329,46 +318,79 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere)
 {
 	OBB& obb = _box.obb;
+
 	XMFLOAT3 spherePosition = _transformSphere.world.GetPosition();
 	float sphereRadius = _sphere.colliderTransform.GetScale().x * 0.5f;
 
 	XMFLOAT3 d = Subtract(spherePosition, obb.center);
+
+	// Coordonnées du centre de la sphère dans le repère local de l'OBB
+	float localX = Dot(d, obb.axes[0]);
+	float localY = Dot(d, obb.axes[1]);
+	float localZ = Dot(d, obb.axes[2]);
+
+	// Point le plus proche sur l'OBB, en coordonnées locales clampées
+	float clampedX = Clamp(localX, -obb.halfExtents.x, obb.halfExtents.x);
+	float clampedY = Clamp(localY, -obb.halfExtents.y, obb.halfExtents.y);
+	float clampedZ = Clamp(localZ, -obb.halfExtents.z, obb.halfExtents.z);
+
+	// Reconstruction du point le plus proche dans le monde
 	XMFLOAT3 closest = obb.center;
+	closest = Add(closest, Mul(obb.axes[0], clampedX));
+	closest = Add(closest, Mul(obb.axes[1], clampedY));
+	closest = Add(closest, Mul(obb.axes[2], clampedZ));
 
-	float distX = Dot(d, obb.axes[0]);
-	float distY = Dot(d, obb.axes[1]);
-	float distZ = Dot(d, obb.axes[2]);
-
-	distX = Clamp(distX, -obb.halfExtents.x, obb.halfExtents.x);
-	distY = Clamp(distY, -obb.halfExtents.y, obb.halfExtents.y);
-	distZ = Clamp(distZ, -obb.halfExtents.z, obb.halfExtents.z);
-
-	XMFLOAT3 temp = Mul(obb.axes[0], distX);
-	XMFLOAT3 temp1 = Mul(obb.axes[1], distY);
-	XMFLOAT3 temp2 = Mul(obb.axes[2], distZ);
-
-	closest = Add(closest, temp);
-	closest = Add(closest, temp1);
-	closest = Add(closest, temp2);
-
+	// Vecteur du point le plus proche de la box vers le centre de la sphère
 	XMFLOAT3 delta = Subtract(spherePosition, closest);
 	float d2 = Dot(delta, delta);
-
-	if (d2 > sphereRadius * sphereRadius)
-		return false;
+	float radius2 = sphereRadius * sphereRadius;
 
 	if (_box.isTrigger || _sphere.isTrigger) //Pas de calcul de contact si trigger
 		return true;
 
+	if (d2 > radius2)
+		return false;
+
+	if (d2 < 1e-6f) //Cas particulier
+	{
+		float dx = obb.halfExtents.x - abs(localX);
+		float dy = obb.halfExtents.y - abs(localY);
+		float dz = obb.halfExtents.z - abs(localZ);
+
+		XMFLOAT3 normal = { 0.0f, 0.0f, 0.0f };
+		float distanceToSurface = 0.0f;
+
+		if (dx <= dy && dx <= dz)
+		{
+			normal = (localX >= 0.0f) ? obb.axes[0] : Inverse(obb.axes[0]);
+			distanceToSurface = dx;
+		}
+		else if (dy <= dx && dy <= dz)
+		{
+			normal = (localY >= 0.0f) ? obb.axes[1] : Inverse(obb.axes[1]);
+			distanceToSurface = dy;
+		}
+		else
+		{
+			normal = (localZ >= 0.0f) ? obb.axes[2] : Inverse(obb.axes[2]);
+			distanceToSurface = dz;
+		}
+
+		float penetration = sphereRadius + distanceToSurface;
+
+		m_contactHolder.normal = normal; // box -> sphere
+		m_contactHolder.penetration = penetration;
+
+		return true;
+	}
+
 	//normale = sphère - point proche
 	XMFLOAT3 normal = Normalize(Subtract(spherePosition, closest));
-	m_contactHolderA.normal = Inverse(normal);
-	m_contactHolderB.normal = normal;
+	m_contactHolder.normal = normal;
 
 	//pénétration = rayon - distance
 	float penetration = sphereRadius - sqrt(d2);
-	m_contactHolderA.penetration = penetration;
-	m_contactHolderB.penetration = penetration;
+	m_contactHolder.penetration = penetration;
 
 	return true;
 }

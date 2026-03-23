@@ -4,6 +4,7 @@
 #include "../ECS/ISystem.hpp"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../ContactManager.hpp"
 
 struct PartitionGrid
 {
@@ -21,6 +22,7 @@ public:
 	void OnEndUpdate(float _dt) override;
 
 	void InitializePartitionGrid(XMINT2 _mapSize, int _cellSize);
+	void SetContactManager(ContactManager* _contactManager) { m_pContactManager = _contactManager; }
 
 private:
 	void ClearPartitionGrid();
@@ -30,7 +32,7 @@ private:
 
 	void UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform);
 	void CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
-	void ResetContactHolders();
+	void ResetContactHolder();
 
 	bool CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& _boxB);
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
@@ -41,9 +43,9 @@ private:
 
 	PartitionGrid m_partitionGrid;
 	Vector<std::pair<EntityId, EntityId>> m_candidatePairs;
+	ContactManager* m_pContactManager = nullptr;
 
-	Contact m_contactHolderA;
-	Contact m_contactHolderB;
+	Contact m_contactHolder;
 };
 
 #endif // !COLLIDER_SYSTEM_H_DEFINED

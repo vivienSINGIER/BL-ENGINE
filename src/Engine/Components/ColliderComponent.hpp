@@ -23,21 +23,11 @@ struct OBB
 	XMFLOAT3 halfExtents;
 };
 
-struct Contact
-{
-	EntityId other;
-	XMFLOAT3 normal;
-	XMFLOAT3 point;
-	float penetration;
-};
-
 struct  ColliderComponent
 {
 	bool isTrigger;
 	ColliderType type;
 	Transform colliderTransform;
-	Array<Contact, 5> contact = Array<Contact, 5>();
-	int contactCount;
 	OBB obb;
 	AABB aabb;
 };

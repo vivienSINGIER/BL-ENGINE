@@ -5,6 +5,7 @@
 #include "Scene.h"
 #include "RessourceManager.h"
 #include "InputManager.h"
+#include "ContactManager.hpp"   
 
 #include "../Render/Generic/Render.h"
 #include "../Render/Generic/Factories/ShaderFactory.hpp"
@@ -52,6 +53,8 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title)
     RessourceManager::AddMaterial("Default", white);
 
 	InputManager::Initialize(m_pWindow->GetHWND());
+
+	m_pContactManager = new ContactManager();
 }
 
 void EngineManager::Run()
@@ -71,6 +74,7 @@ void EngineManager::Run()
 void EngineManager::Exit()
 {
     delete m_pRessourceManager;
+    delete m_pContactManager;
 }
 
 #endif

@@ -3,83 +3,124 @@
 #include <iostream>
 
 void PhysicSystem::OnStartUpdate(float _dt)
-{
-
+{ 
 }
 
-void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform)
+void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, TransformComponent& _transform)
 {
-	if (_physic.type == BodyType::Static) return;
-
-	ResolveContacts(_physic, _collider, _transform);
-
-	XMFLOAT3 acceleration = Mul(_physic.forces, 1.0f / _physic.mass);
-
-	if (_physic.useGravity)
-		acceleration = Add(acceleration, m_gravityAccel);
-
-	XMFLOAT3 velocity = Add(_physic.velocity, Mul(acceleration, _dt));
-	XMFLOAT3 move = Mul(velocity, _dt);
-
-	_physic.acceleration = acceleration;
-	_physic.velocity = velocity;
-	_physic.forces = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
-	_transform.local.Move(move);
-
-	std::cout << _transform.world.GetPosition().x << " " << _transform.world.GetPosition().y << " " << _transform.world.GetPosition().z << std::endl;
 }
 
 void PhysicSystem::OnEndUpdate(float _dt)
 {
-
+	ResolveAllOverlaps();
+	ResolveAllImpulses();
 }
 
-void PhysicSystem::ResolveContacts(PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform)
+void PhysicSystem::ResolveAllOverlaps()
 {
-	for (int i = 0; i < _collider.contactCount; i++)
-	{
-		Contact& contact = _collider.contact[i];
-		PhysicComponent& otherPhysic = world->GetComponent<PhysicComponent>(contact.other);
+    for (Contact& contact : m_pContactManager->contacts)
+    {
+        if (world->HasComponent<PhysicComponent>(contact.a) == false)
+            continue;
+        if (world->HasComponent<PhysicComponent>(contact.b) == false)
+            continue;
 
-		_transform.local.Move(ResolveOverlap(_physic, otherPhysic, contact));
+        PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
+        PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
-		float velNormAxe = Dot(_physic.velocity, contact.normal);
-		if (velNormAxe < 0.0f)
-		{
-			XMFLOAT3 contactForce = Mul(contact.normal, velNormAxe);
-			XMFLOAT3 transferForce = Mul(contactForce, _physic.mass);
-			otherPhysic.AddForce(transferForce);
-			_physic.velocity = Subtract(_physic.velocity, Mul(contactForce, _physic.mass));
-		}
-	}
-	_collider.contactCount = 0;
+        ResolveOverlap(physicA, physicB, contact);
+    }
 }
 
-XMFLOAT3 PhysicSystem::ResolveOverlap(PhysicComponent& _physic, PhysicComponent& _otherPhysic, Contact& _contact)
+void PhysicSystem::ResolveAllImpulses()
 {
-	float invMassA = 1.0f / _physic.mass;
-	float invMassB = 1.0f / _otherPhysic.mass;
-	float totalInvMass = invMassA + invMassB;
+    for (int iteration = 0; iteration < 4; ++iteration)
+    {
+        for (Contact& contact : m_pContactManager->contacts)
+        {
+            if (world->HasComponent<PhysicComponent>(contact.a) == false)
+                continue;
+            if (world->HasComponent<PhysicComponent>(contact.b) == false)
+                continue;
 
-	float slop = 0.00001f; 
-	float correctionDepth = Max(0.0f, _contact.penetration - slop);
+            PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
+            PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
-	XMFLOAT3 move = { 0.0f, 0.0f, 0.0f };
-	float moveAmount = 0.0f;
+            ResolveImpulse(physicA, physicB, contact);
+        }
+    }
+}
 
-	if (_otherPhysic.type == BodyType::Static)
-	{
-		//Deplacement total si autre entité static
-		moveAmount = _contact.penetration;
-	}
-	else
-	{
-		//Deplacement de moitié si autre entité dynamique
-		moveAmount = _contact.penetration * invMassA / totalInvMass;
-	}
+void PhysicSystem::ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+{
+    if (_contact.penetration <= 0.0f)
+        return;
 
-	move = Mul(_contact.normal, moveAmount);
-	//move = Mul(move, correctionDepth);
-	return move;
+    float slop = 0.001f;
+    float percent = 0.2f;
+    float correctionDepth = Max(0.0f, (_contact.penetration - slop) * percent);
+
+    if (correctionDepth <= 0.0f)
+        return;
+
+    float moveAmountA = 0.0f;
+    float moveAmountB = 0.0f;
+
+    if (_physicB.type == BodyType::Static)
+    {
+        moveAmountA = correctionDepth;
+    }
+    else if (_physicA.type == BodyType::Static)
+    {
+        moveAmountB = correctionDepth;
+    }
+    else
+    {
+        float invMassA = _physicA.massInverse;
+        float invMassB = _physicB.massInverse;
+        float totalInvMass = invMassA + invMassB;
+
+        if (totalInvMass <= 0.0f)
+            return;
+
+        moveAmountA = correctionDepth * (invMassA / totalInvMass);
+        moveAmountB = correctionDepth * (invMassB / totalInvMass);
+    }
+
+    XMFLOAT3 moveA = Mul(_contact.normal, -moveAmountA);
+    XMFLOAT3 moveB = Mul(_contact.normal, moveAmountB);
+
+    TransformComponent& transformA = world->GetComponent<TransformComponent>(_contact.a);
+    TransformComponent& transformB = world->GetComponent<TransformComponent>(_contact.b);
+
+    if (moveAmountA > 0.0f)
+        transformA.local.Move(moveA);
+
+    if (moveAmountB > 0.0f)
+        transformB.local.Move(moveB);
+}
+
+void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+{
+    float invMassA = _physicA.massInverse;
+    float invMassB = _physicB.massInverse;
+    float totalInvMass = invMassA + invMassB;
+
+    if (totalInvMass <= 0.0f)
+        return;
+
+    XMFLOAT3 relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
+    float vn = Dot(relativeVelocity, _contact.normal);
+
+    // Déjà en train de s'éloigner
+    if (vn >= 0.0f)
+        return;
+
+    float e = Min(_physicA.restitution, _physicB.restitution);
+
+    float j = -(1.0f + e) * vn / totalInvMass;
+    XMFLOAT3 impulse = Mul(_contact.normal, j);
+
+    _physicA.velocity = Subtract(_physicA.velocity, Mul(impulse, invMassA));
+    _physicB.velocity = Add(_physicB.velocity, Mul(impulse, invMassB));
 }
