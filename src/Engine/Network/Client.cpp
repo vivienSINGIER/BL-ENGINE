@@ -1,9 +1,9 @@
 #include "Client.h"
 
-Client::Client()
+Client::Client() : INetworkBase()
 {
     m_isConnected = false;
-    m_isRunning = false;
+    m_isRunning = true;
     m_serverAddress = {};   
 }
 
@@ -49,6 +49,7 @@ void Client::SendPackets()
 void Client::Connect(sockaddr_in _addr)
 {
     m_serverAddress = _addr;
+    m_isConnected = true;
 }
 
 DWORD Client::ReceiveThread(LPVOID _lpParam)
@@ -65,8 +66,12 @@ DWORD Client::ReceiveThread(LPVOID _lpParam)
             Packet packet;
             memcpy(&packet, buffer, bytesRead);
 
+            ReceivedPacket receivedPacket;
+            receivedPacket.packet = packet;
+            receivedPacket.sender = sender;
+			
             client->m_packetProtection.Enter();
-            client->m_receivedPackets.push_back(packet);
+            client->m_receivedPackets.push_back(receivedPacket);
             client->m_packetProtection.Leave();
         }
     }

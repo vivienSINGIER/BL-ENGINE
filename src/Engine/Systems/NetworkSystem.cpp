@@ -32,38 +32,59 @@ void NetworkSystem::OnEndUpdate(float _dt)
 
 void NetworkSystem::HandleClientReceive()
 {
-    Vector<Packet>& vReceived = m_client->GetReceived();
+    Vector<ReceivedPacket>& vReceived = m_client->GetReceived();
 
     m_client->GetCritSection().Enter();
-    for (Packet& received : vReceived)
+    for (ReceivedPacket& received : vReceived)
     {
+        Packet p = received.packet;
+        sockaddr_in addr = received.sender;
         
-    }
-}
-
-void NetworkSystem::HandleServerReceive()
-{
-    Vector<Packet>& vReceived = m_server->GetReceived();
-
-    m_server->GetCritSection().Enter();
-    for (Packet& received : vReceived)
-    {
-        switch (received.header.type)
+        switch (p.header.type)
         {
-            case PacketType::Connect:
+            case PacketType::ConnectAck:
             {
-                m_server->AddClient(received.connect.addr);
-
-                Packet p;
-                p.header.type = PacketType::ConnectAck;
-                p.header.ackId = received.header.ackId;
-                    
-                m_server->SendReliablePacket(p, received.connect.addr);
+                m_client->OnAckReceived(p.header.ackId);
+                m_client->Connect(p.connect.addr);
+                break;
             }
             default:
                 break;
         }
     }
+    vReceived.clear();
+    m_client->GetCritSection().Leave();
+}
+
+void NetworkSystem::HandleServerReceive()
+{
+    Vector<ReceivedPacket>& vReceived = m_server->GetReceived();
+
+    m_server->GetCritSection().Enter();
+    for (ReceivedPacket& received : vReceived)
+    {
+        Packet p = received.packet;
+        sockaddr_in addr = received.sender;
+        
+        switch (p.header.type)
+        {
+            case PacketType::Connect:
+            {
+                m_server->AddClient(addr);
+
+                Packet np;
+                np.header.type = PacketType::ConnectAck;
+                np.header.ackId = p.header.ackId;
+                np.connect.addr = m_server->GetSocket()->GetAddr();
+                    
+                m_server->RegisterTargetedPacket(np, addr);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    vReceived.clear();
     m_server->GetCritSection().Leave();
 }
 

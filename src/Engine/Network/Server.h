@@ -15,18 +15,22 @@ class Server : public INetworkBase
 {
 public:
 	Server();
-	void Update(float _dt) override;
-	void SendPackets() override;
 	void Initialize(std::string _ip, int _port);
+	void Update(float _dt) override;
 	void Shutdown() { m_isRunning = false; }
+	
+	void SendPackets() override;
+	void RegisterTargetedPacket(Packet _packet, sockaddr_in _addr);
 
 	ClientInfo* FindClient(const sockaddr_in& _addr);
 	void AddClient(const sockaddr_in& _addr);
 
 private:
 	static DWORD WINAPI ReceiveThread(LPVOID lpParam);
-	std::vector<ClientInfo> m_clients;
+	Vector<ClientInfo> m_clients;
 
+	Vector<Pair<Packet, sockaddr_in>> m_targetedPackets;
+	
 	bool m_isRunning = false;
 };
 

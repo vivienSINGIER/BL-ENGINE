@@ -56,7 +56,10 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
 	m_networkFlag = static_cast<NetworkFlag>(_flag);
 
     if ((_flag & NetworkFlag::CLIENT) == NetworkFlag::CLIENT)
+    {
         m_pClient = new Client();
+        m_pClient->Init();
+    }
     
 	InputManager::Initialize(m_pWindow->GetHWND());
 }

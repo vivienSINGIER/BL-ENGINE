@@ -13,7 +13,8 @@ void INetworkBase::SendReliablePacket(Packet _packet, sockaddr_in _target)
     PendingPacket pending;
     pending.packet     = _packet;
     pending.target     = _target;
-    pending.ackId      = ACK_COUNT++;
+    pending.packet.header.ackId = ACK_COUNT++;
+    pending.ackId = pending.packet.header.ackId;
     pending.timer      = 0.0f;
     pending.retryCount = 0;
     pending.canResend = true;
@@ -26,7 +27,7 @@ void INetworkBase::RegisterPacket(Packet _packet)
     m_packets.push_back(_packet);
 }
 
-Vector<Packet>& INetworkBase::GetReceived()
+Vector<ReceivedPacket>& INetworkBase::GetReceived()
 {
     return m_receivedPackets;
 }
@@ -63,10 +64,10 @@ void INetworkBase::TickAck(float _deltaTime)
     }
 }
 
-void INetworkBase::OnAckReceived(uint16 _ackId, sockaddr_in _sender, bool isConnectAck)
+void INetworkBase::OnAckReceived(uint16 _ackId)
 {
     bool isSelf = false;
-    int i = 0; 
+    int i = 0;
     while (i < m_pendingPackets.size())
     {
         if (m_pendingPackets[i].ackId == _ackId)
@@ -76,11 +77,6 @@ void INetworkBase::OnAckReceived(uint16 _ackId, sockaddr_in _sender, bool isConn
             break;
         }
         i++;
-    }
-
-    if (isSelf == false)
-    {
-        SendAck(_ackId, _sender);
     }
 }
 

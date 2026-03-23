@@ -16,6 +16,12 @@ struct PendingPacket
 	bool canResend;
 };
 
+struct ReceivedPacket
+{
+	Packet packet;
+	sockaddr_in sender;
+};
+
 class INetworkBase
 {
 public:
@@ -30,8 +36,10 @@ public:
 	CriticalSection& GetCritSection() { return m_packetProtection; }
 	
 	Sockets* GetSocket() const { return m_socket; }
-	Vector<Packet>& GetReceived();
+	Vector<ReceivedPacket>& GetReceived();
 	void ClearReceived();
+	
+	void OnAckReceived(uint16 _ackId);
 	
 	virtual ~INetworkBase() = default;
 	
@@ -46,14 +54,15 @@ protected:
 	
 	Sockets* m_socket;
 	char m_buffer[BUFFER_SIZE] = {};
+	
 	Vector<PendingPacket> m_pendingPackets;
 	Vector<Packet> m_packets;
-	Vector<Packet> m_receivedPackets;
+	
+	Vector<ReceivedPacket> m_receivedPackets;
 
 	CriticalSection m_packetProtection;
 	
 	void TickAck(float _deltaTime);
-	void OnAckReceived(uint16 _ackId, sockaddr_in _sender, bool isConnectAck = false);
 	void SendAck(uint16 _ackId, sockaddr_in _target);
 };
 

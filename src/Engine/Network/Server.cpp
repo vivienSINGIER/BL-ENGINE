@@ -7,6 +7,7 @@ Server::Server() : INetworkBase()
 void Server::Update(float _dt)
 {
 	TickAck(_dt);
+	SendPackets();
 }
 
 void Server::SendPackets()
@@ -20,6 +21,12 @@ void Server::SendPackets()
 	}
 	m_packets.clear();
 
+	for (int i = 0; i < m_targetedPackets.size(); i++)
+	{
+		m_socket->Send(m_targetedPackets[i].first.Data(), m_targetedPackets[i].first.Size(), m_targetedPackets[i].second);
+	}
+	m_targetedPackets.clear();
+	
 	for(int i = 0; i < m_pendingPackets.size(); i++)
 	{
 		PendingPacket& pending = m_pendingPackets[i];
@@ -31,6 +38,11 @@ void Server::SendPackets()
 			pending.canResend = false;
 		}
 	}
+}
+
+void Server::RegisterTargetedPacket(Packet _packet, sockaddr_in _addr)
+{
+	m_targetedPackets.push_back({_packet, _addr});
 }
 
 ClientInfo* Server::FindClient(const sockaddr_in& _addr)
@@ -56,6 +68,9 @@ void Server::Initialize(std::string _ip, int _port)
 
 void Server::AddClient(const sockaddr_in& _addr)
 {
+	if (FindClient(_addr) != nullptr)
+		return;
+	
 	ClientInfo client;
 	client.udpAddr = _addr;
 	client.ip = GetSocket()->GetIP(_addr);
@@ -77,8 +92,12 @@ DWORD WINAPI Server::ReceiveThread(LPVOID lpParam)
 			Packet packet;
 			memcpy(&packet, buffer, bytesRead);
 
+			ReceivedPacket receivedPacket;
+			receivedPacket.packet = packet;
+			receivedPacket.sender = sender;
+			
 			server->m_packetProtection.Enter();
-			server->m_receivedPackets.push_back(packet);
+			server->m_receivedPackets.push_back(receivedPacket);
 			server->m_packetProtection.Leave();
 		}
 	}

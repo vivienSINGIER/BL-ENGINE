@@ -93,6 +93,7 @@ struct Packet
 		case PacketType::Spawn:
 		case PacketType::Update:
 		case PacketType::Connect:			return sizeof(ConnectPacket);
+		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
