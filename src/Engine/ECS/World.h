@@ -13,13 +13,6 @@
 
 struct IScript;
 
-enum NetworkFlag : uint8
-{
-    NONE = 0,
-    SERVER = 1 << 0,
-    CLIENT = 1 << 1,
-};
-
 class World 
 {
 public:

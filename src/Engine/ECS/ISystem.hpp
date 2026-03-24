@@ -1,6 +1,7 @@
 #ifndef ISYSTEM_HPP_DEFINED
 #define ISYSTEM_HPP_DEFINED
 
+#include "define.h"
 #include "World.h"
 #include "Query.hpp"
 

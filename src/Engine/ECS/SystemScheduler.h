@@ -8,7 +8,7 @@ struct ISystem;
 
 enum Phase
 {
-    PreUpdate, Update, FixedUpdate, PostUpdate, PreRender, Render, PostRender, Count
+    NetworkReceive, PreUpdate, Update, FixedUpdate, PostUpdate, PreRender, Render, PostRender, NetworkSend, Count
 };
 
 class SystemScheduler

@@ -2,7 +2,7 @@
 #define SERVER_H_DEFINED
 
 #include "INetworkBase.h"
-
+#include "Network.h"
 
 struct ClientInfo
 {
@@ -21,10 +21,13 @@ public:
 	
 	void SendPackets() override;
 	void RegisterTargetedPacket(Packet _packet, sockaddr_in _addr);
+	void SendGeneralReliablePacket(Packet _packet);
 
 	ClientInfo* FindClient(const sockaddr_in& _addr);
 	void AddClient(const sockaddr_in& _addr);
 
+	void QueueSyncPackets(const sockaddr_in& _addr);
+	
 private:
 	static DWORD WINAPI ReceiveThread(LPVOID lpParam);
 	Vector<ClientInfo> m_clients;

@@ -12,6 +12,7 @@
 #include "RessourceManager.h"
 #include "SceneManager.h"
 #include "InputManager.h"
+#include "Scene.h"
 
 // ----------- COMPONENTS -----------
 #include "Components/MeshRenderer.hpp"
@@ -27,6 +28,7 @@
 #include "Systems/CameraSystem.h"
 #include "Systems/ColliderSystem.h"
 #include "Systems/LightSystem.h"
-#include "Systems/NetworkSystem.h"
+#include "Systems/ReceiveSystem.h"
+#include "Systems/SendSystem.h"
 
 #endif

@@ -3,6 +3,8 @@
 
 #include "define.h"
 
+#include "EngineManager.h"
+
 class Scene;
 
 class SceneManager
@@ -14,20 +16,28 @@ public:
 	static Scene* GetCurrentScene() { return s_pSceneManager->m_pCurrentScene; }
 
 	static Scene* GetSceneWithName(String const& _name);
+	static Scene* GetSceneWithId(uint32 _id);
 
-	static Scene* CreateScene(String const& _name);
+	static Scene* CreateScene(String const& _name, int32 _id = -1);
 
 	template <typename SceneType>
-	static SceneType* CreateSceneType(String const& _name);
+	static SceneType* CreateSceneType(String const& _name, int32 _id);
 
-	static void ChangeCurrentScene(Scene* _pScene);
-	static void ChangeCurrentScene(String const& _name);
+	static Scene* SetCurrentScene(Scene* _pScene);
+	static Scene* SetCurrentScene(String const& _name);
+	static Scene* SetCurrentScene(uint32 _id);
+
+	UnorderedMap<String, uint32>& GetSceneInfos() { return m_sceneIds; }
 
 private:
 	inline static SceneManager* s_pSceneManager = nullptr;
 
-	UnorderedMap<String, Scene*> m_mScenes;
+	Vector<Scene*> m_scenes;
+	UnorderedMap<String, uint32> m_sceneIds;
+	
 	Scene* m_pCurrentScene = nullptr;
+
+	static void SendSetScenePacket(uint32 _id);
 };
 
 #include "SceneManager.inl"

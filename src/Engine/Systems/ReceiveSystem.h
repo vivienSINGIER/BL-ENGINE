@@ -1,13 +1,13 @@
-﻿#ifndef NETWORK_SYSTEM_H_DEFINED
-#define NETWORK_SYSTEM_H_DEFINED
+﻿#ifndef RECEIVE_SYSTEM_H_DEFINED
+#define RECEIVE_SYSTEM_H_DEFINED
 
-#include "Components/NetworkComponent.hpp"
 #include "../ECS/ISystem.hpp"
+#include "../Components/NetworkComponent.hpp"
 
 class Server;
 class Client;
 
-struct NetworkSystem : public System<NetworkComponent>
+struct ReceiveSystem : public System<NetworkComponent>
 {
     void OnInit() override;
     

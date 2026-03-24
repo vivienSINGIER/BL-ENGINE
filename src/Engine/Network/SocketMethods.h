@@ -1,7 +1,7 @@
 #ifndef SOCKET_METHODS_H_DEFINED
 #define SOCKET_METHODS_H_DEFINED
 #define _SOCKET int
-#define INVALID_SOCKET ((int)-1)
+#define _INVALID_SOCKET ((int)-1)
 
 #pragma comment(lib, "Ws2_32.lib")
 

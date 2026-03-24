@@ -56,14 +56,6 @@ enum InputMouse
     AMOUNT_MOUSE
 };
 
-enum InputState : UINT8
-{
-    NONE_STATE            = 0,
-    DOWN_STATE      = 1 << 0,
-    PRESSED_STATE   = 1 << 1,
-    UP_STATE        = 1 << 2
-};
-
 class InputManager
 {
 public:

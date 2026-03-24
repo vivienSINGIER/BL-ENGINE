@@ -1,7 +1,8 @@
 #ifndef PACKET_HPP_DEFINED
 #define PACKET_HPP_DEFINED
+
 #include <cstdint>
-#include "Engine.h"
+#include "define.h"
 
 #define MAGIC_WORD 0b1010101111001101
 
@@ -10,6 +11,9 @@ enum class PacketType : uint8
 	Connect,
 	ConnectAck,
 	Ack,
+
+	AddScene,
+	SetScene,
 	
 	Spawn,
 	Delete,
@@ -35,6 +39,20 @@ struct ConnectPacket
 {
 	PacketHeader header;
 	sockaddr_in addr;
+};
+
+struct AddScenePacket
+{
+	PacketHeader header;
+	uint32 sceneId;
+	uint8 nameSize;
+	char name[25];
+};
+
+struct SetScenePacket
+{
+	PacketHeader header;
+	uint32 sceneId;
 };
 
 struct ComponentEntry
@@ -79,6 +97,8 @@ struct Packet
 	{
 		PacketHeader    header;
 		ConnectPacket   connect;
+		AddScenePacket  addScene;
+		SetScenePacket  setScene;
 		StatePacket     state;
 		InputPacket     input;
 		ChatPacket      chat;
@@ -94,6 +114,8 @@ struct Packet
 		case PacketType::Update:
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
+		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint32) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
+		case PacketType::SetScene:			return sizeof(SetScenePacket);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;

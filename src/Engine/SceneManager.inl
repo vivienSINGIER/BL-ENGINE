@@ -1,20 +1,38 @@
 #ifndef SCENE_MANAGER_INL_DEFINED
 #define SCENE_MANAGER_INL_DEFINED 
 
-#include "SceneManager.h"
-#include "Scene.h"
+#include "Network/Server.h"
 
 template <typename SceneType>
-SceneType* SceneManager::CreateSceneType(String const& _name)
+SceneType* SceneManager::CreateSceneType(String const& _name, int32 _id)
 {
-	SceneType* pNewScene = new SceneType;
+	assert(_name.size() < 25 && "Scene name is too big");
+	
+	SceneType* pNewScene = new SceneType();
+	pNewScene->Init(_name);
 
-	Scene* pScene = pNewScene;
+	uint32 id;
+	if (_id == -1)
+		id = s_pSceneManager->m_scenes.size();
+	else
+		id = (uint32)_id;
 
-	s_pSceneManager->m_mScenes[_name] = pScene;
+	s_pSceneManager->m_sceneIds[_name] = id;
+	s_pSceneManager->m_scenes.push_back(pNewScene);
 
-	pScene->Init(_name);
+	if (EngineManager::GetServer() != nullptr)
+	{
+		Server* pServer = EngineManager::GetServer();
 
+		Packet p;
+		p.header.type = PacketType::AddScene;
+		p.addScene.sceneId = id;
+		p.addScene.nameSize = _name.size();
+		memcpy(p.addScene.name, _name.c_str(), _name.size());
+
+		pServer->RegisterPacket(p);
+	}
+	
 	return pNewScene;
 }
 

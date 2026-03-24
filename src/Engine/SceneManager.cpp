@@ -1,5 +1,9 @@
 #include "SceneManager.h"
+
+#include "EngineManager.h"
 #include "Scene.h"
+#include "Network/Packet.hpp"
+#include "Network/Server.h"
 
 SceneManager::SceneManager()
 {
@@ -12,39 +16,96 @@ SceneManager::SceneManager()
 
 Scene* SceneManager::GetSceneWithName(String const& _name)
 {
-	for (auto [name, pScene] : s_pSceneManager->m_mScenes)
+	for (auto [name, id] : s_pSceneManager->m_sceneIds)
 	{
 		if (name == _name)
-			return pScene;
+			return s_pSceneManager->m_scenes[id];
 	}
 
 	return nullptr;
 }
 
-Scene* SceneManager::CreateScene(String const& _name)
+Scene* SceneManager::GetSceneWithId(uint32 _id)
 {
-	Scene* pNewScene = new Scene;
+	for (auto [name, id] : s_pSceneManager->m_sceneIds)
+	{
+		if (id == _id)
+			return s_pSceneManager->m_scenes[id];
+	}
+
+	return nullptr;
+}
+
+Scene* SceneManager::CreateScene(String const& _name, int32 _id)
+{
+	assert(_name.size() < 25 && "Scene name is too big");
+
+	if (GetSceneWithName(_name) != nullptr)
+		return GetSceneWithName(_name);
+	
+	Scene* pNewScene = new Scene();
 	pNewScene->Init(_name);
 
-	s_pSceneManager->m_mScenes[_name] = pNewScene;
+	uint32 id;
+	if (_id == -1)
+		id = s_pSceneManager->m_scenes.size();
+	else
+		id = (uint32)_id;
 
+	s_pSceneManager->m_sceneIds[_name] = id;
+	s_pSceneManager->m_scenes.push_back(pNewScene);
+
+	if (EngineManager::GetServer() != nullptr)
+	{
+		Server* pServer = EngineManager::GetServer();
+
+		Packet p;
+		p.header.type = PacketType::AddScene;
+		p.addScene.sceneId = id;
+		p.addScene.nameSize = _name.size();
+		memcpy(p.addScene.name, _name.c_str(), _name.size());
+
+		pServer->SendGeneralReliablePacket(p);
+	}
+	
 	return pNewScene;
 }
 
-void SceneManager::ChangeCurrentScene(Scene* _pScene)
+Scene* SceneManager::SetCurrentScene(Scene* _pScene)
 {
-	if (_pScene == nullptr) return;
-
-	if (!s_pSceneManager->m_mScenes.contains(_pScene->GetName()))
-		s_pSceneManager->CreateScene(_pScene->GetName());
+	if (_pScene == nullptr)
+		return s_pSceneManager->m_pCurrentScene;
+	if (s_pSceneManager->GetSceneWithName(_pScene->GetName()) == nullptr)
+		s_pSceneManager->m_pCurrentScene;
 
 	s_pSceneManager->m_pCurrentScene->OnEnd();
-
 	s_pSceneManager->m_pCurrentScene = _pScene;
 	s_pSceneManager->m_pCurrentScene->OnStart();
+
+	SendSetScenePacket(s_pSceneManager->m_sceneIds[_pScene->GetName()]);
+
+	return s_pSceneManager->m_pCurrentScene;
 }
 
-void SceneManager::ChangeCurrentScene(String const& _name)
+Scene* SceneManager::SetCurrentScene(String const& _name)
 {
-	ChangeCurrentScene(s_pSceneManager->GetSceneWithName(_name));
+	return SetCurrentScene(s_pSceneManager->GetSceneWithName(_name));
+}
+
+Scene* SceneManager::SetCurrentScene(uint32 _id)
+{
+	return SetCurrentScene(s_pSceneManager->GetSceneWithId(_id));
+}
+
+void SceneManager::SendSetScenePacket(uint32 _id)
+{
+	if (EngineManager::GetServer() == nullptr) return;
+	
+	Server* pServer = EngineManager::GetServer();
+
+	Packet p;
+	p.header.type = PacketType::SetScene;
+	p.setScene.sceneId = _id;
+
+	pServer->SendGeneralReliablePacket(p);
 }

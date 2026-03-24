@@ -2,7 +2,6 @@
 #define ENGINE_MANAGER_H_DEFINED
 
 // Engine
-#include "SceneManager.h"
 #include "define.h"
 
 // Render
@@ -13,6 +12,7 @@ class Window;
 class Scene;
 class Camera;
 class RessourceManager;
+class SceneManager;
 class Client;
 class Server;
 

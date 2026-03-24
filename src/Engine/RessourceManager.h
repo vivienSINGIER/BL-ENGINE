@@ -44,12 +44,12 @@ private:
 	Vector<Texture*> m_vTextures;
 	Vector<Camera*> m_vCameras;
 	
-	UnorderedMap<String, uint32> m_mGeometryIndices;
-	UnorderedMap<String, uint32> m_mShaderIndices;
-	UnorderedMap<String, uint32> m_mMaterialIndices;
-	UnorderedMap<String, uint32> m_mFontIndices;
-	UnorderedMap<String, uint32> m_mTextureIndices;
-	UnorderedMap<String, uint32> m_mCameraIndices;
+	UnorderedMap<String, uint32> m_mGeometryIds;
+	UnorderedMap<String, uint32> m_mShaderIds;
+	UnorderedMap<String, uint32> m_mMaterialIds;
+	UnorderedMap<String, uint32> m_mFontIds;
+	UnorderedMap<String, uint32> m_mTextureIds;
+	UnorderedMap<String, uint32> m_mCameraIds;
 };
 
 #endif

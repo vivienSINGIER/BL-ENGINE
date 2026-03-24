@@ -4,6 +4,7 @@
 #include "EngineManager.h"
 #include "Scene.h"
 #include "RessourceManager.h"
+#include "SceneManager.h"
 #include "InputManager.h"
 
 #include "../Render/Generic/Render.h"
@@ -40,8 +41,6 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
         m_pWindow->InitD3D12();
         m_pDevice = m_pWindow->GetDevice();
     }
-    if (m_pSceneManager == nullptr)
-        m_pSceneManager = new SceneManager;
     
     //m_pDevice->SetClearColor(ToColor(3, 63, 153)); //TO DO
     m_pRessourceManager = new RessourceManager;
@@ -62,6 +61,8 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
     }
     
 	InputManager::Initialize(m_pWindow->GetHWND());
+    if (m_pSceneManager == nullptr)
+        m_pSceneManager = new SceneManager;
 }
 
 void EngineManager::Run()

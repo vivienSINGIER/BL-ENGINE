@@ -15,6 +15,7 @@ public:
     void SendPackets() override;
 
     void Connect(sockaddr_in _addr);
+    sockaddr_in& GetServerAddress() { return m_serverAddress; }
 
 private:
     static DWORD WINAPI ReceiveThread(LPVOID _lpParam);

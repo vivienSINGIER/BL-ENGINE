@@ -1,26 +1,7 @@
 #ifndef I_NETWORK_BASE_H_DEFINED
 #define I_NETWORK_BASE_H_DEFINED
 
-#include "Engine.h"
-#include "Sockets.h"
-#include "Packet.hpp"
-#include "CriticalSection.h"
-
-struct PendingPacket
-{
-	Packet packet;
-	sockaddr_in target;
-	uint16 ackId;
-	float timer;
-	uint8 retryCount;
-	bool canResend;
-};
-
-struct ReceivedPacket
-{
-	Packet packet;
-	sockaddr_in sender;
-};
+#include "Network.h"
 
 class INetworkBase
 {
@@ -40,6 +21,7 @@ public:
 	void ClearReceived();
 	
 	void OnAckReceived(uint16 _ackId);
+	void SendAck(uint16 _ackId, sockaddr_in _target);
 	
 	virtual ~INetworkBase() = default;
 	
@@ -63,7 +45,6 @@ protected:
 	CriticalSection m_packetProtection;
 	
 	void TickAck(float _deltaTime);
-	void SendAck(uint16 _ackId, sockaddr_in _target);
 };
 
 #endif // !I_NETWORK_BASE_H_DEFINED

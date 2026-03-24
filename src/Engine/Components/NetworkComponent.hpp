@@ -1,7 +1,7 @@
 #ifndef NETWORK_COMPONENT_HPP_DEFINED
 #define NETWORK_COMPONENT_HPP_DEFINED
 
-#include "Engine.h"
+#include "../define.h"
 
 struct NetworkComponent
 {
@@ -9,4 +9,4 @@ struct NetworkComponent
 	bool dirty = false;
 };
 
-#endif // !NETWORK_COMPONENT_DEFINED
+#endif

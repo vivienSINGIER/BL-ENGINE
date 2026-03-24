@@ -1,5 +1,7 @@
 #include "INetworkBase.h"
 
+#include <stdexcept>
+
 INetworkBase::INetworkBase()
 {
     if (!SocketsMethods::Start())

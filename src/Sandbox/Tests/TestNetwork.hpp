@@ -9,21 +9,29 @@ class TestNetwork : public Test
 public:
     struct TestScript : public IScript
     {
-        
+        void Update(float _dt) override
+        {
+            if (InputManager::IsKeyPressed(K))
+            {
+                SceneManager::CreateScene("Test");
+            }
+
+            if (InputManager::IsKeyPressed(L))
+            {
+                SceneManager::SetCurrentScene("Test");
+            }
+        }
     };
     
     static void Run()
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
-        Scene* scene = SceneManager::GetSceneWithName("Default");
         EngineManager::GetInstance().HostServer();
         
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-        scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
-        scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
-        scene->world.RegisterSystem<NetworkSystem>(Phase::Update);
-
+        Scene* scene = SceneManager::SetCurrentScene("Default");
+        
+        EntityId e = scene->world.CreateEntity();
+        scene->world.AddScript<TestScript>(e);
         
         EngineManager::GetInstance().Run();
     }
