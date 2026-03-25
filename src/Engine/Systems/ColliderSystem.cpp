@@ -112,6 +112,21 @@ void ColliderSystem::ResetContactHolder()
 	m_contactHolder.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
+XMFLOAT3 ColliderSystem::OBBSupportPoint(OBB& obb, XMFLOAT3& dir)
+{
+	XMFLOAT3 result = obb.center;
+
+	float sx = (Dot(dir, obb.axes[0]) >= 0.0f) ? obb.halfExtents.x : -obb.halfExtents.x;
+	float sy = (Dot(dir, obb.axes[1]) >= 0.0f) ? obb.halfExtents.y : -obb.halfExtents.y;
+	float sz = (Dot(dir, obb.axes[2]) >= 0.0f) ? obb.halfExtents.z : -obb.halfExtents.z;
+
+	result = Add(result, Mul(obb.axes[0], sx));
+	result = Add(result, Mul(obb.axes[1], sy));
+	result = Add(result, Mul(obb.axes[2], sz));
+
+	return result;
+}
+
 float ColliderSystem::OBBRadius(OBB& obb, XMFLOAT3& axis)
 {
 	float result = 0.0f;
@@ -267,11 +282,16 @@ bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& 
 		return true;
 
 	XMFLOAT3 normal = Normalize(axes[minAxeIndex]);
+	XMFLOAT3 invNormal = Inverse(normal);
 	XMFLOAT3 centerDelta = Subtract(_boxB.obb.center, _boxA.obb.center);
 
 	if (Dot(centerDelta, normal) < 0.0f)
-		normal = Inverse(normal);
+		normal = invNormal;
 
+	XMFLOAT3 pointA = OBBSupportPoint(_boxA.obb, normal);
+	XMFLOAT3 pointB = OBBSupportPoint(_boxB.obb, invNormal);
+
+	m_contactHolder.point = Mul(Add(pointA, pointB), 0.5f);
 	m_contactHolder.normal = normal;
 	m_contactHolder.penetration = minDistance;
 
@@ -296,10 +316,11 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 	if (_sphereA.isTrigger || _sphereB.isTrigger) //Pas de calcul de contact si trigger
 		return true;
 
-	if (d2 < 1e-6f)
+	XMFLOAT3 normal = { 0, -1, 0 }; //Valeur par défaut arbitraire
+
+	if (d2 < 1e-6f) //Les centres sont presque au même endroit
 	{
-		//Normale arbitraire si les centres sont presque au même endroit
-		m_contactHolder.normal = { 0, -1, 0 };
+		m_contactHolder.normal = normal;
 
 		float penetration = radiusA + radiusB;
 		m_contactHolder.penetration = penetration;
@@ -312,6 +333,11 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 		float penetration = radiusA + radiusB - sqrt(d2);
 		m_contactHolder.penetration = penetration;
 	}
+
+	XMFLOAT3 pointA = Add(posA, Mul(normal, radiusA));
+	XMFLOAT3 pointB = Subtract(posB, Mul(normal, radiusB));
+	m_contactHolder.point = Mul(Add(pointA, pointB), 0.5f);
+
 	return true;
 }
 
@@ -350,6 +376,8 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 
 	if (d2 > radius2)
 		return false;
+
+	m_contactHolder.point = closest;
 
 	if (d2 < 1e-6f) //Cas particulier
 	{

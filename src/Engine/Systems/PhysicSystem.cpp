@@ -125,6 +125,8 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
     _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
 
+	CalculateTorque(_physicA, _physicB, _contact, normalImpulse);
+
     // Recalculer la vitesse relative après l'impulsion normale
     relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
 
@@ -139,7 +141,7 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
 
     float velocityTangent = Dot(relativeVelocity, tangent);
 
-    // Impulsion tangentielle idéale
+    // Impulsion tangente
     float impusleTangent = -velocityTangent / totalInvMass;
 
     float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
@@ -148,7 +150,7 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
     XMFLOAT3 frictionImpulse;
 
     // Friction statique / dynamique
-    if (std::abs(impusleTangent) < impulse * staticFriction)
+    if (abs(impusleTangent) < impulse * staticFriction)
     {
         // Friction statique : annule complètement le mouvement tangent
         frictionImpulse = Mul(tangent, impusleTangent);
@@ -161,4 +163,28 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
 
     _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
+}
+
+void PhysicSystem::CalculateTorque(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _nImpulse)
+{
+    TransformComponent& transformA = world->GetComponent<TransformComponent>(_contact.a);
+    TransformComponent& transformB = world->GetComponent<TransformComponent>(_contact.b);
+
+    XMFLOAT3 centerA = transformA.world.GetPosition();
+    XMFLOAT3 centerB = transformB.world.GetPosition();
+
+    XMFLOAT3 rA = Subtract(_contact.point, centerA);
+    XMFLOAT3 rB = Subtract(_contact.point, centerB);
+
+    XMFLOAT3 torqueA = Cross(rA, Inverse(_nImpulse));
+    XMFLOAT3 torqueB = Cross(rB, _nImpulse);
+
+	torqueA = Mul(torqueA, _physicA.inertieInverse);
+	torqueB = Mul(torqueB, _physicB.inertieInverse);
+
+    if (_physicA.rotation)
+        _physicA.angularVelocity = Add(_physicA.angularVelocity, torqueA);
+
+    if (_physicB.rotation)
+        _physicB.angularVelocity = Add(_physicB.angularVelocity, torqueB);
 }

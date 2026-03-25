@@ -23,6 +23,8 @@ private:
 	void ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
 	void ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
 
+	void CalculateTorque(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _nImpulse);
+
 	ContactManager* m_pContactManager = nullptr;
 };
 

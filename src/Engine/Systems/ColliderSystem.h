@@ -38,6 +38,7 @@ private:
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
 	bool CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere);
 
+	XMFLOAT3 OBBSupportPoint(OBB& obb, XMFLOAT3& dir);
 	float OBBRadius(OBB& obb, XMFLOAT3& axis);
 	bool OverlapOnAxis(OBB& obbA, OBB& obbB, XMFLOAT3& axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex);
 
