@@ -4,9 +4,10 @@
 #include "Scene.h"
 #include "Engine.h"
 
-void Scene::Init(String const& _name)
+void Scene::Init(String const& _name, uint32 _id)
 {
     m_name = _name;
+    m_id = _id;
 
     world.RegisterSystem<TransformSystem>(Phase::Update);
     world.RegisterSystem<MeshRendererSystem>(Phase::Render);

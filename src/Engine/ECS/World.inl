@@ -10,7 +10,7 @@
 template <typename T>
 T& World::AddComponent(EntityId _e, T const& _val)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't add component to dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
 
     return m_commandQueue.EmplaceAdd<T>(_e, _val);
 }
@@ -18,7 +18,7 @@ T& World::AddComponent(EntityId _e, T const& _val)
 template <typename T>
 void World::RemoveComponent(EntityId _e)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't remove component from dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
 
     m_commandQueue.EmplaceRemove<T>(_e);
 }
@@ -26,10 +26,10 @@ void World::RemoveComponent(EntityId _e)
 template <typename T>
 T& World::GetComponent(EntityId _e)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
 
     ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
     assert(src->mask.test(cid) && "Component not present");
@@ -41,10 +41,10 @@ T& World::GetComponent(EntityId _e)
 template <typename T>
 bool World::HasComponent(EntityId _e)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
 
     ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
     return src->mask.test(cid);
@@ -53,10 +53,10 @@ bool World::HasComponent(EntityId _e)
 template <typename T>
 void World::SetActiveComponent(EntityId _e, bool _value)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
 
     ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
     assert(src->mask.test(cid) && "Component not present");
@@ -67,10 +67,10 @@ void World::SetActiveComponent(EntityId _e, bool _value)
 template <typename T>
 bool World::IsActiveComponent(EntityId _e)
 {
-    assert(m_entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
 
     ComponentId cid = ComponentRegistry::Id<T>();
-    EntityRecord& rec = m_entityManager.GetRecord(_e);
+    EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
     assert(src->mask.test(cid) && "Component not present");

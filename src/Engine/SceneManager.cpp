@@ -44,13 +44,14 @@ Scene* SceneManager::CreateScene(String const& _name, int32 _id)
 		return GetSceneWithName(_name);
 	
 	Scene* pNewScene = new Scene();
-	pNewScene->Init(_name);
 
 	uint32 id;
 	if (_id == -1)
 		id = s_pSceneManager->m_scenes.size();
 	else
 		id = (uint32)_id;
+	
+	pNewScene->Init(_name, id);
 
 	s_pSceneManager->m_sceneIds[_name] = id;
 	s_pSceneManager->m_scenes.push_back(pNewScene);
@@ -61,7 +62,7 @@ Scene* SceneManager::CreateScene(String const& _name, int32 _id)
 
 		Packet p;
 		p.header.type = PacketType::AddScene;
-		p.addScene.sceneId = id;
+		p.header.sceneId = id;
 		p.addScene.nameSize = _name.size();
 		memcpy(p.addScene.name, _name.c_str(), _name.size());
 
@@ -105,7 +106,7 @@ void SceneManager::SendSetScenePacket(uint32 _id)
 
 	Packet p;
 	p.header.type = PacketType::SetScene;
-	p.setScene.sceneId = _id;
+	p.header.sceneId = _id;
 
 	pServer->SendGeneralReliablePacket(p);
 }

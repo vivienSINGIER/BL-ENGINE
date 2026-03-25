@@ -5,43 +5,60 @@ World::World()
     m_archetypeRegistry.SetWorld(this);
 }
 
-EntityId World::CreateEntity()
+Vector<EntityId> World::GetEntities()
 {
-    EntityId e = m_entityManager.Create();
+    Vector<EntityId> entities;
+    for (Archetype* archetype : m_archetypeRegistry.All())
+    {
+        for (EntityId id : archetype->entities)
+            entities.push_back(id);
+    }
+    return entities;
+}
+
+EntityId World::CreateEntity(EntityId _id, bool isCopied)
+{
+    EntityId e;
+    if (isCopied == true)
+        e = entityManager.Create(_id, true);
+    else
+        e = entityManager.Create();
 
     Archetype* root = m_archetypeRegistry.GetOrCreate(ComponentMask{});
-    EntityRecord& rec = m_entityManager.GetRecord(e);
+    EntityRecord& rec = entityManager.GetRecord(e);
     rec.archetype = root;
     rec.row = (uint32)root->entities.size();
 
     root->entities.push_back(e);
     root->storage.FinishPush();
 
+    m_commandQueue.EmplaceCreate(e);
+    
     return e;
 }
 
 void World::DestroyEntity(EntityId _entity)
 {
-    assert(m_entityManager.IsAlive(_entity) && "Destroying dead entity");
+    assert(entityManager.IsAlive(_entity) && "Destroying dead entity");
 
     m_commandQueue.EmplaceDestroy(_entity);
 }
 
 void World::SetActive(EntityId _entity)
 {
-    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = true;
 }
 
 void World::SetInactive(EntityId _entity)
 {
-    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = false;
 }
 
 bool World::IsActive(EntityId _entity)
 {
-    return m_entityManager.GetRecord(_entity).isActive;
+    return entityManager.GetRecord(_entity).isActive;
 }
 
 void World::Update(float _dt)
@@ -115,7 +132,7 @@ void World::RemoveFromArchetype(EntityId _e, EntityRecord& _rec)
     EntityId last = src->entities.back();
     if (last != _e)
     {
-        m_entityManager.GetRecord(last).row = srcRow;
+        entityManager.GetRecord(last).row = srcRow;
     }
 
     src->storage.SwapRemove(srcRow);

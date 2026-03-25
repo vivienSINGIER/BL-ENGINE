@@ -9,13 +9,14 @@ SceneType* SceneManager::CreateSceneType(String const& _name, int32 _id)
 	assert(_name.size() < 25 && "Scene name is too big");
 	
 	SceneType* pNewScene = new SceneType();
-	pNewScene->Init(_name);
 
 	uint32 id;
 	if (_id == -1)
 		id = s_pSceneManager->m_scenes.size();
 	else
 		id = (uint32)_id;
+	
+	pNewScene->Init(_name, id);
 
 	s_pSceneManager->m_sceneIds[_name] = id;
 	s_pSceneManager->m_scenes.push_back(pNewScene);
@@ -26,7 +27,7 @@ SceneType* SceneManager::CreateSceneType(String const& _name, int32 _id)
 
 		Packet p;
 		p.header.type = PacketType::AddScene;
-		p.addScene.sceneId = id;
+		p.header.sceneId = id;
 		p.addScene.nameSize = _name.size();
 		memcpy(p.addScene.name, _name.c_str(), _name.size());
 

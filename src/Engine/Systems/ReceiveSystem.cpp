@@ -1,6 +1,7 @@
 ﻿#include "ReceiveSystem.h"
 
 #include "EngineManager.h"
+#include "Scene.h"
 #include "SceneManager.h"
 #include "Network/Client.h"
 #include "Network/Server.h"
@@ -54,7 +55,7 @@ void ReceiveSystem::HandleClientReceive()
                     if (EngineManager::GetServer() != nullptr)
                         break;
 
-                    SceneManager::CreateScene(p.addScene.name, p.addScene.sceneId);
+                    SceneManager::CreateScene(p.addScene.name, p.header.sceneId);
                         
                     break;
                 }
@@ -65,9 +66,24 @@ void ReceiveSystem::HandleClientReceive()
                     if (EngineManager::GetServer() != nullptr)
                         break;
 
-                    SceneManager::SetCurrentScene(p.setScene.sceneId);
+                    SceneManager::SetCurrentScene(p.header.sceneId);
 
                     break;
+                }
+            case PacketType::Spawn:
+                {
+                    Scene* scene = SceneManager::GetCurrentScene();
+                    Server* server = EngineManager::GetServer();
+
+                    if (scene->world.entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                        break;
+                    
+                    m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+
+                    if (server != nullptr)
+                        break;
+
+                    scene->world.CreateEntity(p.header.entityId, true);
                 }
             default:
                 break;
@@ -95,7 +111,6 @@ void ReceiveSystem::HandleServerReceive()
                     
                     break;
                 }
-            
             case PacketType::Connect:
                 {
                     m_server->AddClient(addr);

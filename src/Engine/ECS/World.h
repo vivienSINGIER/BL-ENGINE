@@ -18,7 +18,11 @@ class World
 public:
     World();
 
-    EntityId CreateEntity();
+    EntityManager entityManager;
+
+    Vector<EntityId> GetEntities();
+    
+    EntityId CreateEntity(EntityId _id = 0, bool isCopied = false);
     void DestroyEntity(EntityId _entity);
     
     void SetActive(EntityId _entity);
@@ -49,7 +53,6 @@ public:
     void OnArchetypeCreated(Archetype* _arch);
 
 private:
-    EntityManager m_entityManager;
     ArchetypeRegistry m_archetypeRegistry;
     SystemScheduler m_systemScheduler;
     Vector<QueryBase*> m_queries;

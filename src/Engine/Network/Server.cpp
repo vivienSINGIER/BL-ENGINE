@@ -106,17 +106,29 @@ void Server::QueueSyncPackets(const sockaddr_in& _addr)
 	{
 		Packet p;
 		p.header.type = PacketType::AddScene;
-		p.addScene.sceneId = id;
+		p.header.sceneId = id;
 		p.addScene.nameSize = name.size();
 		memcpy(p.addScene.name, name.c_str(), name.size());
 
 		SendReliablePacket(p, _addr);
+
+		Scene* s = SceneManager::GetSceneWithId(id);
+		
+		for (EntityId e : s->world.GetEntities())
+		{
+			Packet sp;
+			sp.header.type = PacketType::Spawn;
+			sp.header.sceneId = id;
+			sp.header.entityId = e;
+
+			SendReliablePacket(sp, _addr);
+		}
 	}
 
 	uint32 currSceneId = sceneInfo[SceneManager::GetCurrentScene()->GetName()];
 	Packet setSceneP;
 	setSceneP.header.type = PacketType::SetScene;
-	setSceneP.addScene.sceneId = currSceneId;
+	setSceneP.header.sceneId = currSceneId;
 	SendReliablePacket(setSceneP, _addr);
 }
 

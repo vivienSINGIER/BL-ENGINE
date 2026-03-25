@@ -100,4 +100,21 @@ void EngineManager::HostServer(int _port)
     m_pClient->SendReliablePacket(packet, m_pServer->GetSocket()->GetAddr());
 }
 
+void EngineManager::Connect(String const& _ip, int _port)
+{
+    sockaddr_in target;
+    if ( inet_pton(AF_INET, _ip.c_str(), &target.sin_addr)<=0 )
+    {
+        assert(false && "Unvalid Server address");
+    }
+    target.sin_family = AF_INET;
+    target.sin_port = htons(_port);
+    
+    Packet packet;
+    packet.header.type = PacketType::Connect;
+    packet.connect.addr = target;
+    
+    m_pClient->SendReliablePacket(packet, target);
+}
+
 #endif

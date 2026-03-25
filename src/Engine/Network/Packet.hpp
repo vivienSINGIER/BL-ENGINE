@@ -33,6 +33,7 @@ struct PacketHeader
 	uint16      ackId;
 	PacketType  type;
 	EntityId    entityId;
+	uint32      sceneId;
 };
 
 struct ConnectPacket
@@ -44,15 +45,8 @@ struct ConnectPacket
 struct AddScenePacket
 {
 	PacketHeader header;
-	uint32 sceneId;
 	uint8 nameSize;
 	char name[25];
-};
-
-struct SetScenePacket
-{
-	PacketHeader header;
-	uint32 sceneId;
 };
 
 struct ComponentEntry
@@ -60,6 +54,18 @@ struct ComponentEntry
 	uint32	ComponentId;
 	uint32	size;
 	Byte	data[1024];
+};
+
+struct AddComponentPacket
+{
+	PacketHeader header;
+	ComponentEntry entry;
+};
+
+struct RemoveComponentPacket
+{
+	PacketHeader header;
+	ComponentId cid;
 };
 
 struct StatePacket
@@ -98,7 +104,6 @@ struct Packet
 		PacketHeader    header;
 		ConnectPacket   connect;
 		AddScenePacket  addScene;
-		SetScenePacket  setScene;
 		StatePacket     state;
 		InputPacket     input;
 		ChatPacket      chat;
@@ -110,12 +115,13 @@ struct Packet
 	{
 		switch (header.type)
 		{
-		case PacketType::Spawn:
-		case PacketType::Update:
+		case PacketType::Spawn:				return sizeof(PacketHeader);
+		case PacketType::Delete:			return sizeof(PacketHeader);
+		case PacketType::Update:			
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
-		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint32) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
-		case PacketType::SetScene:			return sizeof(SetScenePacket);
+		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
+		case PacketType::SetScene:			return sizeof(PacketHeader);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;

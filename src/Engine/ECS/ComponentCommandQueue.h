@@ -12,6 +12,8 @@ class ComponentCommandQueue
 {
 public:
 
+    void EmplaceCreate(EntityId _e);
+    
     template <typename T>
     T& EmplaceAdd(EntityId _e, T const& _val = {});
     
@@ -38,6 +40,7 @@ private:
     uint8 m_componentSideBuffer[BUFFER_SIZE] = {};
     uint64 m_offset = 0;
 
+    Vector<Command> m_toCreate;
     Vector<Command> m_toAdd;
     Vector<Command> m_toRemove;
     Vector<Command> m_toDestroy;

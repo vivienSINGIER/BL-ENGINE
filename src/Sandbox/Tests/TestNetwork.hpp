@@ -11,27 +11,28 @@ public:
     {
         void Update(float _dt) override
         {
-            if (InputManager::IsKeyPressed(K))
-            {
-                SceneManager::CreateScene("Test");
-            }
-
-            if (InputManager::IsKeyPressed(L))
-            {
-                SceneManager::SetCurrentScene("Test");
-            }
+            
         }
     };
     
-    static void Run()
+    static void Run(LPSTR lpCmdLine = nullptr)
     {
+        String args = lpCmdLine;
+
+        bool isHost = args.find("--host") != String::npos;
+
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
-        EngineManager::GetInstance().HostServer();
+        if (isHost)
+        {
+            EngineManager::GetInstance().HostServer();
         
-        Scene* scene = SceneManager::SetCurrentScene("Default");
+            Scene* scene = SceneManager::SetCurrentScene("Default");
         
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddScript<TestScript>(e);
+            EntityId e = scene->world.CreateEntity();
+            scene->world.AddScript<TestScript>(e);
+        }
+        else
+            EngineManager::GetInstance().Connect("127.0.0.1", 1888);
         
         EngineManager::GetInstance().Run();
     }
