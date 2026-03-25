@@ -110,17 +110,55 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
         return;
 
     XMFLOAT3 relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
-    float vn = Dot(relativeVelocity, _contact.normal);
+    float velocityNormal = Dot(relativeVelocity, _contact.normal);
 
     // Déjà en train de s'éloigner
-    if (vn >= 0.0f)
+    if (velocityNormal >= 0.0f)
         return;
 
     float e = Min(_physicA.restitution, _physicB.restitution);
 
-    float j = -(1.0f + e) * vn / totalInvMass;
-    XMFLOAT3 impulse = Mul(_contact.normal, j);
+    // Impulsion normale
+    float impulse = -(1.0f + e) * velocityNormal / totalInvMass;
+    XMFLOAT3 normalImpulse = Mul(_contact.normal, impulse);
 
-    _physicA.velocity = Subtract(_physicA.velocity, Mul(impulse, invMassA));
-    _physicB.velocity = Add(_physicB.velocity, Mul(impulse, invMassB));
+    _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
+    _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
+
+    // Recalculer la vitesse relative après l'impulsion normale
+    relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
+
+    // Tangente
+    XMFLOAT3 tangent = Subtract(relativeVelocity, Mul(_contact.normal, Dot(relativeVelocity, _contact.normal)));
+    float tangentLenSq = Dot(tangent, tangent);
+
+	if (tangentLenSq < 1e-6f) //Si la tangente est trop petite
+        return;
+
+    tangent = Normalize(tangent);
+
+    float velocityTangent = Dot(relativeVelocity, tangent);
+
+    // Impulsion tangentielle idéale
+    float impusleTangent = -velocityTangent / totalInvMass;
+
+    float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
+    float dynamicFriction = 0.5f * (_physicA.dynamicFriction + _physicB.dynamicFriction);
+
+    XMFLOAT3 frictionImpulse;
+
+    // Friction statique / dynamique
+    if (std::abs(impusleTangent) < impulse * staticFriction)
+    {
+        // Friction statique : annule complètement le mouvement tangent
+        frictionImpulse = Mul(tangent, impusleTangent);
+    }
+    else
+    {
+        // Friction dynamique : limite l'impulsion tangentielle
+        frictionImpulse = Mul(tangent, -impulse * dynamicFriction);
+    }
+
+    _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
+    _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
 }

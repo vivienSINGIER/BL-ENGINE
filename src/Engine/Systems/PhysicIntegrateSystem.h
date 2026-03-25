@@ -13,6 +13,7 @@ public:
 	void OnEndUpdate(float _dt) override;
 
 private:
+	float m_airDrag = 0.3f;
 	XMFLOAT3 m_gravityAccel = XMFLOAT3(0.0f, -9.81f, 0.0f);
 };
 
