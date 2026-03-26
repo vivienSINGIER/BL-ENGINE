@@ -15,8 +15,8 @@ struct PhysicComponent
     float mass = 1.0f;
 	float massInverse = 1.0f;
 	float restitution = 0.5f;
-    float staticFriction = 0.6f;
-    float dynamicFriction = 0.4f;
+    float staticFriction = 0.5f;
+    float dynamicFriction = 0.3f;
 
     XMFLOAT3 velocity = { 0,0,0 };
     XMFLOAT3 acceleration = { 0,0,0 };
@@ -57,6 +57,19 @@ struct PhysicComponent
         mass = _mass;
 		massInverse = (mass > 0.0f) ? 1 / mass : 0.0f;
     }
+
+    inline void SetStatic()
+    {
+        type = BodyType::Static;
+        massInverse = 0.0f;
+		inertie = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        inertieInverse = XMFLOAT3(0.0f, 0.0f, 0.0f);
+    }
+
+    inline void SetDynamic()
+    {
+		type = BodyType::Dynamic;
+	}
 };
 
 #endif // !PHYSIC_COMPONENT_HPP_DEFINED

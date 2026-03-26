@@ -78,10 +78,7 @@ public:
         TransformComponent& tGround = scene->world.AddComponent<TransformComponent>(ground);
         scene->world.AddComponent<ColliderComponent>(ground);
         PhysicComponent& physicGround = scene->world.AddComponent<PhysicComponent>(ground);
-		physicGround.massInverse = 0.0f;
-		physicGround.staticFriction = 0.8f;
-		physicGround.dynamicFriction = 0.6f;
-		physicGround.restitution = 0.0f;
+		physicGround.SetStatic();
         MeshRenderer& mGround = scene->world.AddComponent<MeshRenderer>(ground);
         mGround.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         mGround.material = mat;
@@ -94,7 +91,7 @@ public:
         PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e);
         physic.type = BodyType::Dynamic;
 		physic.SetMass(1.0f);
-        physic.useGravity = false;
+        physic.useGravity = true;
         physic.rotation = true;
         MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
@@ -106,12 +103,12 @@ public:
         PhysicComponent& physic1 = scene->world.AddComponent<PhysicComponent>(e1);
         physic1.type = BodyType::Dynamic;
         physic1.SetMass(1.0f);
-		physic1.velocity = XMFLOAT3(-3.0f, 0.0f, 0.0f);
+		physic1.velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		physic1.useGravity = true;
 		physic1.rotation = true;
 		MeshRenderer& m1 = scene->world.AddComponent<MeshRenderer>(e1);
 		m1.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        t1.local.SetPosition(XMFLOAT3(5.0f, 0.0f, 0.5f));
+        t1.local.SetPosition(XMFLOAT3(-5.0f, 0.0f, 0.5f));
         scene->world.AddScript<MoveScript>(e1);
 
         EntityId e2 = scene->world.CreateEntity();
