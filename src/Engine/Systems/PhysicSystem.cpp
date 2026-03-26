@@ -5,8 +5,14 @@
 namespace
 {
     constexpr float kPenetrationSlop = 0.001f;
-    constexpr float kPenetrationPercent = 0.2f;
+    constexpr float kPenetrationPercent = 0.6f;
+
     constexpr float kTangentEpsilonSq = 1e-6f;
+    constexpr float kRestitutionThreshold = 0.2f;
+    constexpr float kRestingNormalVelocityThreshold = 0.05f;
+    constexpr float kRestingTangentVelocityThreshold = 0.01f;
+
+    constexpr int kSolverIterations = 4;
 }
 
 void PhysicSystem::OnStartUpdate(float _dt)
@@ -23,7 +29,7 @@ void PhysicSystem::OnEndUpdate(float _dt)
         return;
 
     ResolveAllOverlaps();
-    ResolveAllImpulses(4);
+    ResolveAllImpulses(kSolverIterations);
 }
 
 void PhysicSystem::ResolveAllOverlaps()
@@ -39,6 +45,8 @@ void PhysicSystem::ResolveAllOverlaps()
         PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
         PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
+        UpdateSupportContact(physicA, physicB, contact);
+		WakeBodiesFromContact(physicA, physicB, contact);
         ResolveOverlap(physicA, physicB, contact);
     }
 }
@@ -58,11 +66,14 @@ void PhysicSystem::ResolveAllImpulses(int _iterations)
             PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
             PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
+            if (physicA.isSleeping && physicB.isSleeping)
+                continue;
+
             int pointCount = (contact.pointCount > 0) ? contact.pointCount : 1;
 
-            for (int i = 0; i < pointCount; ++i)
+            for (int i = 0; i < contact.pointCount; ++i)
             {
-                XMFLOAT3 point = (contact.pointCount > 0) ? contact.points[i].position : contact.points[0].position;
+                XMFLOAT3 point = contact.points[i].position;
                 ResolveImpulseAtPoint(physicA, physicB, contact, point);
             }
         }
@@ -106,19 +117,14 @@ void PhysicSystem::ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _p
     TransformComponent& transformB = world->GetComponent<TransformComponent>(_contact.b);
 
     if (moveAmountA > 0.0f)
-    {
-        XMFLOAT3 moveA = Mul(_contact.normal, -moveAmountA);
-        transformA.local.Move(moveA);
-    }
+        transformA.local.Move(Mul(_contact.normal, -moveAmountA));
 
     if (moveAmountB > 0.0f)
-    {
-        XMFLOAT3 moveB = Mul(_contact.normal, moveAmountB);
-        transformB.local.Move(moveB);
-    }
+        transformB.local.Move(Mul(_contact.normal, moveAmountB));
 }
 
-void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point)
+void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB,
+    Contact& _contact, const XMFLOAT3& _point)
 {
     float invMassA = _physicA.massInverse;
     float invMassB = _physicB.massInverse;
@@ -126,167 +132,229 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
     if (invMassA + invMassB <= 0.0f)
         return;
 
-    XMFLOAT3 centerA = GetCenterWorld(_contact.a);
-    XMFLOAT3 centerB = GetCenterWorld(_contact.b);
+    int pointCount = (_contact.pointCount > 0) ? _contact.pointCount : 1;
 
-    XMFLOAT3 rA = Subtract(_point, centerA);
-    XMFLOAT3 rB = Subtract(_point, centerB);
+    ContactPointContext ctx = BuildContactPointContext(_physicA, _physicB, _contact.a, _contact.b, _point);
 
-    // Vitesse complète au point de contact
-    XMFLOAT3 velocityAtPointA = GetVelocityAtPoint(_physicA, _contact.a, _point);
-    XMFLOAT3 velocityAtPointB = GetVelocityAtPoint(_physicB, _contact.b, _point);
-    XMFLOAT3 relativeVelocity = Subtract(velocityAtPointB, velocityAtPointA);
-
-    float velocityNormal = Dot(relativeVelocity, _contact.normal);
+    float velocityNormal = Dot(ctx.relativeVelocity, _contact.normal);
     if (velocityNormal >= 0.0f)
         return;
 
-    int pointCount = (_contact.pointCount > 0) ? _contact.pointCount : 1;
-    float restitution = Min(_physicA.restitution, _physicB.restitution);
-
-    // Masse effective sur la normale
-    float normalMass =
-        invMassA +
-        invMassB +
-        ComputeAngularEffectiveMassTerm(rA, _contact.normal, _physicA.inertieInverse) +
-        ComputeAngularEffectiveMassTerm(rB, _contact.normal, _physicB.inertieInverse);
-
-    if (normalMass <= 0.0f)
+    // -----------------------------
+    // Impulsion normale
+    // -----------------------------
+    float normalImpulseScalar = ComputeNormalImpulseScalar(_physicA, _physicB, _contact, ctx, pointCount);
+    if (normalImpulseScalar <= 0.0f)
         return;
-
-    float normalImpulseScalar = -(1.0f + restitution) * velocityNormal / normalMass;
-    normalImpulseScalar /= static_cast<float>(pointCount);
 
     XMFLOAT3 normalImpulse = Mul(_contact.normal, normalImpulseScalar);
 
-    // Impulsion linéaire
     _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
 
-    // Impulsion angulaire liée à la normale
-    if (_physicA.rotation)
-    {
-        XMFLOAT3 nomalImpulseInverse = Inverse(normalImpulse);
-		XMFLOAT3 value = Cross(rA, nomalImpulseInverse);
-        XMFLOAT3 deltaAngularA = ApplyInertiaInverse(value, _physicA.inertieInverse);
-        _physicA.angularVelocity = Add(_physicA.angularVelocity, deltaAngularA);
-    }
+    // -----------------------------
+    // Recalcul au point après normale
+    // -----------------------------
+    ctx = BuildContactPointContext(_physicA, _physicB, _contact.a, _contact.b, _point);
 
-    if (_physicB.rotation)
-    {
-        XMFLOAT3 value = Cross(rB, normalImpulse);
-        XMFLOAT3 deltaAngularB = ApplyInertiaInverse(value, _physicB.inertieInverse);
-        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
-    }
+    float postNormalVelocity = Dot(ctx.relativeVelocity, _contact.normal);
+    XMFLOAT3 tangent = ComputeTangent(ctx.relativeVelocity, _contact.normal);
 
-    // Recalcul de la vitesse relative après impulsion normale
-    velocityAtPointA = GetVelocityAtPoint(_physicA, _contact.a, _point);
-    velocityAtPointB = GetVelocityAtPoint(_physicB, _contact.b, _point);
-    relativeVelocity = Subtract(velocityAtPointB, velocityAtPointA);
-
-    XMFLOAT3 tangent = Subtract(relativeVelocity,
-        Mul(_contact.normal, Dot(relativeVelocity, _contact.normal)));
-
-    const float tangentLenSq = Dot(tangent, tangent);
-    if (tangentLenSq < kTangentEpsilonSq)
+    if (Dot(tangent, tangent) < kTangentEpsilonSq)
         return;
 
     tangent = Normalize(tangent);
 
-    const float velocityTangent = Dot(relativeVelocity, tangent);
+    float velocityTangent = Dot(ctx.relativeVelocity, tangent);
 
-    float tangentMass =
-        invMassA +
-        invMassB +
-        ComputeAngularEffectiveMassTerm(rA, tangent, _physicA.inertieInverse) +
-        ComputeAngularEffectiveMassTerm(rB, tangent, _physicB.inertieInverse);
+    // Contact quasi au repos : on ignore les micro-frictions parasites
+    if (abs(postNormalVelocity) < kRestingNormalVelocityThreshold && abs(velocityTangent) < kRestingTangentVelocityThreshold)
+    {
+        return;
+    }
 
-    if (tangentMass <= 0.0f)
+    // -----------------------------
+    // Impulsion tangentielle
+    // -----------------------------
+    float tangentImpulseScalar = ComputeTangentImpulseScalar(_physicA, _physicB, _contact, ctx, tangent, pointCount);
+    if (tangentImpulseScalar == 0.0f)
         return;
 
-    float tangentImpulseScalar = -velocityTangent / tangentMass;
-    tangentImpulseScalar /= static_cast<float>(pointCount);
-
-    const float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
-    const float dynamicFriction = 0.5f * (_physicA.dynamicFriction + _physicB.dynamicFriction);
+    float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
+    float dynamicFriction = 0.5f * (_physicA.dynamicFriction + _physicB.dynamicFriction);
 
     XMFLOAT3 frictionImpulse;
 
     if (abs(tangentImpulseScalar) < normalImpulseScalar * staticFriction)
     {
+        // friction statique
         frictionImpulse = Mul(tangent, tangentImpulseScalar);
     }
     else
     {
+        // friction dynamique
         frictionImpulse = Mul(tangent, -normalImpulseScalar * dynamicFriction);
     }
 
-    // Impulsion linéaire de friction
     _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
-
-    // Impulsion angulaire de friction
-    if (_physicA.rotation)
-    {
-		XMFLOAT3 value = Cross(rA, Inverse(frictionImpulse));
-        XMFLOAT3 deltaAngularA = ApplyInertiaInverse(value, _physicA.inertieInverse);
-        _physicA.angularVelocity = Add(_physicA.angularVelocity, deltaAngularA);
-    }
-
-    if (_physicB.rotation)
-    {
-		XMFLOAT3 value = Cross(rB, frictionImpulse);
-        XMFLOAT3 deltaAngularB = ApplyInertiaInverse(value, _physicB.inertieInverse);
-        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
-    }
 }
 
-void PhysicSystem::ApplyAngularImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point, XMFLOAT3& _impulse)
+PhysicSystem::ContactPointContext PhysicSystem::BuildContactPointContext(PhysicComponent& _physicA, PhysicComponent& _physicB,
+    EntityId _entityA, EntityId _entityB, const XMFLOAT3& _point) const
 {
-    XMFLOAT3 centerA = GetCenterWorld(_contact.a);
-    XMFLOAT3 centerB = GetCenterWorld(_contact.b);
+    ContactPointContext ctx;
+    ctx.point = _point;
 
-    XMFLOAT3 rA = Subtract(_point, centerA);
-    XMFLOAT3 rB = Subtract(_point, centerB);
+    ctx.centerA = GetCenter(_entityA);
+    ctx.centerB = GetCenter(_entityB);
 
-    XMFLOAT3 torqueA = Mul(Cross(rA, Inverse(_impulse)), _physicA.inertieInverse);
-    XMFLOAT3 torqueB = Mul(Cross(rB, _impulse), _physicB.inertieInverse);
+    ctx.rA = Subtract(_point, ctx.centerA);
+    ctx.rB = Subtract(_point, ctx.centerB);
 
-    if (_physicA.rotation)
-        _physicA.angularVelocity = Add(_physicA.angularVelocity, torqueA);
+    ctx.velocityAtPointA = Add(_physicA.velocity, Cross(_physicA.angularVelocity, ctx.rA));
+    ctx.velocityAtPointB = Add(_physicB.velocity, Cross(_physicB.angularVelocity, ctx.rB));
 
-    if (_physicB.rotation)
-        _physicB.angularVelocity = Add(_physicB.angularVelocity, torqueB);
+    ctx.relativeVelocity = Subtract(ctx.velocityAtPointB, ctx.velocityAtPointA);
+
+    return ctx;
 }
 
-XMFLOAT3 PhysicSystem::ApplyInertiaInverse(XMFLOAT3& v, XMFLOAT3& inertiaInverse)
+float PhysicSystem::ComputeNormalImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
+    const Contact& _contact, const ContactPointContext& _ctx, int _pointCount) const
+{
+    float velocityNormal = Dot(_ctx.relativeVelocity, _contact.normal);
+
+    float restitution = Min(_physicA.restitution, _physicB.restitution);
+    if (abs(velocityNormal) < kRestitutionThreshold)
+        restitution = 0.0f;
+
+    float invMassA = _physicA.massInverse;
+    float invMassB = _physicB.massInverse;
+
+    float normalMass =
+        invMassA +
+        invMassB +
+        ComputeAngularEffectiveMassTerm(_ctx.rA, _contact.normal, _physicA.inertieInverse) +
+        ComputeAngularEffectiveMassTerm(_ctx.rB, _contact.normal, _physicB.inertieInverse);
+
+    if (normalMass <= 0.0f)
+        return 0.0f;
+
+    float impulse = -(1.0f + restitution) * velocityNormal / normalMass;
+    impulse /= (float)_pointCount;
+
+    return impulse;
+}
+
+float PhysicSystem::ComputeTangentImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
+    const Contact& _contact, const ContactPointContext& _ctx, const XMFLOAT3& _tangent, int _pointCount) const
+{
+    float velocityTangent = Dot(_ctx.relativeVelocity, _tangent);
+
+    float invMassA = _physicA.massInverse;
+    float invMassB = _physicB.massInverse;
+
+    float tangentMass =
+        invMassA +
+        invMassB +
+        ComputeAngularEffectiveMassTerm(_ctx.rA, _tangent, _physicA.inertieInverse) +
+        ComputeAngularEffectiveMassTerm(_ctx.rB, _tangent, _physicB.inertieInverse);
+
+    if (tangentMass <= 0.0f)
+        return 0.0f;
+
+    float impulse = -velocityTangent / tangentMass;
+    impulse /= (float)_pointCount;
+
+    return impulse;
+}
+
+XMFLOAT3 PhysicSystem::ComputeTangent(const XMFLOAT3& _relativeVelocity, const XMFLOAT3& _normal) const
+{
+    return Subtract(_relativeVelocity, Mul(_normal, Dot(_relativeVelocity, _normal)));
+}
+
+XMFLOAT3 PhysicSystem::ApplyInertiaInverse(const XMFLOAT3& _v, const XMFLOAT3& _inertiaInverse) const
 {
     return
     {
-        v.x * inertiaInverse.x,
-        v.y * inertiaInverse.y,
-        v.z * inertiaInverse.z
+        _v.x * _inertiaInverse.x,
+        _v.y * _inertiaInverse.y,
+        _v.z * _inertiaInverse.z
     };
 }
 
-float PhysicSystem::ComputeAngularEffectiveMassTerm(XMFLOAT3& r, XMFLOAT3& axis, XMFLOAT3& inertiaInverse)
+float PhysicSystem::ComputeAngularEffectiveMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const XMFLOAT3& _inertiaInverse) const
 {
-    XMFLOAT3 rxn = Cross(r, axis);
-    XMFLOAT3 i_rxn = ApplyInertiaInverse(rxn, inertiaInverse);
-    XMFLOAT3 crossTerm = Cross(i_rxn, r);
-    return Dot(crossTerm, axis);
+    XMFLOAT3 rxn = Cross(_r, _axis);
+    XMFLOAT3 i_rxn = ApplyInertiaInverse(rxn, _inertiaInverse);
+    XMFLOAT3 crossTerm = Cross(i_rxn, _r);
+    return Dot(crossTerm, _axis);
 }
 
-XMFLOAT3 PhysicSystem::GetCenterWorld(EntityId _e) 
+XMFLOAT3 PhysicSystem::GetCenter(EntityId _e) const
 {
     TransformComponent& transform = world->GetComponent<TransformComponent>(_e);
-    return transform.world.GetPosition();
+    return transform.local.GetPosition();
 }
 
-XMFLOAT3 PhysicSystem::GetVelocityAtPoint(PhysicComponent& _physic, EntityId _e, XMFLOAT3& _point)
+XMFLOAT3 PhysicSystem::GetVelocityAtPoint(const PhysicComponent& _physic, EntityId _e, const XMFLOAT3& _point) const
 {
-    XMFLOAT3 center = GetCenterWorld(_e);
+    XMFLOAT3 center = GetCenter(_e);
     XMFLOAT3 r = Subtract(_point, center);
     XMFLOAT3 angularContribution = Cross(_physic.angularVelocity, r);
     return Add(_physic.velocity, angularContribution);
+}
+
+void PhysicSystem::WakeBodiesFromContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+{
+    // Gestion support
+    if (_contact.normal.y < -0.5f)
+    {
+        _physicA.hasSupportContact = true;
+        _physicA.supportNormal = Inverse(_contact.normal);
+    }
+
+    if (_contact.normal.y > 0.5f)
+    {
+        _physicB.hasSupportContact = true;
+        _physicB.supportNormal = _contact.normal;
+    }
+
+    // Réveil uniquement sur impact significatif
+    XMFLOAT3 relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
+    float velocityNormal = Dot(relativeVelocity, _contact.normal);
+
+    // si velocityNormal < 0 -> ils se rapprochent
+    float wakeImpactThreshold = 0.3f;
+
+    if (velocityNormal < -wakeImpactThreshold)
+    {
+        _physicA.WakeUp();
+        _physicB.WakeUp();
+    }
+}
+
+void PhysicSystem::UpdateSupportContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+{
+    // contact.normal = A -> B
+    // direction pour sortir A = -normal
+    // direction pour sortir B = +normal
+
+    XMFLOAT3 normalForA = Inverse(_contact.normal);
+    XMFLOAT3 normalForB = _contact.normal;
+
+    // Un support est un contact dont la normale de sortie pointe suffisamment vers le haut
+    if (normalForA.y > 0.5f)
+    {
+        _physicA.hasSupportContact = true;
+        _physicA.supportNormal = normalForA;
+    }
+
+    if (normalForB.y > 0.5f)
+    {
+        _physicB.hasSupportContact = true;
+        _physicB.supportNormal = normalForB;
+    }
 }

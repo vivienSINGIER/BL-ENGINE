@@ -1,4 +1,12 @@
 #include "PhysicIntegrateSystem.h"
+#include <iostream>
+
+namespace
+{
+    constexpr float kSleepLinearThreshold = 0.05f;
+    constexpr float kSleepAngularThreshold = 0.05f;
+	constexpr float kSleepTimeThreshold = 0.5f;
+}
 
 void PhysicIntegrateSystem::OnStartUpdate(float _dt)
 {
@@ -8,13 +16,60 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
 {
     if (_physic.type == BodyType::Static)
         return;
+	if (_physic.isSleeping)
+		return;
 
     _transform.local.Move(IntegrateVelocity(_physic, _dt));
 
-    XMFLOAT3 deltaAngle = IntegrateTorque(_physic, _dt);
-	UpdateQuaternion(_transform, deltaAngle);
+    if (_collider.type == ColliderType::Box)
+        BoxInertie(_physic, _collider);
+    else
+        SphereInertie(_physic, _collider);
 
-	_collider.type == ColliderType::Box ? BoxInertie(_physic, _collider) : SphereInertie(_physic, _collider);
+    XMFLOAT3 deltaAngle = IntegrateTorque(_physic, _dt);
+    UpdateQuaternion(_transform, deltaAngle);
+
+    // Sleep logic
+    XMFLOAT3 velocityForSleep = _physic.velocity;
+
+    if (_physic.hasSupportContact)
+    {
+        XMFLOAT3 n = Normalize(_physic.supportNormal);
+        float vn = Dot(velocityForSleep, n);
+
+        velocityForSleep = Subtract(velocityForSleep, Mul(n, vn));
+
+        if (abs(vn) < 0.1f)
+            _physic.velocity = Subtract(_physic.velocity, Mul(n, vn));
+    }
+
+    float linearSq = NormSquared(velocityForSleep);
+    float angularSq = NormSquared(_physic.angularVelocity);
+
+    float linearThresholdSq = kSleepLinearThreshold * kSleepLinearThreshold;
+    float angularThresholdSq = kSleepAngularThreshold * kSleepAngularThreshold;
+
+    bool lowMotion =
+        linearSq < linearThresholdSq &&
+        angularSq < angularThresholdSq;
+
+    if (lowMotion && _physic.hasSupportContact)
+    {
+        _physic.sleepTimer += _dt;
+
+        if (_physic.sleepTimer >= kSleepTimeThreshold)
+        {
+            std::cout << "Entity " << _e << " is sleeping." << std::endl;
+            _physic.Sleep();
+        }
+    }
+    else
+    {
+        _physic.sleepTimer = 0.0f;
+    }
+
+    _physic.hasSupportContact = false;
+	_physic.supportNormal = XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
 void PhysicIntegrateSystem::OnEndUpdate(float _dt)
