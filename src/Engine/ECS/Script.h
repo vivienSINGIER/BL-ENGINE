@@ -1,8 +1,9 @@
-#ifndef SCRIPT_HPP_DEFINED
-#define SCRIPT_HPP_DEFINED
+#ifndef SCRIPT_H_DEFINED
+#define SCRIPT_H_DEFINED
 
 #include "define.h"
-#include "World.h"
+
+class World;
 
 struct ScriptRegistry
 {
@@ -41,10 +42,10 @@ struct IScript
 
     virtual ~IScript() = default;
 
-    template<typename T> T&     AddComponent() { return world->AddComponent<T>(entity); }
-    template<typename T> void   RemoveComponent() { world->RemoveComponent<T>(entity); }
-    template<typename T> T&     GetComponent() { return world->GetComponent<T>(entity); }
-    template<typename T> bool   HasComponent() { return world->HasComponent<T>(entity); }
+    template<typename T> T&     AddComponent();
+    template<typename T> void   RemoveComponent();
+    template<typename T> T&     GetComponent();
+    template<typename T> bool   HasComponent();
     
 
 private:
@@ -53,5 +54,7 @@ private:
     template <typename T>
     friend struct ScriptSystem;
 };
+
+#include "Script.inl"
 
 #endif

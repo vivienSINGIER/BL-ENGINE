@@ -28,8 +28,8 @@ public:
         
             Scene* scene = SceneManager::SetCurrentScene("Default");
         
-            EntityId e = scene->world.CreateEntity();
-            scene->world.AddScript<TestScript>(e);
+            EntityId e = scene->world->CreateEntity();
+            scene->world->AddScript<TestScript>(e);
         }
         else
             EngineManager::GetInstance().Connect("127.0.0.1", 1888);

@@ -1,7 +1,7 @@
 ﻿#ifndef SEND_SYSTEM_H_DEFINED
 #define SEND_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "../Components/NetworkComponent.hpp"
 
 class Server;

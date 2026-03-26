@@ -7,7 +7,7 @@ using namespace DirectX;
 
 #include "define.h"
 
-enum DIRTY_FLAG : uint32
+enum class DIRTY_FLAG : uint32
 {
     WORLD =       0b00001,
     INVERSE =     0b00010,

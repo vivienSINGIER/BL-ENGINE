@@ -32,23 +32,20 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-        scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
 
-        EntityId e1 = scene->world.CreateEntity();
-        TransformComponent& t1 = scene->world.AddComponent<TransformComponent>(e1);
+        EntityId e1 = scene->world->CreateEntity();
+        TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
         t1.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
 
-        CameraComponent& cam = scene->world.AddComponent<CameraComponent>(e1);
+        CameraComponent& cam = scene->world->AddComponent<CameraComponent>(e1);
         cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
         cam.isMainCamera = true;
-        scene->world.AddScript<TestScript>(e1);
+        scene->world->AddScript<TestScript>(e1);
         
         EngineManager::GetInstance().Run();
     }

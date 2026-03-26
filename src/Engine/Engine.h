@@ -3,9 +3,9 @@
 
 // -------------- ECS ---------------
 #include "ECS/World.h"
-#include "ECS/ISystem.hpp"
+#include "ECS/ISystem.h"
 #include "ECS/EntityManager.h"
-#include "ECS/Script.hpp"
+#include "ECS/Script.h"
 
 // ------------- ENGINE -------------
 #include "EngineManager.h"

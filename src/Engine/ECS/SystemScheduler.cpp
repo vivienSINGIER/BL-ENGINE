@@ -1,8 +1,20 @@
 #include "SystemScheduler.h"
 
 #include "EngineManager.h"
-#include "ISystem.hpp"
+#include "ISystem.h"
 #include "Generic/Base/Window.h"
+#include "World.h"
+
+void SystemScheduler::BindWorld(World* world)
+{
+    for (auto& phase : m_phases)
+    {
+        for (ISystem* sys : phase)
+        {
+            sys->OnRegister(world);
+        }
+    }
+}
 
 void SystemScheduler::Run(float _dt)
 {

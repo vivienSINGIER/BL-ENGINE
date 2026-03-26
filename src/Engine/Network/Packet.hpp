@@ -19,7 +19,9 @@ enum class PacketType : uint8
 	Delete,
 	
 	AddComponent,
+	AddScript,
 	RemoveComponent,
+	RemoveScript,
 	Update,
 	
 	InputUpdate,
@@ -59,7 +61,15 @@ struct ComponentEntry
 struct AddComponentPacket
 {
 	PacketHeader header;
-	ComponentEntry entry;
+	uint32	ComponentId;
+	uint32	size;
+	Byte	data[1024];
+};
+
+struct AddScriptPacket
+{
+	PacketHeader header;
+	uint32 ComponentId;
 };
 
 struct RemoveComponentPacket
@@ -104,6 +114,8 @@ struct Packet
 		PacketHeader    header;
 		ConnectPacket   connect;
 		AddScenePacket  addScene;
+		AddComponentPacket addComponent;
+		AddScriptPacket  addScript;
 		StatePacket     state;
 		InputPacket     input;
 		ChatPacket      chat;
@@ -122,7 +134,8 @@ struct Packet
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
 		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
 		case PacketType::SetScene:			return sizeof(PacketHeader);
-		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
+		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentId) + sizeof(uint32) + addComponent.size;
+		case PacketType::AddScript:			return sizeof(AddScriptPacket);
 		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
 		case PacketType::Chat:              return sizeof(PacketHeader) + sizeof(uint32) + chat.messageLength;

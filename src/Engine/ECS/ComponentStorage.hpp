@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "../define.h"
-#include "ComponentRegistry.hpp"
+#include "ComponentRegistry.h"
 
 struct ComponentStorage
 {
@@ -64,7 +64,26 @@ struct ComponentStorage
         std::memcpy(col.data() + offset, &_val, sizeof(T));
         
         Vector<bool>& active = activeStates[_cId];
-        active.resize(active.size() + sizeof(bool));
+        active.resize(active.size() + 1);
+        active[active.size() - 1] = true;
+    }
+
+    void PushRaw(ComponentId _cId, const Byte* _data, uint64 _size)
+    {
+        auto it = columns.find(_cId);
+        if (it == columns.end())
+            RegisterColumn(_cId, _size);
+
+        assert(strides[_cId] == _size && "Added component size inconsistent with column size");
+        
+        Vector<Byte>& col = columns[_cId];
+        uint64 offset = col.size();
+        col.resize(offset + _size);
+        if (_data != nullptr)
+            std::memcpy(col.data() + offset, _data, _size);
+
+        Vector<bool>& active = activeStates[_cId];
+        active.resize(active.size() + 1);
         active[active.size() - 1] = true;
     }
 

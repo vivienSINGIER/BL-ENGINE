@@ -3,14 +3,15 @@
 
 #include <wrl/internal.h>
 
-#include "ISystem.hpp"
-#include "World.h"
-#include "Script.hpp"
+#include "ISystem.h"
+#include "Script.h"
 
 template <typename T>
 T& World::AddComponent(EntityId _e, T const& _val)
 {
     assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
+    assert(!ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Component should not be a script");
 
     return m_commandQueue.EmplaceAdd<T>(_e, _val);
 }
@@ -19,6 +20,7 @@ template <typename T>
 void World::RemoveComponent(EntityId _e)
 {
     assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     m_commandQueue.EmplaceRemove<T>(_e);
 }
@@ -27,8 +29,9 @@ template <typename T>
 T& World::GetComponent(EntityId _e)
 {
     assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
@@ -42,8 +45,9 @@ template <typename T>
 bool World::HasComponent(EntityId _e)
 {
     assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
@@ -54,8 +58,9 @@ template <typename T>
 void World::SetActiveComponent(EntityId _e, bool _value)
 {
     assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
@@ -68,8 +73,9 @@ template <typename T>
 bool World::IsActiveComponent(EntityId _e)
 {
     assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
@@ -81,20 +87,21 @@ bool World::IsActiveComponent(EntityId _e)
 template <typename T>
 T& World::AddScript(EntityId _e)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
+    assert(!ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Script should not be a component");
+    
     ScriptRegistry* reg = nullptr;
     if (!HasComponent<ScriptRegistry>(_e))
         reg = &AddComponent<ScriptRegistry>(_e);
     else
         reg = &GetComponent<ScriptRegistry>(_e);
 
-    T& script = AddComponent<T>(_e);
-
-    CheckScriptSystem<T>();
+    T& script = m_commandQueue.EmplaceAdd<T>(_e);
     
     script.world = this;
     script.entity = _e;
 
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     reg->push_back(cid);
 
     script.Awake();
@@ -105,35 +112,41 @@ T& World::AddScript(EntityId _e)
 template <typename T>
 void World::RemoveScript(EntityId _e)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
+    
     GetComponent<T>(_e).Destroy();
-    RemoveComponent<T>(_e);
+    m_commandQueue.EmplaceRemove<T>(_e);
 
     ScriptRegistry& reg = GetComponent<ScriptRegistry>(_e);
-    ComponentId cid = ComponentRegistry::Id<T>();
+    ComponentId cid = ComponentType::Id<T>();
     reg.remove(cid);
 }
 
 template <typename T>
 T& World::GetScript(EntityId _e)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     return GetComponent<T>(_e);
 }
 
 template <typename T>
 bool World::HasScript(EntityId _e)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     return HasComponent<T>(_e);
 }
 
 template <typename T>
 void World::SetActiveScript(EntityId _e, bool _value)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     return SetActiveComponent<T>(_e, _value);
 }
 
 template <typename T>
 bool World::IsActiveScript(EntityId _e)
 {
+    assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     return IsActiveComponent<T>(_e);
 }
 
@@ -145,31 +158,8 @@ void World::NotifyScripts(EntityId _e, void(IScript::*_fn)(Args...), Args... arg
     auto& reg = GetComponent<ScriptRegistry>(_e);
     for (int i = 0; i < reg.count; i++ )
     {
-        IScript* script = m_scriptSystems[reg.ownedScripts[i]](_e, *this);
+        IScript* script = ComponentRegistry::GetScript(reg.ownedScripts[i], _e, *this);
         (script->*_fn)(args...);
-    }
-}
-
-template <typename T, typename ... Args>
-T* World::RegisterSystem(Phase _phase, uint8 _flag, Args&&... args)
-{
-    T* sys = m_systemScheduler.AddSystem<T>(_phase, std::forward<Args>(args)...);
-    sys->networkFlags = _flag;
-    sys->OnRegister(*this);
-    return sys;
-}
-
-template <typename T>
-void World::CheckScriptSystem()
-{
-    ComponentId cid = ComponentRegistry::Id<T>();
-    if (m_scriptSystems.find(cid) == m_scriptSystems.end())
-    {
-        m_scriptSystems[cid] = [](EntityId _entity, World& _world) -> IScript*
-        {
-            return &_world.GetComponent<T>(_entity);
-        };
-        RegisterSystem<ScriptSystem<T>>(Phase::Update);
     }
 }
 

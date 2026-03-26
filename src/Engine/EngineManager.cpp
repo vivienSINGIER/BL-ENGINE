@@ -2,13 +2,11 @@
 #define ENGINE_MANAGER_CPP_DEFINED
 
 #include "EngineManager.h"
-#include "Scene.h"
-#include "RessourceManager.h"
-#include "SceneManager.h"
-#include "InputManager.h"
+#include "Engine.h"
 
 #include "../Render/Generic/Render.h"
 #include "../Render/Generic/Factories/ShaderFactory.hpp"
+#include "ECS/SystemScheduler.h"
 #include "Network/Client.h"
 #include "Network/Server.h"
 
@@ -63,6 +61,16 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
 	InputManager::Initialize(m_pWindow->GetHWND());
     if (m_pSceneManager == nullptr)
         m_pSceneManager = new SceneManager;
+
+    ComponentRegistry::Init();
+
+    SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::Update);
+    SystemScheduler::Get().RegisterSystem<MeshRendererSystem>(Phase::Render);
+    SystemScheduler::Get().RegisterSystem<CameraSystem>(Phase::PreRender);
+    SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender);
+    SystemScheduler::Get().RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);
+    SystemScheduler::Get().RegisterSystem<SendSystem>(Phase::NetworkSend);
+    SystemScheduler::Get().RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
 }
 
 void EngineManager::Run()

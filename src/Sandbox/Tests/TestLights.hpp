@@ -40,29 +40,25 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-        scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
-        scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
 
-        EntityId e1 = scene->world.CreateEntity();
-        TransformComponent& t1 = scene->world.AddComponent<TransformComponent>(e1);
+        EntityId e1 = scene->world->CreateEntity();
+        TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
         t1.local.SetPosition(XMFLOAT3(1.0f, 1.0f, -5.0f));
-        CameraComponent& cam = scene->world.AddComponent<CameraComponent>(e1);
+        CameraComponent& cam = scene->world->AddComponent<CameraComponent>(e1);
         cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
         cam.isMainCamera = true;
 
-        EntityId e2 = scene->world.CreateEntity();
-        TransformComponent& t2 = scene->world.AddComponent<TransformComponent>(e2);
+        EntityId e2 = scene->world->CreateEntity();
+        TransformComponent& t2 = scene->world->AddComponent<TransformComponent>(e2);
         t2.local.SetPosition(XMFLOAT3(0.0f, 2.0f, 0.0f));
-        LightComponent& l = scene->world.AddComponent<LightComponent>(e2);
+        LightComponent& l = scene->world->AddComponent<LightComponent>(e2);
         l.SetPoint(1.0f, 10.0f, 1);
-        scene->world.AddScript<TestScript>(e2);
+        scene->world->AddScript<TestScript>(e2);
         
         EngineManager::GetInstance().Run();
     }

@@ -1,7 +1,7 @@
 #ifndef COLLIDER_SYSTEM_H_DEFINED
 #define COLLIDER_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 

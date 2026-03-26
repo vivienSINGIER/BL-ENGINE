@@ -3,7 +3,7 @@
 
 #include "Components/LightComponent.hpp"
 #include "Components/TransformComponent.hpp"
-#include "ECS/ISystem.hpp"
+#include "ECS/ISystem.h"
 
 struct LightSystem : public System<LightComponent, TransformComponent>
 {

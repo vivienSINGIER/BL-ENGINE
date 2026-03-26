@@ -51,22 +51,20 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.AddScript<TestScript>(e);
+        scene->world->AddScript<TestScript>(e);
 
-        EntityId e1 = scene->world.CreateEntity();
-        TransformComponent& t1 = scene->world.AddComponent<TransformComponent>(e1);
+        EntityId e1 = scene->world->CreateEntity();
+        TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
         t1.SetParent(e);
         t1.local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
-        MeshRenderer& m1 = scene->world.AddComponent<MeshRenderer>(e1);
+        MeshRenderer& m1 = scene->world->AddComponent<MeshRenderer>(e1);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.AddScript<TestScript2>(e1);
+        scene->world->AddScript<TestScript2>(e1);
 
         Camera cam;
         XMFLOAT3 pos = XMFLOAT3(0.0f, -5.0f, -5.0f);

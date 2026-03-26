@@ -1,14 +1,11 @@
 #ifndef WORLD_H_DEFINED
 #define WORLD_H_DEFINED
 
-#include <functional>
-
 #include "../define.h"
 
 #include "ArchetypeRegistry.h"
 #include "EntityManager.h"
 #include "Query.hpp"
-#include "SystemScheduler.h"
 #include "ComponentCommandQueue.h"
 
 struct IScript;
@@ -28,6 +25,13 @@ public:
     void SetActive(EntityId _entity);
     void SetInactive(EntityId _entity);
     bool IsActive(EntityId _entity);
+
+    void AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data);
+    void RemoveRawComponent(EntityId _e, ComponentId _cid);
+    void* GetRawComponent(EntityId _e, ComponentId _cid);
+    void AddRawScript(EntityId _e, ComponentId _cid);
+    void RemoveRawScript(EntityId _e, ComponentId _cid);
+    IScript* GetRawScript(EntityId _e, ComponentId _cid);
     
     template <typename T> T& AddComponent(EntityId _e, T const& _val = T{});
     template <typename T> void RemoveComponent(EntityId _e);
@@ -45,8 +49,6 @@ public:
 
     template <typename... Args> void NotifyScripts(EntityId _e, void (IScript::*fn)(Args...), Args... args);
     
-    template <typename T, typename... Args>
-    T* RegisterSystem(Phase _phase, uint8 _flag = NetworkFlag::NONE, Args&&... args);
     void Update(float _dt);
 
     void RegisterQuery(QueryBase* _query);
@@ -54,16 +56,11 @@ public:
 
 private:
     ArchetypeRegistry m_archetypeRegistry;
-    SystemScheduler m_systemScheduler;
     Vector<QueryBase*> m_queries;
     ComponentCommandQueue m_commandQueue;
     
-    UnorderedMap<ComponentId, std::function<IScript*(EntityId, World&)>> m_scriptSystems;
-    
     void MoveEntity(EntityId _entity, EntityRecord& rec, Archetype* _src, Archetype* _dst);
     void RemoveFromArchetype(EntityId _e, EntityRecord& _rec);
-
-    template <typename T> void CheckScriptSystem();
     
     Archetype* GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add);
 
@@ -73,5 +70,7 @@ private:
 };
 
 #include "World.inl"
+#include "ISystem.inl"
+#include "ComponentRegistry.inl"
 
 #endif

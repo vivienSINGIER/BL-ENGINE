@@ -9,13 +9,13 @@ void CameraSystem::OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, Tr
     
     Device* d = EngineManager::GetInstance().GetDevice();
 
-    if ((_transform.world.dirty & WORLD) == WORLD)
+    if ((_transform.world.dirty & (uint8)DIRTY_FLAG::WORLD) == (uint8)DIRTY_FLAG::WORLD)
     {
         _camera.camera->SetWorld(_transform.world.GetMatrix());
         if (_camera.isMainCamera)
         {
             d->SetMainCamera(_camera.camera);
-            _transform.world.dirty &= ~WORLD;
+            _transform.world.dirty &= ~(uint8)DIRTY_FLAG::WORLD;
         }   
     }
 }

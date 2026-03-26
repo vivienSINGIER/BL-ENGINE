@@ -2,6 +2,7 @@
 
 #include "Scene.h"
 #include "SceneManager.h"
+#include "../ECS/World.h"
 
 Server::Server() : INetworkBase()
 {
@@ -114,14 +115,9 @@ void Server::QueueSyncPackets(const sockaddr_in& _addr)
 
 		Scene* s = SceneManager::GetSceneWithId(id);
 		
-		for (EntityId e : s->world.GetEntities())
+		for (EntityId e : s->world->GetEntities())
 		{
-			Packet sp;
-			sp.header.type = PacketType::Spawn;
-			sp.header.sceneId = id;
-			sp.header.entityId = e;
-
-			SendReliablePacket(sp, _addr);
+			QueueEntitySyncPackets(e, id, _addr);
 		}
 	}
 
@@ -130,6 +126,49 @@ void Server::QueueSyncPackets(const sockaddr_in& _addr)
 	setSceneP.header.type = PacketType::SetScene;
 	setSceneP.header.sceneId = currSceneId;
 	SendReliablePacket(setSceneP, _addr);
+}
+
+void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr_in& _addr)
+{
+	Scene* s = SceneManager::GetSceneWithId(_sceneId);
+	
+	Packet sp;
+	sp.header.type = PacketType::Spawn;
+	sp.header.sceneId = _sceneId;
+	sp.header.entityId = _e;
+
+	SendReliablePacket(sp, _addr);
+
+	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
+	Archetype* arch = rec.archetype;
+
+	for (auto& [cid, data] : arch->storage.columns)
+	{
+		uint64 stride = arch->storage.strides[cid];
+
+		Packet acP;
+
+		if (ComponentRegistry::IsScript(cid) == false)
+		{
+			acP.header.type = PacketType::AddComponent;
+			acP.header.sceneId = _sceneId;
+			acP.header.entityId = _e;
+
+			acP.addComponent.ComponentId = cid;
+			acP.addComponent.size = stride;
+			memcpy(acP.addComponent.data, data.data() + stride * rec.row, stride);
+		}
+		else
+		{
+			acP.header.type = PacketType::AddScript;
+			acP.header.sceneId = _sceneId;
+			acP.header.entityId = _e;
+
+			acP.addScript.ComponentId = cid;
+		}
+		
+		SendReliablePacket(acP, _addr);
+	}
 }
 
 DWORD WINAPI Server::ReceiveThread(LPVOID lpParam)
@@ -158,3 +197,4 @@ DWORD WINAPI Server::ReceiveThread(LPVOID lpParam)
 	delete[] buffer;
 	return 0;
 }
+

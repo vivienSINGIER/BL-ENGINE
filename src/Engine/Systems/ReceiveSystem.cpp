@@ -6,6 +6,8 @@
 #include "Network/Client.h"
 #include "Network/Server.h"
 
+#include "../ECS/World.h"
+
 void ReceiveSystem::OnInit()
 {
     
@@ -72,10 +74,11 @@ void ReceiveSystem::HandleClientReceive()
                 }
             case PacketType::Spawn:
                 {
-                    Scene* scene = SceneManager::GetCurrentScene();
                     Server* server = EngineManager::GetServer();
+                    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                    if (scene == nullptr) break;
 
-                    if (scene->world.entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
                         break;
                     
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
@@ -83,7 +86,41 @@ void ReceiveSystem::HandleClientReceive()
                     if (server != nullptr)
                         break;
 
-                    scene->world.CreateEntity(p.header.entityId, true);
+                    scene->world->CreateEntity(p.header.entityId, true);
+
+                    break;
+                }
+            case PacketType::AddComponent:
+                {
+                    Server* server = EngineManager::GetServer();
+                    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                    if (scene == nullptr) break;
+
+                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                        break;
+
+                    m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+
+                    if (server != nullptr)
+                        break;
+
+                    scene->world->AddRawComponent(p.header.entityId, p.addComponent.ComponentId, p.addComponent.size, p.addComponent.data);
+                }
+            case PacketType::AddScript:
+                {
+                    Server* server = EngineManager::GetServer();
+                    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                    if (scene == nullptr) break;
+
+                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                        break;
+
+                    m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+
+                    if (server != nullptr)
+                        break;
+
+                    
                 }
             default:
                 break;

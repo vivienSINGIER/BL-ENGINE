@@ -4,24 +4,27 @@
 #include "Scene.h"
 #include "Engine.h"
 
+Scene::Scene()
+{
+    world = new World();
+}
+
+Scene::~Scene()
+{
+    delete world;
+}
+
 void Scene::Init(String const& _name, uint32 _id)
 {
     m_name = _name;
     m_id = _id;
-
-    world.RegisterSystem<TransformSystem>(Phase::Update);
-    world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-    world.RegisterSystem<CameraSystem>(Phase::PreRender);
-    world.RegisterSystem<LightSystem>(Phase::PreRender);
-    world.RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);
-    world.RegisterSystem<SendSystem>(Phase::NetworkSend);
     
     OnInit();
 }
 
 void Scene::Update(float _dt)
 {
-    world.Update(_dt);
+    world->Update(_dt);
 
     OnUpdate(_dt);
 }

@@ -32,6 +32,8 @@ private:
 	static DWORD WINAPI ReceiveThread(LPVOID lpParam);
 	Vector<ClientInfo> m_clients;
 
+	void QueueEntitySyncPackets(EntityId _e, uint32  _sceneId, const sockaddr_in& _addr);
+
 	Vector<Pair<Packet, sockaddr_in>> m_targetedPackets;
 	
 	bool m_isRunning = false;

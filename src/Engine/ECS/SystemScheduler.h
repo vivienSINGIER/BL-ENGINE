@@ -5,6 +5,7 @@
 #include "../define.h"
 
 struct ISystem;
+class World;
 
 enum Phase
 {
@@ -14,12 +15,28 @@ enum Phase
 class SystemScheduler
 {
 public:
+    static SystemScheduler& Get()
+    {
+        static SystemScheduler instance;
+        return instance;
+    }
+
+    void BindWorld(World* world);
+    
+    SystemScheduler(const SystemScheduler&) = delete;
+    SystemScheduler& operator=(const SystemScheduler&) = delete;
+
     template <typename T, typename... Args>
-    T* AddSystem(Phase _phase, Args&&... args);
+    T* RegisterSystem(Phase _phase, uint8 _nFlag = NetworkFlag::ALL, Args&&... args);
+
+    template <typename T>
+    T* GetSystem();
     
     void Run(float _dt);
     
 private:
+    SystemScheduler() = default;
+
     Array<Vector<ISystem*>, Phase::Count> m_phases;
     float m_accumulator = 0.0f;
 };

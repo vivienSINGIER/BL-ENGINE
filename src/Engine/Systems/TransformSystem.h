@@ -1,7 +1,7 @@
 #ifndef TRANSFORM_SYSTEM_H_DEFINED
 #define TRANSFORM_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "../Components/TransformComponent.hpp"
 
 class TransformSystem : public System<TransformComponent>

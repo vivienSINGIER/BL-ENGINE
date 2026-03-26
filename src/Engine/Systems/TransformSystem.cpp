@@ -1,5 +1,5 @@
 #include "TransformSystem.h"
-
+#include "../ECS/World.h"
 
 bool TransformSystem::IsDirty(Transform& _transform, uint32 _flag)
 {
@@ -14,18 +14,18 @@ void TransformSystem::UpdateMatrix(TransformComponent& _t)
         TransformComponent& p = world->GetComponent<TransformComponent>(_t.parent);
         UpdateMatrix(p);
         
-        if (IsDirty(_t.local, POS | SCALE | ROTATE) || IsDirty(p.local, WORLD))
+        if (IsDirty(_t.local, (uint8)DIRTY_FLAG::POS | (uint8)DIRTY_FLAG::SCALE | (uint8)DIRTY_FLAG::ROTATE) || IsDirty(p.local, (uint8)DIRTY_FLAG::WORLD))
         {
             _t.world = _t.local;
             _t.world.UpdateFromParent(p.world);
-            _t.local.dirty = WORLD;
+            _t.local.dirty = (uint8)DIRTY_FLAG::WORLD;
         }
     }
-    else if (IsDirty(_t.local, POS | SCALE | ROTATE))
+    else if (IsDirty(_t.local, (uint8)DIRTY_FLAG::POS | (uint8)DIRTY_FLAG::SCALE | (uint8)DIRTY_FLAG::ROTATE))
     {
         _t.world = _t.local;
         _t.world.UpdateMatrix();
-        _t.local.dirty = WORLD;
+        _t.local.dirty = (uint8)DIRTY_FLAG::WORLD;
     }
 }
 

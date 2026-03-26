@@ -1,6 +1,8 @@
 #ifndef TEST_COLLISION_HPP_DEFINED
 #define TEST_COLLISION_HPP_DEFINED
 
+#include "../Engine/Engine.h"
+
 class TestCollision : public Test
 {
 public:
@@ -75,46 +77,44 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Collision");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-		ColliderSystem* sys = scene->world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
+		ColliderSystem* sys = SystemScheduler::Get().GetSystem<ColliderSystem>();
         sys->InitializePartitionGrid(XMINT2(100, 100), 10);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-		scene->world.AddComponent<ColliderComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+		scene->world->AddComponent<ColliderComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-		scene->world.GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
-        scene->world.GetComponent<TransformComponent>(e).local.AddYPR(XMFLOAT3(0.0f, 0.0f, 0.0f));
+		scene->world->GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+        scene->world->GetComponent<TransformComponent>(e).local.AddYPR(XMFLOAT3(0.0f, 0.0f, 0.0f));
 
-		EntityId e2 = scene->world.CreateEntity();
-		scene->world.AddComponent<TransformComponent>(e2);
-		scene->world.AddComponent<ColliderComponent>(e2);
-		MeshRenderer& m2 = scene->world.AddComponent<MeshRenderer>(e2);
+		EntityId e2 = scene->world->CreateEntity();
+		scene->world->AddComponent<TransformComponent>(e2);
+		scene->world->AddComponent<ColliderComponent>(e2);
+		MeshRenderer& m2 = scene->world->AddComponent<MeshRenderer>(e2);
 		m2.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
-        scene->world.AddScript<MoveScript>(e2);
+        scene->world->GetComponent<TransformComponent>(e2).local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
+        scene->world->AddScript<MoveScript>(e2);
 
         Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
         RessourceManager::AddMaterial("debug", mat);
         mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 
-        EntityId debug = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(debug);
-        MeshRenderer& m3 = scene->world.AddComponent<MeshRenderer>(debug);
+        EntityId debug = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(debug);
+        MeshRenderer& m3 = scene->world->AddComponent<MeshRenderer>(debug);
         m3.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         m3.material = mat;
-        scene->world.GetComponent<TransformComponent>(debug).local.SetScale(0.1f);
-        scene->world.AddScript<DebugScript>(debug);
+        scene->world->GetComponent<TransformComponent>(debug).local.SetScale(0.1f);
+        scene->world->AddScript<DebugScript>(debug);
 
-        EntityId debug2 = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(debug2);
-        MeshRenderer& m4 = scene->world.AddComponent<MeshRenderer>(debug2);
+        EntityId debug2 = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(debug2);
+        MeshRenderer& m4 = scene->world->AddComponent<MeshRenderer>(debug2);
         m4.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         m4.material = mat;
-        scene->world.GetComponent<TransformComponent>(debug2).local.SetScale(0.1f);
-        scene->world.AddScript<DebugScript2>(debug2);
+        scene->world->GetComponent<TransformComponent>(debug2).local.SetScale(0.1f);
+        scene->world->AddScript<DebugScript2>(debug2);
 
         Camera cam;
         XMFLOAT3 pos = XMFLOAT3(0.0f, -5.0f, -1.0f);
