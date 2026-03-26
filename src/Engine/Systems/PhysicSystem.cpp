@@ -12,17 +12,17 @@ void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, Tr
 
 void PhysicSystem::OnEndUpdate(float _dt)
 {
-	ResolveAllOverlaps();
-	ResolveAllImpulses();
+    ResolveAllOverlaps();
+    ResolveAllImpulses(4);
 }
 
 void PhysicSystem::ResolveAllOverlaps()
 {
     for (Contact& contact : m_pContactManager->contacts)
     {
-        if (world->HasComponent<PhysicComponent>(contact.a) == false)
+        if (!world->HasComponent<PhysicComponent>(contact.a))
             continue;
-        if (world->HasComponent<PhysicComponent>(contact.b) == false)
+        if (!world->HasComponent<PhysicComponent>(contact.b))
             continue;
 
         PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
@@ -32,21 +32,34 @@ void PhysicSystem::ResolveAllOverlaps()
     }
 }
 
-void PhysicSystem::ResolveAllImpulses()
+
+void PhysicSystem::ResolveAllImpulses(int _iterations)
 {
-    for (int iteration = 0; iteration < 4; ++iteration)
+    for (int iteration = 0; iteration < _iterations; ++iteration)
     {
         for (Contact& contact : m_pContactManager->contacts)
         {
-            if (world->HasComponent<PhysicComponent>(contact.a) == false)
+            if (!world->HasComponent<PhysicComponent>(contact.a))
                 continue;
-            if (world->HasComponent<PhysicComponent>(contact.b) == false)
+            if (!world->HasComponent<PhysicComponent>(contact.b))
                 continue;
 
             PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
             PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
-            ResolveImpulse(physicA, physicB, contact);
+            int pointCount = contact.pointCount;
+
+            // fallback si tu gardes encore un contact.point unique
+            if (pointCount <= 0)
+            {
+                ResolveImpulseAtPoint(physicA, physicB, contact, contact.points[0].position);
+                continue;
+            }
+
+            for (int i = 0; i < pointCount; ++i)
+            {
+                ResolveImpulseAtPoint(physicA, physicB, contact, contact.points[i].position);
+            }
         }
     }
 }
@@ -100,7 +113,7 @@ void PhysicSystem::ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _p
         transformB.local.Move(moveB);
 }
 
-void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point)
 {
     float invMassA = _physicA.massInverse;
     float invMassB = _physicB.massInverse;
@@ -112,60 +125,61 @@ void PhysicSystem::ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _p
     XMFLOAT3 relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
     float velocityNormal = Dot(relativeVelocity, _contact.normal);
 
-    // Déjà en train de s'éloigner
     if (velocityNormal >= 0.0f)
         return;
 
     float e = Min(_physicA.restitution, _physicB.restitution);
 
-    // Impulsion normale
-    float impulse = -(1.0f + e) * velocityNormal / totalInvMass;
-    XMFLOAT3 normalImpulse = Mul(_contact.normal, impulse);
+    // Repartition de l'impulsion normale sur les points
+    int pointCount = (_contact.pointCount > 0) ? _contact.pointCount : 1;
+
+    float impulseScalar = -(1.0f + e) * velocityNormal / totalInvMass;
+    impulseScalar /= static_cast<float>(pointCount);
+
+    XMFLOAT3 normalImpulse = Mul(_contact.normal, impulseScalar);
 
     _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
 
-	CalculateTorque(_physicA, _physicB, _contact, normalImpulse);
-
-    // Recalculer la vitesse relative après l'impulsion normale
+    // vitesse relative après impulsion normale
     relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
 
-    // Tangente
-    XMFLOAT3 tangent = Subtract(relativeVelocity, Mul(_contact.normal, Dot(relativeVelocity, _contact.normal)));
-    float tangentLenSq = Dot(tangent, tangent);
+    XMFLOAT3 tangent = Subtract(relativeVelocity,
+        Mul(_contact.normal, Dot(relativeVelocity, _contact.normal)));
 
-	if (tangentLenSq < 1e-6f) //Si la tangente est trop petite
+    float tangentLenSq = Dot(tangent, tangent);
+    if (tangentLenSq < 1e-6f)
         return;
 
     tangent = Normalize(tangent);
 
     float velocityTangent = Dot(relativeVelocity, tangent);
-
-    // Impulsion tangente
-    float impusleTangent = -velocityTangent / totalInvMass;
+    float impulseTangentScalar = -velocityTangent / totalInvMass;
+    impulseTangentScalar /= static_cast<float>(pointCount);
 
     float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
     float dynamicFriction = 0.5f * (_physicA.dynamicFriction + _physicB.dynamicFriction);
 
     XMFLOAT3 frictionImpulse;
-
-    // Friction statique / dynamique
-    if (abs(impusleTangent) < impulse * staticFriction)
+    if (abs(impulseTangentScalar) < impulseScalar * staticFriction) //Satique
     {
-        // Friction statique : annule complètement le mouvement tangent
-        frictionImpulse = Mul(tangent, impusleTangent);
+        frictionImpulse = Mul(tangent, impulseTangentScalar);
     }
-    else
+	else // Dynamique
     {
-        // Friction dynamique : limite l'impulsion tangentielle
-        frictionImpulse = Mul(tangent, -impulse * dynamicFriction);
+        frictionImpulse = Mul(tangent, -impulseScalar * dynamicFriction);
+        CalculateTorqueAtPoint(_physicA, _physicB, _contact, _point, frictionImpulse);
     }
 
     _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
+
+    std::cout << "velocityNormal = " << velocityNormal << "\n";
+    std::cout << "velocityTangent = " << velocityTangent << "\n";
+    std::cout << "normal = " << _contact.normal.x << ", " << _contact.normal.y << ", " << _contact.normal.z << "\n";
 }
 
-void PhysicSystem::CalculateTorque(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _nImpulse)
+void PhysicSystem::CalculateTorqueAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point, XMFLOAT3& _impulse)
 {
     TransformComponent& transformA = world->GetComponent<TransformComponent>(_contact.a);
     TransformComponent& transformB = world->GetComponent<TransformComponent>(_contact.b);
@@ -173,14 +187,14 @@ void PhysicSystem::CalculateTorque(PhysicComponent& _physicA, PhysicComponent& _
     XMFLOAT3 centerA = transformA.world.GetPosition();
     XMFLOAT3 centerB = transformB.world.GetPosition();
 
-    XMFLOAT3 rA = Subtract(_contact.point, centerA);
-    XMFLOAT3 rB = Subtract(_contact.point, centerB);
+    XMFLOAT3 rA = Subtract(_point, centerA);
+    XMFLOAT3 rB = Subtract(_point, centerB);
 
-    XMFLOAT3 torqueA = Cross(rA, Inverse(_nImpulse));
-    XMFLOAT3 torqueB = Cross(rB, _nImpulse);
+    XMFLOAT3 torqueA = Cross(rA, Inverse(_impulse));
+    XMFLOAT3 torqueB = Cross(rB, _impulse);
 
-	torqueA = Mul(torqueA, _physicA.inertieInverse);
-	torqueB = Mul(torqueB, _physicB.inertieInverse);
+    torqueA = Mul(torqueA, _physicA.inertieInverse);
+    torqueB = Mul(torqueB, _physicB.inertieInverse);
 
     if (_physicA.rotation)
         _physicA.angularVelocity = Add(_physicA.angularVelocity, torqueA);

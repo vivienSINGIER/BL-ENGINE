@@ -109,35 +109,108 @@ void ColliderSystem::ResetContactHolder()
 	m_contactHolder.b = -1;
 	m_contactHolder.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	m_contactHolder.penetration = 0.0f;
-	m_contactHolder.point = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_contactHolder.pointCount = 0;
 }
 
-XMFLOAT3 ColliderSystem::OBBSupportPoint(OBB& obb, XMFLOAT3& dir)
+XMFLOAT3 ColliderSystem::OBBSupportPoint(OBB& _obb, XMFLOAT3& _dir)
 {
-	XMFLOAT3 result = obb.center;
+	XMFLOAT3 result = _obb.center;
 
-	float sx = (Dot(dir, obb.axes[0]) >= 0.0f) ? obb.halfExtents.x : -obb.halfExtents.x;
-	float sy = (Dot(dir, obb.axes[1]) >= 0.0f) ? obb.halfExtents.y : -obb.halfExtents.y;
-	float sz = (Dot(dir, obb.axes[2]) >= 0.0f) ? obb.halfExtents.z : -obb.halfExtents.z;
+	float sx = (Dot(_dir, _obb.axes[0]) >= 0.0f) ? _obb.halfExtents.x : -_obb.halfExtents.x;
+	float sy = (Dot(_dir, _obb.axes[1]) >= 0.0f) ? _obb.halfExtents.y : -_obb.halfExtents.y;
+	float sz = (Dot(_dir, _obb.axes[2]) >= 0.0f) ? _obb.halfExtents.z : -_obb.halfExtents.z;
 
-	result = Add(result, Mul(obb.axes[0], sx));
-	result = Add(result, Mul(obb.axes[1], sy));
-	result = Add(result, Mul(obb.axes[2], sz));
+	result = Add(result, Mul(_obb.axes[0], sx));
+	result = Add(result, Mul(_obb.axes[1], sy));
+	result = Add(result, Mul(_obb.axes[2], sz));
 
 	return result;
 }
 
-float ColliderSystem::OBBRadius(OBB& obb, XMFLOAT3& axis)
+float ColliderSystem::OBBRadius(OBB& _obb, XMFLOAT3& _axis)
 {
 	float result = 0.0f;
-	result += obb.halfExtents.x * abs(Dot(axis, obb.axes[0]));
-	result += obb.halfExtents.y * abs(Dot(axis, obb.axes[1]));
-	result += obb.halfExtents.z * abs(Dot(axis, obb.axes[2]));
+	result += _obb.halfExtents.x * abs(Dot(_axis, _obb.axes[0]));
+	result += _obb.halfExtents.y * abs(Dot(_axis, _obb.axes[1]));
+	result += _obb.halfExtents.z * abs(Dot(_axis, _obb.axes[2]));
 
 	return result;
 }
 
-void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, ColliderComponent& _colliderComponent)
+bool ColliderSystem::PointInOBB(XMFLOAT3& _point, OBB& _obb)
+{
+	XMFLOAT3 d = Subtract(_point, _obb.center);
+
+	float x = Dot(d, _obb.axes[0]);
+	float y = Dot(d, _obb.axes[1]);
+	float z = Dot(d, _obb.axes[2]);
+
+	float eps = 1e-6f;
+
+	return abs(x) <= _obb.halfExtents.x + eps &&
+		abs(y) <= _obb.halfExtents.y + eps &&
+		abs(z) <= _obb.halfExtents.z + eps;
+}
+
+void ColliderSystem::GetOBBCorners(OBB& _obb, XMFLOAT3 _outCorners[8])
+{
+	XMFLOAT3 ex = Mul(_obb.axes[0], _obb.halfExtents.x);
+	XMFLOAT3 ey = Mul(_obb.axes[1], _obb.halfExtents.y);
+	XMFLOAT3 ez = Mul(_obb.axes[2], _obb.halfExtents.z);
+
+	int index = 0;
+
+	for (int sx = -1; sx <= 1; sx += 2)
+	{
+		for (int sy = -1; sy <= 1; sy += 2)
+		{
+			for (int sz = -1; sz <= 1; sz += 2)
+			{
+				XMFLOAT3 p = _obb.center;
+				p = Add(p, Mul(ex, (float)sx));
+				p = Add(p, Mul(ey, (float)sy));
+				p = Add(p, Mul(ez, (float)sz));
+				_outCorners[index++] = p;
+			}
+		}
+	}
+}
+
+void ColliderSystem::BuildOBBContactPoints(OBB& _boxA, OBB& _boxB)
+{
+	XMFLOAT3 cornersA[8];
+	XMFLOAT3 cornersB[8];
+
+	GetOBBCorners(_boxA, cornersA);
+	GetOBBCorners(_boxB, cornersB);
+
+	for (int i = 0; i < 8 && m_contactHolder.pointCount < 4; ++i)
+	{
+		if (PointInOBB(cornersA[i], _boxB))
+			m_contactHolder.points[m_contactHolder.pointCount++].position = cornersA[i];
+	}
+
+	for (int i = 0; i < 8 && m_contactHolder.pointCount < 4; ++i)
+	{
+		if (PointInOBB(cornersB[i], _boxA))
+			m_contactHolder.points[m_contactHolder.pointCount++].position = cornersB[i];
+	}
+}
+
+XMFLOAT3 ColliderSystem::AveragePoints(XMFLOAT3* points, int count)
+{
+	XMFLOAT3 result = { 0.0f, 0.0f, 0.0f };
+
+	if (count <= 0)
+		return result;
+
+	for (int i = 0; i < count; ++i)
+		result = Add(result, points[i]);
+
+	return Mul(result, 1.0f / (float)count);
+}
+
+void ColliderSystem::InsertIntoPartitionGrid(EntityId _e, ColliderComponent& _colliderComponent)
 {
 	int cellXMin = static_cast<int>(floorf(_colliderComponent.aabb.min.x / m_partitionGrid.cellSize));
 	int cellYMin = static_cast<int>(floorf(_colliderComponent.aabb.min.y / m_partitionGrid.cellSize));
@@ -153,7 +226,7 @@ void ColliderSystem::InsertIntoPartitionGrid(EntityId entity, ColliderComponent&
 	{
 		for (int y = cellYMin; y <= cellYMax; ++y)
 		{
-			m_partitionGrid.cells[x][y].push_back(entity);
+			m_partitionGrid.cells[x][y].push_back(_e);
 		}
 	}
 }
@@ -221,19 +294,19 @@ void ColliderSystem::NarrowPhase()
 	}
 }
 
-bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex)
+bool ColliderSystem::OverlapOnAxis(OBB& _a, OBB& _b, XMFLOAT3& _axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex)
 {
-	if (Dot(axis, axis) < 1e-6f)
+	if (Dot(_axis, _axis) < 1e-6f)
 		return true;
 
-	XMFLOAT3 n = Normalize(axis);
-	XMFLOAT3 centerDelta = Subtract(b.center, a.center);
+	XMFLOAT3 n = Normalize(_axis);
+	XMFLOAT3 centerDelta = Subtract(_b.center, _a.center);
 
-	float distance = abs(Dot(centerDelta, n));
-	float ra = OBBRadius(a, n);
-	float rb = OBBRadius(b, n);
+	float distance = std::abs(Dot(centerDelta, n));
+	float ra = OBBRadius(_a, n);
+	float rb = OBBRadius(_b, n);
 
-	float overlap = ra + rb - distance;
+	float overlap = (ra + rb) - distance;
 
 	if (overlap < 0.0f)
 		return false;
@@ -244,7 +317,7 @@ bool ColliderSystem::OverlapOnAxis(OBB& a, OBB& b, XMFLOAT3& axis, float& _minDi
 		_minAxeIndex = _currAxeIndex;
 	}
 
-	return distance <= (ra + rb);
+	return true;
 }
 
 bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& _boxB)
@@ -268,32 +341,39 @@ bool ColliderSystem::CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& 
 		Cross(_boxA.obb.axes[2], _boxB.obb.axes[2])
 	};
 
-	//avec SAT, garder l’axe de pénétration minimale
-	float minDistance = FLT_MAX;
+	float minOverlap = FLT_MAX;
 	int minAxeIndex = -1;
 
 	for (int i = 0; i < 15; ++i)
 	{
-		if (OverlapOnAxis(_boxA.obb, _boxB.obb, axes[i], minDistance, minAxeIndex, i) == false)
+		if (OverlapOnAxis(_boxA.obb, _boxB.obb, axes[i], minOverlap, minAxeIndex, i) == false)
 			return false;
 	}
 
-	if (_boxA.isTrigger || _boxB.isTrigger) //Pas de calcul de contact si trigger
+	if (_boxA.isTrigger || _boxB.isTrigger)
 		return true;
 
 	XMFLOAT3 normal = Normalize(axes[minAxeIndex]);
-	XMFLOAT3 invNormal = Inverse(normal);
 	XMFLOAT3 centerDelta = Subtract(_boxB.obb.center, _boxA.obb.center);
 
 	if (Dot(centerDelta, normal) < 0.0f)
-		normal = invNormal;
+		normal = Inverse(normal);
 
-	XMFLOAT3 pointA = OBBSupportPoint(_boxA.obb, normal);
-	XMFLOAT3 pointB = OBBSupportPoint(_boxB.obb, invNormal);
+	m_contactHolder.normal = normal;         // A -> B
+	m_contactHolder.penetration = minOverlap;
 
-	m_contactHolder.point = Mul(Add(pointA, pointB), 0.5f);
-	m_contactHolder.normal = normal;
-	m_contactHolder.penetration = minDistance;
+	BuildOBBContactPoints(_boxA.obb, _boxB.obb);
+	if (m_contactHolder.pointCount <= 0)
+	{
+		// Fallback : support points
+		XMFLOAT3 normalInverse = Inverse(normal);
+		XMFLOAT3 pointA = OBBSupportPoint(_boxA.obb, normal);
+		XMFLOAT3 pointB = OBBSupportPoint(_boxB.obb, normalInverse);
+		XMFLOAT3 fallbackPoint = Mul(Add(pointA, pointB), 0.5f);
+
+		m_contactHolder.pointCount = 1;
+		m_contactHolder.points[0].position = fallbackPoint;
+	}
 
 	return true;
 }
@@ -336,7 +416,9 @@ bool ColliderSystem::CheckSphereToSphere(ColliderComponent& _sphereA, TransformC
 
 	XMFLOAT3 pointA = Add(posA, Mul(normal, radiusA));
 	XMFLOAT3 pointB = Subtract(posB, Mul(normal, radiusB));
-	m_contactHolder.point = Mul(Add(pointA, pointB), 0.5f);
+
+	m_contactHolder.pointCount = 1;
+	m_contactHolder.points[0].position = Mul(Add(pointA, pointB), 0.5f);
 
 	return true;
 }
@@ -377,7 +459,8 @@ bool ColliderSystem::CheckBoxToSphere(ColliderComponent& _box, TransformComponen
 	if (d2 > radius2)
 		return false;
 
-	m_contactHolder.point = closest;
+	m_contactHolder.pointCount = 1;
+	m_contactHolder.points[0].position = closest;
 
 	if (d2 < 1e-6f) //Cas particulier
 	{

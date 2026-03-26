@@ -17,15 +17,15 @@ public:
 	void SetContactManager(ContactManager* _contactManager) { m_pContactManager = _contactManager; }
 
 private:
-	void ResolveAllOverlaps();
-	void ResolveAllImpulses();
+    void ResolveAllOverlaps();
+    void ResolveAllImpulses(int _iterations = 4);
 
-	void ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
-	void ResolveImpulse(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
+    void ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
 
-	void CalculateTorque(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _nImpulse);
+    void ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point);
+    void CalculateTorqueAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact, XMFLOAT3& _point, XMFLOAT3& _impulse);
 
-	ContactManager* m_pContactManager = nullptr;
+    ContactManager* m_pContactManager = nullptr;
 };
 
 #endif // !PHYSIC_SYSTEM_H_DEFINED

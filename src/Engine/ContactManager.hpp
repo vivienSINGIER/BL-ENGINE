@@ -3,14 +3,21 @@
 
 #include "define.h"
 
+struct ContactPoint
+{
+    XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
+};
+
 struct Contact
 {
-	EntityId a;
-	EntityId b;
-    
-	XMFLOAT3 normal; //Direction A -> B
-	XMFLOAT3 point;
-	float penetration;
+    EntityId a = -1;
+    EntityId b = -1;
+
+    XMFLOAT3 normal = { 0.0f, 0.0f, 0.0f }; // A -> B
+    float penetration = 0.0f;
+
+    int pointCount = 0;
+    ContactPoint points[4];
 };
 
 struct ContactManager

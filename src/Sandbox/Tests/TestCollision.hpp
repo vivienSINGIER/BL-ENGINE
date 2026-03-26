@@ -94,10 +94,8 @@ public:
         PhysicComponent& physic = scene->world.AddComponent<PhysicComponent>(e);
         physic.type = BodyType::Dynamic;
 		physic.SetMass(1.0f);
-		physic.staticFriction = 0.6f;
-		physic.dynamicFriction = 0.4f;
-		physic.restitution = 0.0f;
         physic.useGravity = false;
+        physic.rotation = true;
         MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
         m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         transform.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
@@ -108,8 +106,9 @@ public:
         PhysicComponent& physic1 = scene->world.AddComponent<PhysicComponent>(e1);
         physic1.type = BodyType::Dynamic;
         physic1.SetMass(1.0f);
-		physic1.velocity = XMFLOAT3(-2.0f, 0.0f, 0.0f);
-		physic1.useGravity = false;
+		physic1.velocity = XMFLOAT3(-3.0f, 0.0f, 0.0f);
+		physic1.useGravity = true;
+		physic1.rotation = true;
 		MeshRenderer& m1 = scene->world.AddComponent<MeshRenderer>(e1);
 		m1.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
         t1.local.SetPosition(XMFLOAT3(5.0f, 0.0f, 0.5f));

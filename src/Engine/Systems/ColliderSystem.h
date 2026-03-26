@@ -38,9 +38,13 @@ private:
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
 	bool CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere);
 
-	XMFLOAT3 OBBSupportPoint(OBB& obb, XMFLOAT3& dir);
-	float OBBRadius(OBB& obb, XMFLOAT3& axis);
-	bool OverlapOnAxis(OBB& obbA, OBB& obbB, XMFLOAT3& axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex);
+	XMFLOAT3 OBBSupportPoint(OBB& _obb, XMFLOAT3& _dir);
+	float OBBRadius(OBB& _obb, XMFLOAT3& _axis);
+	bool PointInOBB(XMFLOAT3& point, OBB& _obb);
+	void GetOBBCorners(OBB& _obb, XMFLOAT3 _outCorners[8]);
+	void BuildOBBContactPoints(OBB& _boxA, OBB& _boxB);
+	XMFLOAT3 AveragePoints(XMFLOAT3* points, int count);
+	bool OverlapOnAxis(OBB& _obbA, OBB& _obbB, XMFLOAT3& _axis, float& _minDistance, int& _minAxeIndex, int _currAxeIndex);
 
 	PartitionGrid m_partitionGrid;
 	Vector<std::pair<EntityId, EntityId>> m_candidatePairs;
