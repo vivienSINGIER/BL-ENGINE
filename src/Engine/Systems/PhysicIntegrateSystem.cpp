@@ -6,6 +6,8 @@ namespace
     constexpr float kSleepLinearThreshold = 0.05f;
     constexpr float kSleepAngularThreshold = 0.05f;
 	constexpr float kSleepTimeThreshold = 0.5f;
+
+	constexpr float kAngularDamping = 2.0f;
 }
 
 void PhysicIntegrateSystem::OnStartUpdate(float _dt)
@@ -26,8 +28,21 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
     else
         SphereInertie(_physic, _collider);
 
-    XMFLOAT3 deltaAngle = IntegrateTorque(_physic, _dt);
-    UpdateQuaternion(_transform, deltaAngle);
+    if (_e == 5 || _e == 6)
+    {
+		int o = 0;
+	}
+
+    if (_physic.rotation)
+    {
+        XMFLOAT3 deltaAngle = IntegrateTorque(_physic, _dt);
+        UpdateQuaternion(_transform, deltaAngle);
+    }
+    else
+    {
+        _physic.angularVelocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        _physic.torque = XMFLOAT3(0.0f, 0.0f, 0.0f);
+    }
 
     // Sleep logic
     XMFLOAT3 velocityForSleep = _physic.velocity;
@@ -103,8 +118,12 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateTorque(PhysicComponent& _physic, float 
 
     _physic.angularVelocity = Add(_physic.angularVelocity, Mul(angularAcceleration, _dt));
 
-    float angularDampingFactor = 1.0f / (1.0f + _physic.angularDamping * _dt);
+    float angularDampingFactor = 1.0f / (1.0f + kAngularDamping * _dt);
     _physic.angularVelocity = Mul(_physic.angularVelocity, angularDampingFactor);
+
+    if (NormSquared(_physic.angularVelocity) < 1e-4f)
+        _physic.angularVelocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
     _physic.torque = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
     return Mul(_physic.angularVelocity, _dt); //Angle delta

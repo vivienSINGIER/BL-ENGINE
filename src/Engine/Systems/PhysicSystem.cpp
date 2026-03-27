@@ -69,8 +69,6 @@ void PhysicSystem::ResolveAllImpulses(int _iterations)
             if (physicA.isSleeping && physicB.isSleeping)
                 continue;
 
-            int pointCount = (contact.pointCount > 0) ? contact.pointCount : 1;
-
             for (int i = 0; i < contact.pointCount; ++i)
             {
                 XMFLOAT3 point = contact.points[i].position;
@@ -152,6 +150,18 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
     _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
 
+    if (_physicA.type != BodyType::Static && _physicA.rotation)
+    {
+        XMFLOAT3 deltaAngularA = ComputeAngularVelocityDelta(ctx.rA, normalImpulse, _physicA.inertieInverse);
+        _physicA.angularVelocity = Subtract(_physicA.angularVelocity, deltaAngularA);
+    }
+
+    if (_physicB.type != BodyType::Static && _physicB.rotation)
+    {
+        XMFLOAT3 deltaAngularB = ComputeAngularVelocityDelta(ctx.rB, normalImpulse, _physicB.inertieInverse);
+        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
+    }
+
     // -----------------------------
     // Recalcul au point après normale
     // -----------------------------
@@ -168,10 +178,10 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
     float velocityTangent = Dot(ctx.relativeVelocity, tangent);
 
     // Contact quasi au repos : on ignore les micro-frictions parasites
-    if (abs(postNormalVelocity) < kRestingNormalVelocityThreshold && abs(velocityTangent) < kRestingTangentVelocityThreshold)
-    {
+    if (abs(velocityTangent) < 0.05f)
         return;
-    }
+    if (abs(postNormalVelocity) < kRestingNormalVelocityThreshold && abs(velocityTangent) < kRestingTangentVelocityThreshold)
+        return;
 
     // -----------------------------
     // Impulsion tangentielle
@@ -198,6 +208,18 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
 
     _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
     _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
+
+    if (_physicA.type != BodyType::Static && _physicA.rotation)
+    {
+        XMFLOAT3 deltaAngularA = ComputeAngularVelocityDelta(ctx.rA, frictionImpulse, _physicA.inertieInverse);
+        _physicA.angularVelocity = Subtract(_physicA.angularVelocity, deltaAngularA);
+    }
+
+    if (_physicB.type != BodyType::Static && _physicB.rotation)
+    {
+        XMFLOAT3 deltaAngularB = ComputeAngularVelocityDelta(ctx.rB, frictionImpulse, _physicB.inertieInverse);
+        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
+    }
 }
 
 PhysicSystem::ContactPointContext PhysicSystem::BuildContactPointContext(PhysicComponent& _physicA, PhysicComponent& _physicB,
@@ -273,6 +295,12 @@ float PhysicSystem::ComputeTangentImpulseScalar(PhysicComponent& _physicA, Physi
 XMFLOAT3 PhysicSystem::ComputeTangent(const XMFLOAT3& _relativeVelocity, const XMFLOAT3& _normal) const
 {
     return Subtract(_relativeVelocity, Mul(_normal, Dot(_relativeVelocity, _normal)));
+}
+
+XMFLOAT3 PhysicSystem::ComputeAngularVelocityDelta(const XMFLOAT3& _r, const XMFLOAT3& _impulse, const XMFLOAT3& _inertiaInverse) const
+{
+    XMFLOAT3 angularImpulse = Cross(_r, _impulse);
+    return ApplyInertiaInverse(angularImpulse, _inertiaInverse);
 }
 
 XMFLOAT3 PhysicSystem::ApplyInertiaInverse(const XMFLOAT3& _v, const XMFLOAT3& _inertiaInverse) const

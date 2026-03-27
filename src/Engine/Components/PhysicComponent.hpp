@@ -27,7 +27,6 @@ struct PhysicComponent
     XMFLOAT3 torque = { 0.0f, 0.0f, 0.0f };
     XMFLOAT3 inertie = { 1.0f, 1.0f, 1.0f };
     XMFLOAT3 inertieInverse = { 1.0f, 1.0f, 1.0f };
-    float angularDamping = 0.1f;
     bool rotation = false;
 
     bool isSleeping = false;

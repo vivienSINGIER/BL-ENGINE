@@ -49,6 +49,7 @@ private:
         const Contact& _contact, const ContactPointContext& _ctx, const XMFLOAT3& _tangent, int _pointCount) const;
 
     XMFLOAT3 ComputeTangent(const XMFLOAT3& _relativeVelocity, const XMFLOAT3& _normal) const;
+    XMFLOAT3 ComputeAngularVelocityDelta(const XMFLOAT3& _r, const XMFLOAT3& _impulse, const XMFLOAT3& _inertiaInverse) const;
 
     XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const XMFLOAT3& _inertiaInverse) const;
     float ComputeAngularEffectiveMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const XMFLOAT3& _inertiaInverse) const;

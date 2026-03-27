@@ -4,32 +4,6 @@
 class TestCollision : public Test
 {
 public:
-    struct MoveScript : public IScript
-    {
-        void Update(float dt) override
-        {
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
-
-            if (InputManager::IsKeyPressed(E))
-                transform.AddYPR(XMFLOAT3(XM_PIDIV4 * dt, 0.0f, 0.0f));
-
-            if (InputManager::IsKeyPressed(A))
-                transform.AddYPR(XMFLOAT3(0.0f, -XM_PIDIV4 * dt, 0.0f));
-
-            if (InputManager::IsKeyDown(G))
-            {
-                PhysicComponent& physic = world->GetComponent<PhysicComponent>(entity);
-                physic.ToggleGravity();
-            }
-
-            if (InputManager::IsKeyPressed(W))
-            {
-                XMFLOAT3 scale = transform.GetScale();
-                transform.SetScale(XMFLOAT3(scale.x + 0.5f * dt, scale.y, scale.z));
-            }
-        }
-    };
-
     struct CameraScript : public IScript
     {
         void Update(float dt) override
@@ -202,9 +176,9 @@ public:
         // -----------------------------
         // TEST D : empilement
         // -----------------------------
-        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, false);
-        CreateCube(world, XMFLOAT3(8.0f, 1.1f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, false);
-        CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, false);
+        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 1.1f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
 
         // -----------------------------
         // TEST E : collision latérale
@@ -226,7 +200,7 @@ public:
 
         CreateCube(
             world,
-            XMFLOAT3(4.f, 0.0f, 6.0f),
+            XMFLOAT3(4.0f, 0.0f, 6.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
             nullptr,
             true,
@@ -240,30 +214,17 @@ public:
         );
 
         // -----------------------------
-        // TEST F : cube de debug pilotable
+		// TEST F : Rotation
         // -----------------------------
-        EntityId debugCube = CreateCube(
-            world,
-            XMFLOAT3(0.0f, 5.0f, 5.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
-            true,
-            1.0f,
-            true,
-            true,
-            XMFLOAT3(0.0f, 0.0f, 0.0f),
-            0.5f,
-            0.3f,
-            0.0f
-        );
-        world.AddScript<MoveScript>(debugCube);
+        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), nullptr, true, 1.0f, true, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), nullptr, true, 1.0f, true, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
 
         // -----------------------------
         // CAMERA
         // -----------------------------
         EntityId camera = world.CreateEntity();
         TransformComponent& tCamera = world.AddComponent<TransformComponent>(camera);
-        tCamera.local.SetPosition(XMFLOAT3(0.0f, 4.0f, -15.0f));
+        tCamera.local.SetPosition(XMFLOAT3(0.0f, 4.0f, -19.0f));
 
         CameraComponent& cam = world.AddComponent<CameraComponent>(camera);
         cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
