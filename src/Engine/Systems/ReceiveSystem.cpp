@@ -120,7 +120,42 @@ void ReceiveSystem::HandleClientReceive()
                     if (server != nullptr)
                         break;
 
+                    scene->world->AddRawScript(p.header.entityId, p.addScript.ComponentId);
+                }
+            case PacketType::RemoveComponent:
+                {
+                    Server* server = EngineManager::GetServer();
+                    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                    if (scene == nullptr) break;
+
+                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                        break;
                     
+                    m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+                    
+                    if (server != nullptr)
+                        break;
+                    
+                    if (ComponentRegistry::IsScript(p.removeComponent.cid))
+                        scene->world->RemoveRawScript(p.header.entityId, p.removeComponent.cid);
+                    else
+                        scene->world->RemoveRawComponent(p.header.entityId, p.removeComponent.cid);
+                }
+            case PacketType::Delete:
+                {
+                    Server* server = EngineManager::GetServer();
+                    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                    if (scene == nullptr) break;
+
+                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
+                        break;
+                    
+                    m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+                    
+                    if (server != nullptr)
+                        break;
+                    
+                    scene->world->DestroyEntity(p.header.entityId);
                 }
             default:
                 break;

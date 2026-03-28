@@ -116,6 +116,7 @@ struct Packet
 		AddScenePacket  addScene;
 		AddComponentPacket addComponent;
 		AddScriptPacket  addScript;
+		RemoveComponentPacket removeComponent;
 		StatePacket     state;
 		InputPacket     input;
 		ChatPacket      chat;
@@ -136,7 +137,7 @@ struct Packet
 		case PacketType::SetScene:			return sizeof(PacketHeader);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentId) + sizeof(uint32) + addComponent.size;
 		case PacketType::AddScript:			return sizeof(AddScriptPacket);
-		case PacketType::RemoveComponent:   return sizeof(PacketHeader) + sizeof(ComponentMask) + state.dataSize;
+		case PacketType::RemoveComponent:   return sizeof(RemoveComponentPacket);
 		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
 		case PacketType::Chat:              return sizeof(PacketHeader) + sizeof(uint32) + chat.messageLength;
 		default:                            return sizeof(PacketHeader);

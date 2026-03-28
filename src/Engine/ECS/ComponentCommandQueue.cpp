@@ -152,6 +152,17 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, false);
     _pWorld->MoveEntity(cmd.entity, rec, src, dst);
     m_toRemove.pop_back();
+    
+    Server* server = EngineManager::GetServer();
+    if (server == nullptr) return;
+        
+    Packet p;
+    p.header.type = PacketType::RemoveComponent;
+    p.header.entityId = cmd.entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    p.removeComponent.cid = cmd.component;
+    
+    server->SendGeneralReliablePacket(p);
 }
 
 void ComponentCommandQueue::FlushDestroy(World* _pWorld)
@@ -169,5 +180,15 @@ void ComponentCommandQueue::FlushDestroy(World* _pWorld)
     _pWorld->RemoveFromArchetype(cmd.entity, rec);
     _pWorld->entityManager.Destroy(cmd.entity);
     m_toDestroy.pop_back();
+    
+    Server* server = EngineManager::GetServer();
+    if (server == nullptr) return;
+        
+    Packet p;
+    p.header.type = PacketType::Delete;
+    p.header.entityId = cmd.entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    server->SendGeneralReliablePacket(p);
 }
 
