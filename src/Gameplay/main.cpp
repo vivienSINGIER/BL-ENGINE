@@ -1,20 +1,20 @@
 #include "pch.h"
 #include <windows.h>
 #include "main.h"
+#include "Engine/Engine.h"
 
 #ifdef _DEBUG
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
     Console::InitConsol();
     
-    /////////////////////////////////////////////////////////////////////////////
-    // EngineManager engineManager;
-    // engineManager.Initialize(1920, 1080, L"DON'T BLINK TO MUCH", true);
-    //
-    // SceneManager::CreateSceneType<SplashScreen>("SplashScreen");
-    // SceneManager::ChangeCurrentScene("SplashScreen");
-    //
-    // engineManager.Run();
+     EngineManager engineManager;
+     engineManager.Initialize(1920, 1080, L"LabyBL");
+     
+	 SceneManager::CreateScene("Default");
+	 SceneManager::ChangeCurrentScene("Default");
+
+     engineManager.Run();
     
     Console::DeleteConsol();
     return 0;
