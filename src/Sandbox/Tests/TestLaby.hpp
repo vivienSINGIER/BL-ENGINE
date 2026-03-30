@@ -202,16 +202,18 @@ public:
     {
 		Scene* scene = SceneManager::GetSceneWithName("Default");
 
-        for(int x = 0; x < _grid.size(); x++)
-            for(int y = 0; y < _grid[0].size(); y++)
-                if(_grid[x][y] == 'X')
+        for (int x = 0; x < _grid.size(); x++)
+        {
+            for (int y = 0; y < _grid[0].size(); y++)
+                if (_grid[x][y] == 'X')
                 {
-					EntityId e = scene->world.CreateEntity();
-					scene->world.AddComponent<TransformComponent>(e);
-					MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-					m.geo = RessourceManager::GetGeometry("CUBE");
-					scene->world.GetComponent<TransformComponent>(e).local.SetPosition(XMFLOAT3(x, 0.0f, y));
-				}
+                    EntityId e = scene->world.CreateEntity();
+                    TransformComponent& t = scene->world.AddComponent<TransformComponent>(e);
+                    MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
+                    m.geo = RessourceManager::GetGeometry("CUBE");
+                    t.local.SetPosition(XMFLOAT3(x, 0.0f, y));
+                }
+        }
 	}
 
     static void Run()
