@@ -23,6 +23,14 @@ void MainScene::OnInit()
 	cam.isMainCamera = true;
 	world->AddScript<Movement::ScriptMovement>(m_camera);
 
+	EntityId light = world->CreateEntity();
+	TransformComponent& lt = world->AddComponent<TransformComponent>(light);
+	lt.world.LookTo(XMFLOAT3(-1.0f, -1.0f, -1.0f));
+
+	LightComponent& l = world->AddComponent<LightComponent>(light);
+	l.type = LightType::Directional;
+	l.SetStrength(XMFLOAT3(0.8f, 0.8f, 0.8f));
+
 	EntityId e = world->CreateEntity();
 	world->AddScript<Labyrinthe::LabyScript>(e);
 }

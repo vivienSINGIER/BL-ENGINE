@@ -127,18 +127,18 @@ void InputManager::HandleInput(uint32 _clientId)
 {
     if (_clientId == 0)
         _clientId = EngineManager::GetClient()->GetId();
-    
+
     RegisterClient(_clientId);
 
     Array<InputState, AMOUNT_KEY>& kb = s_keyboardStates[_clientId];
     Array<InputState, AMOUNT_MOUSE>& mouse = s_mouseStates[_clientId];
     MouseData& mData = s_mouseDatas[_clientId];
-    
+
     for (const Pair<unsigned char, int> input : s_keyboardMap)
     {
         unsigned char inputKey = input.first;
         int indexKey = input.second;
-        
+
         bool isKeyDown = (GetAsyncKeyState(indexKey) & 0x8000) != 0;
         InputState currentState = kb[inputKey];
 
@@ -157,12 +157,12 @@ void InputManager::HandleInput(uint32 _clientId)
                 kb[inputKey] = NONE_STATE;
         }
     }
-    
+
     for (const Pair<unsigned char, int> input : s_mouseMap)
     {
         unsigned char inputButton = input.first;
         int indexButton = input.second;
-        
+
         bool isButtonDown = (GetAsyncKeyState(indexButton) & 0x8000) != 0;
         InputState currentState = mouse[inputButton];
 
@@ -181,18 +181,41 @@ void InputManager::HandleInput(uint32 _clientId)
                 mouse[inputButton] = NONE_STATE;
         }
     }
-    
+
     POINT p;
-    GetCursorPos( &p );
-    ScreenToClient( s_pHWND, &p );
-    XMINT2 newPos = {p.x, p.y};
-    
-    if (newPos.x == mData.x && newPos.y == mData.y) return;
-    
-    mData.deltaX = newPos.x - mData.x;
-    mData.deltaY = newPos.y - mData.y;
-    mData.x = newPos.x;
-    mData.y = newPos.y;
+    GetCursorPos(&p);
+    ScreenToClient(s_pHWND, &p);
+
+    XMINT2 newPos = { p.x, p.y };
+
+    if (mData.cursorLocked)
+    {
+        RECT rect;
+        GetClientRect(s_pHWND, &rect);
+
+        int centerX = (rect.right - rect.left) / 2;
+        int centerY = (rect.bottom - rect.top) / 2;
+
+        mData.deltaX = newPos.x - centerX;
+        mData.deltaY = newPos.y - centerY;
+
+        POINT center = { centerX, centerY };
+        ClientToScreen(s_pHWND, &center);
+        SetCursorPos(center.x, center.y);
+
+        mData.x = centerX;
+        mData.y = centerY;
+    }
+    else
+    {
+        mData.deltaX = newPos.x - mData.x;
+        mData.deltaY = newPos.y - mData.y;
+
+        mData.x = newPos.x;
+        mData.y = newPos.y;
+    }
+
+    mData.dirty = true;
 }
 
 bool InputManager::BuildKeyboardPacket(Packet& _p)
@@ -441,7 +464,6 @@ void InputManager::SetMousePosition( XMINT2 const& coordinates, uint32 _clientId
     s_mouseDatas[_clientId].dirty = true;
 }
 
-
 void InputManager::LockMouseCursor(uint32 _clientId)
 {
     if (_clientId == 0)
@@ -485,7 +507,6 @@ bool InputManager::IsMouseCursorLocked(uint32 _clientId)
     return s_mouseDatas[_clientId].cursorLocked;
 }
 
-
 void InputManager::ShowMouseCursor(uint32 _clientId)
 {
     if (_clientId == 0)
@@ -506,7 +527,7 @@ void InputManager::HideMouseCursor(uint32 _clientId)
         _clientId = EngineManager::GetClient()->GetId();
     RegisterClient(_clientId);
     
-    if (  s_mouseDatas[_clientId].cursorVisible ) return;
+    if ( !s_mouseDatas[_clientId].cursorVisible ) return;
     s_mouseDatas[_clientId].cursorVisible = false;
 
     while ( s_mouseDatas[_clientId].cursorVisibilityCount >= 0 )
