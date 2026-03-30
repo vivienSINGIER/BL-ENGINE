@@ -26,18 +26,23 @@ void SystemScheduler::Run(float _dt)
         if (i == Phase::PreRender && (flag & CLIENT) == CLIENT)
 			EngineManager::GetInstance().GetWindow()->Clear();
 
-        for (ISystem* sys : m_phases[i])
+        if (i == Phase::FixedUpdate)
         {
-            if (i == Phase::FixedUpdate)
+            while (m_accumulator >= 0.016666667f)
             {
-                while (m_accumulator >= 0.016666667f)
-                {
+                for (ISystem* sys : m_phases[i])
                     sys->Update(0.016666667f);
-                    m_accumulator -= 0.016666667f;
-				}
+
+                m_accumulator -= 0.016666667f;
             }
-			else if ((sys->networkFlags & flag))
-                sys->Update(_dt);
+        }
+        else
+        {
+            for (ISystem* sys : m_phases[i])
+            {
+                if ((sys->networkFlags & flag))
+                    sys->Update(_dt);
+            }
         }
 
 		if (i == Phase::PostRender && (flag & CLIENT) == CLIENT)

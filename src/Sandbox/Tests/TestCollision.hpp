@@ -1,6 +1,7 @@
 #ifndef TEST_COLLISION_HPP_DEFINED
 #define TEST_COLLISION_HPP_DEFINED
 
+#include "Test.h"
 #include "../Engine/Engine.h"
 
 class TestCollision : public Test
@@ -12,25 +13,25 @@ public:
         {
             TransformComponent& t = GetComponent<TransformComponent>();
 
-            if (InputManager::IsKeyPressed(Z))
+            if (InputManager::IsKey(Z))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 2.0f * dt));
-            if (InputManager::IsKeyPressed(S))
+            if (InputManager::IsKey(S))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, -2.0f * dt));
-            if (InputManager::IsKeyPressed(Q))
+            if (InputManager::IsKey(Q))
                 t.local.Move(XMFLOAT3(-2.0f * dt, 0.0f, 0.0f));
-            if (InputManager::IsKeyPressed(D))
+            if (InputManager::IsKey(D))
                 t.local.Move(XMFLOAT3(2.0f * dt, 0.0f, 0.0f));
-            if (InputManager::IsKeyPressed(SPACE))
+            if (InputManager::IsKey(SPACE))
                 t.local.Move(XMFLOAT3(0.0f, 2.0f * dt, 0.0f));
-            if (InputManager::IsKeyPressed(LCONTROL))
+            if (InputManager::IsKey(LCONTROL))
                 t.local.Move(XMFLOAT3(0.0f, -2.0f * dt, 0.0f));
         }
     };
 
-    static EntityId CreateCube(World& world,
+    static EntityId CreateCube(World* world,
         const XMFLOAT3& position,
         const XMFLOAT3& scale,
-        Material* material,
+        uint32 material,
         bool dynamicBody,
         float mass = 1.0f,
         bool useGravity = true,
@@ -40,16 +41,16 @@ public:
         float dynamicFriction = 0.3f,
         float restitution = 0.0f)
     {
-        EntityId e = world.CreateEntity();
+        EntityId e = world->CreateEntity();
 
-        TransformComponent& t = world.AddComponent<TransformComponent>(e);
+        TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
         t.local.SetScale(scale);
 
-        ColliderComponent& c = world.AddComponent<ColliderComponent>(e);
+        ColliderComponent& c = world->AddComponent<ColliderComponent>(e);
         c.type = ColliderType::Box;
 
-        PhysicComponent& p = world.AddComponent<PhysicComponent>(e);
+        PhysicComponent& p = world->AddComponent<PhysicComponent>(e);
 
         if (dynamicBody)
         {
@@ -70,10 +71,10 @@ public:
             p.restitution = restitution;
         }
 
-        MeshRenderer& m = world.AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        MeshRenderer& m = world->AddComponent<MeshRenderer>(e);
+		m.geoId = RessourceManager::GetGeometryId("Cube");
         if (material)
-			m.material = material;
+			m.materialId = material;
 
         return e;
     }
@@ -83,25 +84,19 @@ public:
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Collision Reference");
 
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        World& world = scene->world;
+        World* world = scene->world;
 
-        world.RegisterSystem<TransformSystem>(Phase::Update);
-        world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-        world.RegisterSystem<CameraSystem>(Phase::PreRender);
-        world.RegisterSystem<LightSystem>(Phase::PreRender);
+        RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
+        uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
+        Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
+        RessourceManager::AddMaterial("White", white);
 
-        world.RegisterSystem<PhysicIntegrateSystem>(Phase::FixedUpdate);
+        RessourceManager::AddCamera("Default");
 
-        ColliderSystem* colSys = world.RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
-        colSys->InitializePartitionGrid(XMINT2(200, 200), 10);
-        colSys->SetContactManager(EngineManager::GetContactManager());
+        ComponentRegistry::RegisterScript<CameraScript>();
 
-        PhysicSystem* physSys = world.RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
-        physSys->SetContactManager(EngineManager::GetContactManager());
-
-        Material* mat = RessourceManager::GetShader("Color")->CreateMaterial();
-        RessourceManager::AddMaterial("debug_ref", mat);
-        mat->SetFloat4("DiffuseAlbedo", XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f));
+        uint32 mat = RessourceManager::GetMaterialId("White");
+		uint32 otherMat = RessourceManager::GetMaterialId("Default");
 
         // -----------------------------
         // SOL PRINCIPAL
@@ -128,7 +123,7 @@ public:
             world,
             XMFLOAT3(-15.0f, 5.0f, 0.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
+            otherMat,
             true,
             1.0f,
             true,
@@ -146,7 +141,7 @@ public:
             world,
             XMFLOAT3(-8.0f, 0.0f, 0.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
+            otherMat,
             true,
             1.0f,
             true,
@@ -164,7 +159,7 @@ public:
             world,
             XMFLOAT3(-8.0f, 0.0f, -2.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
+            otherMat,
             true,
             1.0f,
             true,
@@ -178,8 +173,8 @@ public:
         // -----------------------------
         // TEST D : empilement
         // -----------------------------
-        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
-        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
         //CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
 
         // -----------------------------
@@ -189,7 +184,7 @@ public:
             world,
             XMFLOAT3(0.0f, 0.0f, 6.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
+            otherMat,
             true,
             1.0f,
             false,
@@ -204,7 +199,7 @@ public:
             world,
             XMFLOAT3(4.0f, 0.0f, 6.0f),
             XMFLOAT3(1.0f, 1.0f, 1.0f),
-            nullptr,
+            otherMat,
             true,
             1.0f,
             false,
@@ -218,30 +213,30 @@ public:
         // -----------------------------
 		// TEST F : Rotation
         // -----------------------------
-        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), nullptr, true, 1.0f, true, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
-        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), nullptr, true, 1.0f, true, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
 
         // -----------------------------
         // CAMERA
         // -----------------------------
-        EntityId camera = world.CreateEntity();
-        TransformComponent& tCamera = world.AddComponent<TransformComponent>(camera);
+        EntityId camera = world->CreateEntity();
+        TransformComponent& tCamera = world->AddComponent<TransformComponent>(camera);
         tCamera.local.SetPosition(XMFLOAT3(0.0f, 4.0f, -19.0f));
 
-        CameraComponent& cam = world.AddComponent<CameraComponent>(camera);
-        cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
+        CameraComponent& cam = world->AddComponent<CameraComponent>(camera);
+        cam.camId = RessourceManager::GetCameraId("Default");
         cam.isMainCamera = true;
 
-        world.AddScript<CameraScript>(camera);
+        world->AddScript<CameraScript>(camera);
 
         // -----------------------------
         // LIGHT
         // -----------------------------
-        EntityId light = world.CreateEntity();
-        TransformComponent& tLight = world.AddComponent<TransformComponent>(light);
+        EntityId light = world->CreateEntity();
+        TransformComponent& tLight = world->AddComponent<TransformComponent>(light);
         tLight.local.SetPosition(XMFLOAT3(8.0f, 12.0f, -4.0f));
 
-        LightComponent& l = world.AddComponent<LightComponent>(light);
+        LightComponent& l = world->AddComponent<LightComponent>(light);
         l.SetPoint(1.0f, 50.0f, 1);
 
         EngineManager::GetInstance().Run();
