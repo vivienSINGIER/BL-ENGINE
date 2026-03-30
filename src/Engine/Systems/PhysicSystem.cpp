@@ -46,11 +46,6 @@ void PhysicSystem::ResolveAllOverlaps()
         PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
         PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
-        if (contact.a == 4 && contact.b == 5)
-        {
-            int o = 0;
-        }
-
 		WakeBodiesFromContact(physicA, physicB, contact);
         ResolveOverlap(physicA, physicB, contact);
     }
