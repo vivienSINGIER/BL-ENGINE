@@ -15,7 +15,7 @@ public:
         {
 			InputManager::HandleInput();
 
-            if (InputManager::IsKeyPressed(Z))
+            if (InputManager::IsKey(Z))
             {
 				std::cout << "Z is pressed" << std::endl;
             }
@@ -26,14 +26,12 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
-        scene->world.AddScript<TestScript>(e);
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
+        m.geoId = RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
+        scene->world->AddScript<TestScript>(e);
 
         Camera cam;
         XMFLOAT3 pos = XMFLOAT3(0.0f, -3.0f, -3.0f);

@@ -1,13 +1,20 @@
 #ifndef DEFINE_H_INCLUDED
 #define DEFINE_H_INCLUDED
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef _WINSOCKAPI_
+#define _WINSOCKAPI_
+#endif
+#include <windows.h>
+
 #include <any>
 #include <DirectXCollision.h>
 #include <string>
 #include <vector>
 #include <array>
 #include <unordered_map>
-#include <windows.h>
 
 #include <DirectXMath.h>
 #include <map>

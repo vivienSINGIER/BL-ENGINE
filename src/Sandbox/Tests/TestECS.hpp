@@ -59,8 +59,8 @@ public:
         World world;
 
         // Register systems before creating entities
-        world.RegisterSystem<MoveSystem>(Phase::Update);
-        world.RegisterSystem<DrainSystem>(Phase::Update);
+        SystemScheduler::Get().RegisterSystem<MoveSystem>(Phase::Update);
+        SystemScheduler::Get().RegisterSystem<DrainSystem>(Phase::Update);
 
         // ── Test 1: basic entity creation ──────────
         EntityId e1 = world.CreateEntity();

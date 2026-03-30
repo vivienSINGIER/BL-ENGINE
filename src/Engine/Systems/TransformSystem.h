@@ -1,7 +1,7 @@
 #ifndef TRANSFORM_SYSTEM_H_DEFINED
 #define TRANSFORM_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "../Components/TransformComponent.hpp"
 
 class TransformSystem : public System<TransformComponent>
@@ -11,7 +11,7 @@ public:
 
 private:
     bool IsDirty(Transform& _transform, uint32 _flag);
-    void UpdateMatrix(TransformComponent& _t);
+    void UpdateMatrix(TransformComponent& _t, EntityId _e);
 };
 
 #endif

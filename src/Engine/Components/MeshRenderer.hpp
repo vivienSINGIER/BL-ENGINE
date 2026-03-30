@@ -5,8 +5,8 @@
 
 struct MeshRenderer
 {
-    Geometry* geo;
-    Material* material;
+    uint32 geoId;
+    uint32 materialId;
 };
 
 #endif

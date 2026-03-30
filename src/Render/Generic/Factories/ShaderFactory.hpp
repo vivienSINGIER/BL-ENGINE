@@ -1,7 +1,7 @@
 ﻿#ifndef SHADER_FACTORY_HPP_DEFINED
 #define SHADER_FACTORY_HPP_DEFINED
 
-#include "../Base/Device.h";
+#include "../Base/Device.h"
 #include "../Shader-Mat/Shader.h"
 #include "../Shader-Mat/Material.h"
 

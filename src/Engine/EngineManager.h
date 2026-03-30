@@ -2,7 +2,6 @@
 #define ENGINE_MANAGER_H_DEFINED
 
 // Engine
-#include "SceneManager.h"
 #include "define.h"
 
 // Render
@@ -14,6 +13,9 @@ class Scene;
 class Camera;
 class RessourceManager;
 class ContactManager;
+class SceneManager;
+class Client;
+class Server;
 
 class EngineManager
 {
@@ -23,15 +25,23 @@ public:
 
     static EngineManager& GetInstance();
     
-    void Initialize(UINT _width, UINT _height, WString _title);
+    void Initialize(UINT _width, UINT _height, WString _title, uint8 _flag = NetworkFlag::CLIENT);
     void Run();
     void Exit();
-    
+
+	void HostServer(int _port = 1888);
+	void Connect(String const& ip, int _port);
+	
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }
     static Device* GetDevice() { return GetInstance().m_pDevice; }
     static ContactManager* GetContactManager() { return GetInstance().m_pContactManager; }
     
+	static uint8 GetNetworkFlag() { return GetInstance().m_networkFlag; }
+
+	static Client* GetClient() { return GetInstance().m_pClient; }
+	static Server* GetServer() { return GetInstance().m_pServer; }
+
 private:
     static EngineManager* s_pInstance;
 
@@ -47,8 +57,12 @@ private:
     RessourceManager* m_pRessourceManager;
 
 	ContactManager* m_pContactManager;
+	Client* m_pClient = nullptr;
+	Server* m_pServer = nullptr;
     
     float m_DeltaTime = 0.0f;
+
+	uint8 m_networkFlag = NetworkFlag::NONE;
 };
 
 #endif

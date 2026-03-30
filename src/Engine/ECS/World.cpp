@@ -1,52 +1,151 @@
 #include "World.h"
+#include "ComponentRegistry.h"
 
 World::World()
 {
     m_archetypeRegistry.SetWorld(this);
 }
 
-EntityId World::CreateEntity()
+Vector<EntityId> World::GetEntities()
 {
-    EntityId e = m_entityManager.Create();
+    Vector<EntityId> entities;
+    for (Archetype* archetype : m_archetypeRegistry.All())
+    {
+        for (EntityId id : archetype->entities)
+            entities.push_back(id);
+    }
+    return entities;
+}
+
+EntityId World::CreateEntity(EntityId _id, bool isCopied)
+{
+    EntityId e;
+    if (isCopied == true)
+        e = entityManager.Create(_id, true);
+    else
+        e = entityManager.Create();
 
     Archetype* root = m_archetypeRegistry.GetOrCreate(ComponentMask{});
-    EntityRecord& rec = m_entityManager.GetRecord(e);
+    EntityRecord& rec = entityManager.GetRecord(e);
     rec.archetype = root;
     rec.row = (uint32)root->entities.size();
 
     root->entities.push_back(e);
     root->storage.FinishPush();
 
+    m_commandQueue.EmplaceCreate(e);
+    
     return e;
 }
 
 void World::DestroyEntity(EntityId _entity)
 {
-    assert(m_entityManager.IsAlive(_entity) && "Destroying dead entity");
+    assert(entityManager.IsAlive(_entity) && "Destroying dead entity");
 
     m_commandQueue.EmplaceDestroy(_entity);
 }
 
 void World::SetActive(EntityId _entity)
 {
-    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = true;
 }
 
 void World::SetInactive(EntityId _entity)
 {
-    EntityRecord& rec = m_entityManager.GetRecord(_entity);
+    EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = false;
 }
 
 bool World::IsActive(EntityId _entity)
 {
-    return m_entityManager.GetRecord(_entity).isActive;
+    return entityManager.GetRecord(_entity).isActive;
+}
+
+void World::AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data)
+{
+    assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
+    assert(!ComponentRegistry::IsScript(_cid) && "Component should not be a script");
+
+    m_commandQueue.EmplaceAddRaw(_e, _cid, _size, _data);
+}
+
+void World::RemoveRawComponent(EntityId _e, ComponentId _cid)
+{
+    assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
+
+    m_commandQueue.EmplaceRemoveRaw(_e, _cid);
+}
+
+void* World::GetRawComponent(EntityId _e, ComponentId _cid)
+{
+    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
+
+    ComponentId cid = _cid;
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(cid) && "Component not present");
+
+    void* stored = src->storage.GetRaw(cid, rec.row);
+    return stored;
+}
+
+void World::AddRawScript(EntityId _e, ComponentId _cid)
+{
+    assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
+    assert(ComponentRegistry::IsScript(_cid) && "Script should not be a component");
+    
+    ScriptRegistry* reg = nullptr;
+    if (!HasComponent<ScriptRegistry>(_e))
+        reg = &AddComponent<ScriptRegistry>(_e);
+    else
+        reg = &GetComponent<ScriptRegistry>(_e);
+    
+    void* ptr = m_commandQueue.EmplaceAddRaw(_e, _cid, ComponentRegistry::GetSize(_cid), nullptr);
+    IScript* script = ComponentRegistry::ConstructScript(_cid, ptr);
+    
+    script->world = this;
+    script->entity = _e;
+
+    ComponentId cid = _cid;
+    reg->push_back(cid);
+
+    script->Awake();
+}
+
+void World::RemoveRawScript(EntityId _e, ComponentId _cid)
+{
+    assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
+    
+    GetRawScript(_e, _cid)->Destroy();
+    m_commandQueue.EmplaceRemoveRaw(_e, _cid);
+
+    ScriptRegistry& reg = GetComponent<ScriptRegistry>(_e);
+    reg.remove(_cid);
+}
+
+IScript* World::GetRawScript(EntityId _e, ComponentId _cid)
+{
+    assert(entityManager.IsAlive(_e) && "Can't access script from dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
+
+    ComponentId cid = _cid;
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(cid) && "Component not present");
+
+    IScript* stored = reinterpret_cast<IScript*>(src->storage.GetRaw(cid, rec.row));
+    return stored;
 }
 
 void World::Update(float _dt)
 {
-    m_systemScheduler.Run(_dt);
+    SystemScheduler::Get().Run(_dt);
     m_commandQueue.Flush(this);
 }
 
@@ -115,7 +214,7 @@ void World::RemoveFromArchetype(EntityId _e, EntityRecord& _rec)
     EntityId last = src->entities.back();
     if (last != _e)
     {
-        m_entityManager.GetRecord(last).row = srcRow;
+        entityManager.GetRecord(last).row = srcRow;
     }
 
     src->storage.SwapRemove(srcRow);

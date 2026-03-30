@@ -2,17 +2,29 @@
 #define SCENE_CPP_DEFINED
 
 #include "Scene.h"
+#include "Engine.h"
 
-void Scene::Init(String const& _name)
+Scene::Scene()
+{
+    world = new World();
+}
+
+Scene::~Scene()
+{
+    delete world;
+}
+
+void Scene::Init(String const& _name, uint32 _id)
 {
     m_name = _name;
-
+    m_id = _id;
+    
     OnInit();
 }
 
 void Scene::Update(float _dt)
 {
-    world.Update(_dt);
+    world->Update(_dt);
 
     OnUpdate(_dt);
 }

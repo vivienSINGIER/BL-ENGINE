@@ -2,15 +2,17 @@
 #define COMPONENT_COMMANDQUEUE_INL_DEFINED
 
 #include "ComponentCommandQueue.h"
+#include "ComponentId.hpp"
 
 template <typename T>
 T& ComponentCommandQueue::EmplaceAdd(EntityId _e, T const& _val)
 {
     Command cmd;
     cmd.entity = _e;
-    cmd.component = ComponentRegistry::Id<T>();
+    cmd.component = ComponentType::Id<T>();
     cmd.size = sizeof(T);
     cmd.offset = m_offset;
+    cmd.isScript = ComponentRegistry::IsScript(ComponentType::Id<T>());
         
     T* ptr = reinterpret_cast<T*>(m_componentSideBuffer + m_offset);
     memcpy(ptr, &_val, sizeof(T));
@@ -31,7 +33,8 @@ void ComponentCommandQueue::EmplaceRemove(EntityId _e)
 {
     Command cmd;
     cmd.entity = _e;
-    cmd.component = ComponentRegistry::Id<T>();
+    cmd.component = ComponentType::Id<T>();
+    cmd.isScript = ComponentRegistry::IsScript(ComponentType::Id<T>());;
     m_toRemove.emplace(m_toRemove.begin(), cmd);
 }
 

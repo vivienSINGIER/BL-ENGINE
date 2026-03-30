@@ -23,11 +23,11 @@ struct EntityRecord
 class EntityManager 
 {
 public:
-    EntityId Create();
+    EntityId Create(EntityId id = 0, bool isSetId = false);
     void Destroy(EntityId _e);
     bool IsAlive(EntityId _e);
     EntityRecord& GetRecord(EntityId _e);
-
+    
 private:
     Vector<EntityRecord> m_vRecords;
     Vector<uint32> m_freeList;

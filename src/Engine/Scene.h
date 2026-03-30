@@ -2,16 +2,20 @@
 #define SCENE_H_DEFINED
 
 #include "define.h"
-#include "ECS/World.h"
+
+class World;
 
 class Scene
 {
 public:
+	Scene();
+	
 	String GetName() { return m_name; }
+	uint32 GetId() { return m_id; }
 
-	virtual ~Scene() {}
+	virtual ~Scene();
 
-	World world;
+	World* world;
 	
 protected:
 	virtual void OnInit() {}
@@ -21,8 +25,9 @@ protected:
 
 private:
 	String m_name;
+	uint32 m_id;
 
-	void Init(String const& _name);
+	void Init(String const& _name, uint32 _id);
 	void Update(float _dt);
 
 	friend class EngineManager;

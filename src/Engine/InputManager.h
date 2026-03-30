@@ -2,8 +2,9 @@
 #define INPUT_SYSTEM_H_INCLUDED
 
 #include "define.h"
+#include "Network/Packet.hpp"
 
-enum InputKeyboard
+enum InputKeyboard 
 {
     F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
     
@@ -48,7 +49,7 @@ enum InputKeyboard
     RIGHT_ARROW = RIGHT,
 };
 
-enum InputMouse
+enum InputMouse 
 {
     LEFT_MOUSE,
     RIGHT_MOUSE,
@@ -56,12 +57,16 @@ enum InputMouse
     AMOUNT_MOUSE
 };
 
-enum InputState : UINT8
+struct MouseData
 {
-    NONE            = 0,
-    DOWN_STATE      = 1 << 0,
-    PRESSED_STATE   = 1 << 1,
-    UP_STATE        = 1 << 2
+    bool cursorLocked = false;
+    bool cursorVisible = true;
+    int cursorVisibilityCount = 0;
+    
+    int32 x, y;
+    float deltaX, deltaY;
+    
+    bool dirty = false;
 };
 
 class InputManager
@@ -72,37 +77,54 @@ public:
 
     static void Initialize(HWND hwnd);
 
-    static void HandleInput();
+    static void HandleInput(uint32 _clientId = 0);
+    static void UpdateRemoteStates();
     
-    static bool IsKeyPressed(InputKeyboard key);
-    static bool IsKeyUp(InputKeyboard key);
-    static bool IsKeyDown(InputKeyboard key);
-    static bool IsMouseButtonPressed(InputMouse key);
-    static bool IsMouseButtonUp(InputMouse key);
-    static bool IsMouseButtonDown(InputMouse key);
-    static XMINT2 GetMousePosition();
-    static void SetMousePosition(XMINT2 const& coordinates);
-    static void LockMouseCursor();
-    static void UnlockMouseCursor();
-    static bool IsMouseCursorLocked() { return s_cursorLocked; }
-    static void ShowMouseCursor();
-    static void HideMouseCursor();
-    static bool IsMouseCursorVisible() { return s_cursorVisible; }
+    static bool BuildKeyboardPacket(Packet& _p);
+    static bool BuildMousePacket(Packet& _p);
+    static bool BuildMouseButtonPacket(Packet& _p);
+    
+    static void UpdateFromPacket(Packet& _p, uint32 _clientId = 0);
+    
+    static void SetKeyState(InputKeyboard _key, InputState _state, uint32 _clientId = 0);
+    
+    static bool IsKeyDown(InputKeyboard _key, uint32 _clientId = 0);
+    static bool IsKey(InputKeyboard _key, uint32 _clientId = 0);
+    static bool IsKeyUp(InputKeyboard _key, uint32 _clientId = 0);
+    
+    static bool IsMouseButtonPressed(InputMouse _key, uint32 _clientId = 0);
+    static bool IsMouseButtonUp(InputMouse _key, uint32 _clientId = 0);
+    static bool IsMouseButtonDown(InputMouse _key, uint32 _clientId = 0);
+    
+    static void SetMouseButtonState(InputMouse _key, InputState _state, uint32 _clientId = 0);
+    
+    static XMINT2 GetMousePosition(uint32 _clientId = 0);
+    static XMFLOAT2 GetMouseDelta(uint32 _clientId = 0);
+    static void SetMousePosition(XMINT2 const& coordinates, uint32 _clientId = 0);
+    
+    static void LockMouseCursor(uint32 _clientId = 0);
+    static void UnlockMouseCursor(uint32 _clientId = 0);
+    static bool IsMouseCursorLocked(uint32 _clientId = 0);
+    
+    static void ShowMouseCursor(uint32 _clientId = 0);
+    static void HideMouseCursor(uint32 _clientId = 0);
+    static bool IsMouseCursorVisible(uint32 _clientId = 0);
 
 
 private:
     static UnorderedMap<UINT8, INT32> s_keyboardMap;
-    inline static InputState s_keyboardStates[AMOUNT_KEY];
-
-    inline static bool s_cursorLocked = false;
-    inline static bool s_cursorVisible = true;
-    inline static int s_cursorVisibilityCount = 0;
-    
     static UnorderedMap<UINT8, INT32> s_mouseMap;
-    inline static InputState s_mouseStates[AMOUNT_MOUSE];
-
+    
+    inline static UnorderedMap<uint32, Array<InputState, AMOUNT_KEY>> s_keyboardStates;
+    inline static UnorderedMap<uint32, Array<InputState, AMOUNT_KEY>>  s_lastKeyboardStates;
+    
+    inline static UnorderedMap<uint32, Array<InputState, AMOUNT_MOUSE>> s_mouseStates;
+    inline static UnorderedMap<uint32, Array<InputState, AMOUNT_MOUSE>> s_lastMouseStates;
+    inline static UnorderedMap<uint32, MouseData> s_mouseDatas;
+    
     inline static HWND s_pHWND = nullptr;
-
+    
+    static void RegisterClient(uint32 _clientId);
 };
 
 

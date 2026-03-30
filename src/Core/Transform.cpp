@@ -75,7 +75,7 @@ Transform& Transform::operator=(Transform&& other) noexcept
 
 XMFLOAT4X4& Transform::GetMatrix()
 {
-    if (dirty & WORLD)
+    if (dirty & (uint8)DIRTY_FLAG::WORLD)
         UpdateMatrix();
     
     return matrix;
@@ -83,7 +83,7 @@ XMFLOAT4X4& Transform::GetMatrix()
 
 XMFLOAT4X4& Transform::GetInvMatrix()
 {
-    if (dirty & INVERSE)
+    if (dirty & (uint8)DIRTY_FLAG::INVERSE)
         UpdateInvMatrix();
     
     return invMatrix;
@@ -108,23 +108,23 @@ void Transform::UpdateMatrix()
     XMMATRIX m = XMMatrixAffineTransformation(s, XMVectorZero(), r, p);
     XMStoreFloat4x4(&matrix, m);
     
-    dirty &= ~POS;
-    dirty &= ~SCALE;
-    dirty &= ~ROTATE;
+    dirty &= ~(uint8)DIRTY_FLAG::POS;
+    dirty &= ~(uint8)DIRTY_FLAG::SCALE;
+    dirty &= ~(uint8)DIRTY_FLAG::ROTATE;
 
-    dirty |= WORLD;
-    dirty |= INVERSE;
+    dirty |= (uint8)DIRTY_FLAG::WORLD;
+    dirty |= (uint8)DIRTY_FLAG::INVERSE;
 }
 
 void Transform::UpdateInvMatrix()
 {
-    if (dirty & WORLD)
+    if (dirty & (uint8)DIRTY_FLAG::WORLD)
         UpdateMatrix();
     
     XMMATRIX m = XMLoadFloat4x4(&matrix);
     XMStoreFloat4x4(&invMatrix, XMMatrixInverse(nullptr, m));
 
-    dirty &= ~INVERSE;
+    dirty &= ~(uint8)DIRTY_FLAG::INVERSE;
 }
 
 void Transform::UpdateFromParent(Transform const& parent)
@@ -151,7 +151,7 @@ void Transform::UpdateFromParent(Transform const& parent)
     XMStoreFloat3(&pos, worldPos);
     
     UpdateRotationFromQuaternion();
-    dirty |= WORLD | INVERSE;
+    dirty |= (uint8)DIRTY_FLAG::WORLD | (uint8)DIRTY_FLAG::INVERSE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ void Transform::Move(XMFLOAT3 const& delta)
     pos.y += delta.y;
     pos.z += delta.z;
     
-    dirty |= POS;
+    dirty |= (uint8)DIRTY_FLAG::POS;
 }
 
 void Transform::Move(XMFLOAT3 const& dir, float distance)
@@ -178,7 +178,7 @@ void Transform::Move(XMFLOAT3 const& dir, float distance)
     pos.y += dir.y * distance;
     pos.z += dir.z * distance;
 
-    dirty |= POS;
+    dirty |= (uint8)DIRTY_FLAG::POS;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -188,27 +188,27 @@ void Transform::Move(XMFLOAT3 const& dir, float distance)
 void Transform::SetScale(XMFLOAT3 const& _scale)
 {
     scale = _scale;
-    dirty |= SCALE;
+    dirty |= (uint8)DIRTY_FLAG::SCALE;
 }
 
 void Transform::SetScale(float _scale)
 {
     XMStoreFloat3(&scale, XMVectorReplicate(_scale));
-    dirty |= SCALE;
+    dirty |= (uint8)DIRTY_FLAG::SCALE;
 }
 
 void Transform::Scale(XMFLOAT3 const& _scale)
 {
     XMVECTOR s = XMVectorMultiply(XMLoadFloat3(&scale), XMLoadFloat3(&_scale));
     XMStoreFloat3(&scale, s);
-    dirty |= SCALE;
+    dirty |= (uint8)DIRTY_FLAG::SCALE;
 }
 
 void Transform::Scale(float _scale)
 {
     XMVECTOR s = XMVectorMultiply(XMLoadFloat3(&scale), XMVectorReplicate(_scale));
     XMStoreFloat3(&scale, s);
-    dirty |= SCALE;
+    dirty |= (uint8)DIRTY_FLAG::SCALE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +239,7 @@ void Transform::LookTo(XMFLOAT3 const& dir)
     XMStoreFloat4x4(&rotMatrix, rot);
     UpdateRotationFromMatrix();
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::LookAt(XMFLOAT3 const& target)
@@ -256,7 +256,7 @@ void Transform::LookAt(XMFLOAT3 const& target)
     XMStoreFloat4x4(&rotMatrix, rot);
     UpdateRotationFromMatrix();
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::SetRotationMatrix(XMFLOAT4X4 const& rotation)
@@ -264,7 +264,7 @@ void Transform::SetRotationMatrix(XMFLOAT4X4 const& rotation)
     rotMatrix = rotation;
     UpdateRotationFromMatrix();
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::SetRotationQuaternion(XMFLOAT4 const& _quat)
@@ -272,7 +272,7 @@ void Transform::SetRotationQuaternion(XMFLOAT4 const& _quat)
     quat = _quat;
     UpdateRotationFromQuaternion();
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::ResetRotation()
@@ -284,7 +284,7 @@ void Transform::ResetRotation()
     XMStoreFloat4x4(&rotMatrix,  XMMatrixIdentity());
     XMStoreFloat4  (&quat, XMQuaternionIdentity());
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::SetYPR(XMFLOAT3 const& ypr)
@@ -332,14 +332,14 @@ void Transform::UpdateRotationFromAxes()
 
     XMStoreFloat4(&quat, XMQuaternionRotationMatrix(XMLoadFloat4x4(&rotMatrix)));
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::UpdateRotationFromQuaternion()
 {
     XMStoreFloat4x4(&rotMatrix, XMMatrixRotationQuaternion(XMLoadFloat4(&quat)));
     ExtractAxesFromMatrix(rotMatrix, right, up, forward);
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 void Transform::UpdateRotationFromMatrix()
@@ -349,7 +349,7 @@ void Transform::UpdateRotationFromMatrix()
 
     ExtractAxesFromMatrix(rotMatrix, right, up, forward);
 
-    dirty |= ROTATE;
+    dirty |= (uint8)DIRTY_FLAG::ROTATE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

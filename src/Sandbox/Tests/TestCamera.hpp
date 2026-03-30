@@ -13,17 +13,17 @@ public:
         {
             TransformComponent& t = GetComponent<TransformComponent>();
 
-            if (InputManager::IsKeyPressed(Z))
+            if (InputManager::IsKey(Z))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * dt));
-            if (InputManager::IsKeyPressed(S))
+            if (InputManager::IsKey(S))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * dt));
-            if (InputManager::IsKeyPressed(Q))
+            if (InputManager::IsKey(Q))
                 t.local.Move(XMFLOAT3(-1.0f * dt, 0.0f, 0.0f));
-            if (InputManager::IsKeyPressed(D))
+            if (InputManager::IsKey(D))
                 t.local.Move(XMFLOAT3(1.0f * dt, 0.0f, 0.0f));
-            if (InputManager::IsKeyPressed(SPACE))
+            if (InputManager::IsKey(SPACE))
                 t.local.Move(XMFLOAT3(0.0f, 1.0f * dt, 0.0f));
-            if (InputManager::IsKeyPressed(LCONTROL))
+            if (InputManager::IsKey(LCONTROL))
                 t.local.Move(XMFLOAT3(0.0f, -1.0f * dt, 0.0f));
         }
     };
@@ -32,23 +32,22 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-        scene->world.RegisterSystem<CameraSystem>(Phase::PreRender);
 
-        EntityId e = scene->world.CreateEntity();
-        scene->world.AddComponent<TransformComponent>(e);
-        MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        EntityId e = scene->world->CreateEntity();
+        scene->world->AddComponent<TransformComponent>(e);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
+        m.geoId = RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
+        
+        RessourceManager::AddCamera("Default");
 
-        EntityId e1 = scene->world.CreateEntity();
-        TransformComponent& t1 = scene->world.AddComponent<TransformComponent>(e1);
+        EntityId e1 = scene->world->CreateEntity();
+        TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
         t1.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
 
-        CameraComponent& cam = scene->world.AddComponent<CameraComponent>(e1);
-        cam.camera = RessourceManager::GetCamera(RessourceManager::AddCamera("Default"));
+        CameraComponent& cam = scene->world->AddComponent<CameraComponent>(e1);
+        cam.camId = RessourceManager::GetCameraId("Default");
         cam.isMainCamera = true;
-        scene->world.AddScript<TestScript>(e1);
+        scene->world->AddScript<TestScript>(e1);
         
         EngineManager::GetInstance().Run();
     }

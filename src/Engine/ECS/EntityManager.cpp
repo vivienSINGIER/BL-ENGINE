@@ -1,7 +1,32 @@
 #include "EntityManager.h"
 
-EntityId EntityManager::Create()
+EntityId EntityManager::Create(EntityId id, bool isSetId)
 {
+    if (isSetId == true)
+    {
+        uint32 index = EntityIndex(id);
+        uint32 gen   = EntityGen(id);
+
+        if  (index >= m_vRecords.size())
+        {
+            uint32 oldSize = (uint32)m_vRecords.size();
+            m_vRecords.resize(index + 1, {nullptr, false, 0, 0});
+
+            for (uint32 i = oldSize; i < index; i++)
+                m_freeList.push_back(i);
+        }
+
+        assert(m_vRecords[index].isActive == false && "Entity already exists");
+
+        auto it = std::find(m_freeList.begin(), m_freeList.end(), index);
+        if (it != m_freeList.end())
+            m_freeList.erase(it);
+
+        m_vRecords[index].isActive = true;
+        m_vRecords[index].gen = gen;
+        return MakeEntity(index, gen);
+    }
+    
     if (m_freeList.empty() == false)
     {
         uint32 index = m_freeList.back();

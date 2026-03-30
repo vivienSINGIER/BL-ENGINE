@@ -1,22 +1,25 @@
 #include "pch.h"
-#include <windows.h>
+
+#include "../Core/define.h"
+
 #include "main.h"
+#include "Engine/Engine.h"
+#include "../Gameplay/Scene/MainScene.h"
 
 #ifdef _DEBUG
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
     Console::InitConsol();
     
-    /////////////////////////////////////////////////////////////////////////////
-    // EngineManager engineManager;
-    // engineManager.Initialize(1920, 1080, L"DON'T BLINK TO MUCH", true);
-    //
-    // SceneManager::CreateSceneType<SplashScreen>("SplashScreen");
-    // SceneManager::ChangeCurrentScene("SplashScreen");
-    //
-    // engineManager.Run();
+    EngineManager engineManager;
+    engineManager.Initialize(1920, 1080, L"LabyBL");
+     
+	SceneManager::CreateSceneType<MainScene>("MainScene");
+	SceneManager::SetCurrentScene("MainScene");
+
+    engineManager.Run();
     
-    Console::DeleteConsol();
+    //Console::DeleteConsol();
     return 0;
 }
 #else
