@@ -38,4 +38,9 @@ void Movement::ScriptMovement::Update(float dt)
 		t.local.Move(XMFLOAT3(0.0f, moveSpeed * dt, 0.0f));
 	if (InputManager::IsKey(LCONTROL))
 		t.local.Move(XMFLOAT3(0.0f, -moveSpeed * dt, 0.0f));
+	if(InputManager::IsKey(ESCAPE))
+	{
+		InputManager::UnlockMouseCursor();
+		InputManager::ShowMouseCursor();
+	}
 }

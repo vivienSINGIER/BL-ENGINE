@@ -25,12 +25,13 @@ void MainScene::OnInit()
 
 	EntityId light = world->CreateEntity();
 	TransformComponent& lt = world->AddComponent<TransformComponent>(light);
-	lt.world.LookTo(XMFLOAT3(-1.0f, -1.0f, -1.0f));
+	lt.local.SetPosition(XMFLOAT3(0.0f, 50.0f,0.0f));
 
 	LightComponent& l = world->AddComponent<LightComponent>(light);
-	l.type = LightType::Directional;
-	l.SetStrength(XMFLOAT3(0.8f, 0.8f, 0.8f));
-
+	l.type = LightType::Point;
+	l.SetStrength(1.0f);
+	l.SetPoint(1.0f, 100.0f);
+	
 	EntityId e = world->CreateEntity();
 	world->AddScript<Labyrinthe::LabyScript>(e);
 }

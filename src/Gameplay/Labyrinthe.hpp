@@ -197,6 +197,9 @@ class Labyrinthe
     {
         Scene* scene = SceneManager::GetSceneWithName("MainScene");
 
+        float offsetX = (_grid.size() - 1) * 0.5f;
+        float offsetY = (_grid[0].size() - 1) * 0.5f;
+
         for (int x = 0; x < _grid.size(); x++)
         {
             for (int y = 0; y < _grid[0].size(); y++)
@@ -207,7 +210,7 @@ class Labyrinthe
                     MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
                     m.geoId = RessourceManager::GetGeometryId("Cube");
 					m.materialId = RessourceManager::GetMaterialId("White");
-                    t.local.SetPosition(XMFLOAT3(x, 0.0f, y));
+                    t.local.SetPosition(XMFLOAT3(x - offsetX, 0.0f, y - offsetY));
                 }
         }
 
@@ -216,7 +219,7 @@ class Labyrinthe
         MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(ground);
 		m.geoId = RessourceManager::GetGeometryId("Cube");
         m.materialId = RessourceManager::GetMaterialId("White");
-        t.local.SetPosition(XMFLOAT3(_grid.size() / 2.0f, -1.0f, _grid[0].size() / 2.0f));
+        t.local.SetPosition(XMFLOAT3(0.0f, -1.0f,0.0f));
 		t.local.SetScale(XMFLOAT3(_grid.size(), 1.0f, _grid[0].size()));
     }
 
