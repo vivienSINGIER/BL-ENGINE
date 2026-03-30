@@ -21,7 +21,7 @@ public:
 	static Scene* CreateScene(String const& _name, int32 _id = -1);
 
 	template <typename SceneType>
-	static SceneType* CreateSceneType(String const& _name, int32 _id);
+	static SceneType* CreateSceneType(String const& _name, int32 _id = -1);
 
 	static Scene* SetCurrentScene(Scene* _pScene);
 	static Scene* SetCurrentScene(String const& _name);

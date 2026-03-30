@@ -15,11 +15,11 @@ SceneType* SceneManager::CreateSceneType(String const& _name, int32 _id)
 		id = s_pSceneManager->m_scenes.size();
 	else
 		id = (uint32)_id;
-	
-	pNewScene->Init(_name, id);
 
 	s_pSceneManager->m_sceneIds[_name] = id;
 	s_pSceneManager->m_scenes.push_back(pNewScene);
+
+	pNewScene->Init(_name, id);
 
 	if (EngineManager::GetServer() != nullptr)
 	{

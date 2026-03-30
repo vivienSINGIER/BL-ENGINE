@@ -2,6 +2,7 @@
 #define LABYRINTHE_H_DEFINED
 
 #include "../Engine/Engine.h"
+#include <iostream>
 
 class Labyrinthe
 {
@@ -194,57 +195,95 @@ class Labyrinthe
 
     static void Laby3d(Vector<Vector<char>>& _grid)
     {
-        Scene* scene = SceneManager::GetSceneWithName("Default");
+        Scene* scene = SceneManager::GetSceneWithName("MainScene");
 
         for (int x = 0; x < _grid.size(); x++)
         {
             for (int y = 0; y < _grid[0].size(); y++)
                 if (_grid[x][y] == 'X')
                 {
-                    EntityId e = scene->world.CreateEntity();
-                    TransformComponent& t = scene->world.AddComponent<TransformComponent>(e);
-                    MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-                    m.geo = RessourceManager::GetGeometry("CUBE");
+					EntityId e = scene->world->CreateEntity();
+                    TransformComponent& t = scene->world->AddComponent<TransformComponent>(e);
+                    MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
+                    m.geoId = RessourceManager::GetGeometryId("Cube");
+					m.materialId = RessourceManager::GetMaterialId("White");
                     t.local.SetPosition(XMFLOAT3(x, 0.0f, y));
                 }
         }
+
+		EntityId ground = scene->world->CreateEntity();
+        TransformComponent& t = scene->world->AddComponent<TransformComponent>(ground);
+        MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(ground);
+		m.geoId = RessourceManager::GetGeometryId("Cube");
+        m.materialId = RessourceManager::GetMaterialId("White");
+        t.local.SetPosition(XMFLOAT3(_grid.size() / 2.0f, -1.0f, _grid[0].size() / 2.0f));
+		t.local.SetScale(XMFLOAT3(_grid.size(), 1.0f, _grid[0].size()));
     }
 
-
+public:
 	struct LabyScript : public IScript
 	{
 		void Awake() override
         {
-            int widthGrid = 21, heightGrid = 21;
-            Vector<Vector<char>> grid(widthGrid, Vector<char>(heightGrid, ' '));
+			int m_widthGrid = 51; // doit être impair
+			int m_heightGrid = 51; // doit être impair
+
+            std::vector<std::vector<char>> grid(m_widthGrid, std::vector<char>(m_heightGrid, ' '));
+
             Enclose(grid);
-            int cx = widthGrid / 2;
-            int cy = heightGrid / 2;
+
+            int cx = m_widthGrid / 2;
+            int cy = m_heightGrid / 2;
             if (cx % 2 == 0) cx--;
             if (cy % 2 == 0) cy--;
+
             int rW = 5, rH = 5;
             int rxMin = cx - rW; if (rxMin % 2 == 1) rxMin--;
             int rxMax = cx + rW; if (rxMax % 2 == 1) rxMax++;
             int ryMin = cy - rH; if (ryMin % 2 == 1) ryMin--;
             int ryMax = cy + rH; if (ryMax % 2 == 1) ryMax++;
+
             // Murs de séparation
-            for (int i = 0; i < widthGrid; i++)
+            for (int i = 0; i < m_widthGrid; i++)
+            {
                 grid[i][ryMin] = 'X';
-            for (int i = 0; i < widthGrid; i++)
                 grid[i][ryMax] = 'X';
-            for (int j = 0; j < heightGrid; j++)
+            }
+            for (int j = 0; j < m_heightGrid; j++)
+            {
                 grid[rxMin][j] = 'X';
-            for (int j = 0; j < heightGrid; j++)
                 grid[rxMax][j] = 'X';
-            Recursive_division(grid, rxMin, rxMax, ryMin, ryMax);
-            PierceWallH(grid, ryMin, rxMin, rxMax, heightGrid);
-            PierceWallH(grid, ryMax, rxMin, rxMax, heightGrid);
-            PierceWallV(grid, rxMin, ryMin, ryMax, widthGrid);
-            PierceWallV(grid, rxMax, ryMin, ryMax, widthGrid);
+            }
+
+            // 8 zones
+            Recursive_division(grid, 0, rxMin, 0, ryMin);
+            Recursive_division(grid, rxMax, m_widthGrid - 1, 0, ryMin);
+            Recursive_division(grid, 0, rxMin, ryMax, m_heightGrid - 1);
+            Recursive_division(grid, rxMax, m_widthGrid - 1, ryMax, m_heightGrid - 1);
+            Recursive_division(grid, rxMin, rxMax, 0, ryMin);
+            Recursive_division(grid, rxMin, rxMax, ryMax, m_heightGrid - 1);
+            Recursive_division(grid, 0, rxMin, ryMin, ryMax);
+            Recursive_division(grid, rxMax, m_widthGrid - 1, ryMin, ryMax);
+
+            PierceWallH(grid, ryMin, 0, rxMin, m_heightGrid);
+            PierceWallH(grid, ryMin, rxMax, m_widthGrid - 1, m_heightGrid);
+
+            PierceWallH(grid, ryMax, 0, rxMin, m_heightGrid);
+            PierceWallH(grid, ryMax, rxMax, m_widthGrid - 1, m_heightGrid);
+
+            PierceWallV(grid, rxMin, 0, ryMin, m_widthGrid);
+            PierceWallV(grid, rxMin, ryMax, m_heightGrid - 1, m_widthGrid);
+
+            PierceWallV(grid, rxMax, 0, ryMin, m_widthGrid);
+            PierceWallV(grid, rxMax, ryMax, m_heightGrid - 1, m_widthGrid);
+
+            Lobby(grid, rxMin, rxMax, ryMin, ryMax);
+            Laby3d(grid);
+
+            system("cls");
             bfs_check(grid);
             printGrid(grid);
-            
-            Laby3d(grid);
+
 		}
 	};
 };

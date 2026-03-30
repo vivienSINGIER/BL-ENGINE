@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "Network/Packet.hpp"
 #include "Network/Server.h"
+#include "ECS/SystemScheduler.h"
 
 SceneManager::SceneManager()
 {
@@ -51,10 +52,10 @@ Scene* SceneManager::CreateScene(String const& _name, int32 _id)
 	else
 		id = (uint32)_id;
 	
-	pNewScene->Init(_name, id);
-
 	s_pSceneManager->m_sceneIds[_name] = id;
 	s_pSceneManager->m_scenes.push_back(pNewScene);
+
+	pNewScene->Init(_name, id);
 
 	if (EngineManager::GetServer() != nullptr)
 	{
@@ -82,6 +83,8 @@ Scene* SceneManager::SetCurrentScene(Scene* _pScene)
 	s_pSceneManager->m_pCurrentScene->OnEnd();
 	s_pSceneManager->m_pCurrentScene = _pScene;
 	s_pSceneManager->m_pCurrentScene->OnStart();
+
+	SystemScheduler::Get().BindWorld(s_pSceneManager->m_pCurrentScene->world);
 
 	SendSetScenePacket(s_pSceneManager->m_sceneIds[_pScene->GetName()]);
 

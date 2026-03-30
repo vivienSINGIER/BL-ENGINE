@@ -4,21 +4,22 @@
 
 #include "main.h"
 #include "Engine/Engine.h"
+#include "../Gameplay/Scene/MainScene.h"
 
 #ifdef _DEBUG
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
     Console::InitConsol();
     
-     EngineManager engineManager;
-     engineManager.Initialize(1920, 1080, L"LabyBL");
+    EngineManager engineManager;
+    engineManager.Initialize(1920, 1080, L"LabyBL");
      
-	 SceneManager::CreateScene("Default");
-	 SceneManager::ChangeCurrentScene("Default");
+	SceneManager::CreateSceneType<MainScene>("MainScene");
+	SceneManager::SetCurrentScene("MainScene");
 
-     engineManager.Run();
+    engineManager.Run();
     
-    Console::DeleteConsol();
+    //Console::DeleteConsol();
     return 0;
 }
 #else

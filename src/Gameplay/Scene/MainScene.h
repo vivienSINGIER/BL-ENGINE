@@ -11,6 +11,9 @@ public:
 	void OnStart() override;
 	void OnEnd() override;
 
+private:
+	EntityId m_camera;
+	EntityId m_test;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED
