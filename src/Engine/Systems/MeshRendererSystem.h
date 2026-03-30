@@ -2,7 +2,7 @@
 #define MESH_RENDERER_SYSTEM_H_DEFINED
 
 #include "../Components/TransformComponent.hpp"
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 
 struct MeshRenderer;
 

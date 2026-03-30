@@ -8,15 +8,11 @@ void MeshRendererSystem::OnUpdate(float _dt, EntityId _e, MeshRenderer& _mesh, T
 {
     Device* pDevice = EngineManager::GetDevice();
 
-    if (_mesh.geo == nullptr) return;
+    Geometry* geo = RessourceManager::GetGeometry(_mesh.geoId);
+    Material* mat = RessourceManager::GetMaterial(_mesh.materialId);
     
-    Material* mat = _mesh.material;
-
-    if (mat == nullptr)
-        mat = RessourceManager::GetMaterial("Default");
-    if (mat == nullptr)
-        return;
+    if (mat == nullptr || geo == nullptr) return;
 
     pDevice->SetMaterial(mat);
-    pDevice->Draw(_mesh.geo, _transform.world.GetMatrix());
+    pDevice->Draw(geo, _transform.world.GetMatrix());
 }

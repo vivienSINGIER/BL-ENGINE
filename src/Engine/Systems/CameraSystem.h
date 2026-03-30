@@ -1,7 +1,7 @@
 #ifndef CAMERA_SYSTEM_H_DEFINED
 #define CAMERA_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "Components/CameraComponent.hpp"
 #include "Components/TransformComponent.hpp"
 

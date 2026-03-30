@@ -5,7 +5,7 @@
 
 struct CameraComponent
 {
-    Camera* camera = nullptr;
+    uint32 camId = 0;
     bool isMainCamera = false;
 };
 

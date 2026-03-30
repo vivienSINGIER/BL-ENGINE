@@ -1,5 +1,7 @@
 #include "pch.h"
-#include <windows.h>
+
+#include "../Core/define.h"
+
 #include "main.h"
 #include "Engine/Engine.h"
 

@@ -1,7 +1,7 @@
 #ifndef CHRONO_H_DEFINED
 #define CHRONO_H_DEFINED
 
-#include <Windows.h>
+#include "define.h"
 
 class Chrono
 {

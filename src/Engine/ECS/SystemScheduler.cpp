@@ -1,15 +1,29 @@
 #include "SystemScheduler.h"
 
 #include "EngineManager.h"
-#include "ISystem.hpp"
+#include "ISystem.h"
 #include "Generic/Base/Window.h"
+#include "World.h"
+
+void SystemScheduler::BindWorld(World* world)
+{
+    for (auto& phase : m_phases)
+    {
+        for (ISystem* sys : phase)
+        {
+            sys->OnRegister(world);
+        }
+    }
+}
 
 void SystemScheduler::Run(float _dt)
 {
+    uint8 flag = EngineManager::GetNetworkFlag();
+
     m_accumulator += _dt;
     for (int i = 0; i < Phase::Count; i++)
     {
-        if (i == Phase::PreRender)
+        if (i == Phase::PreRender && (flag & CLIENT) == CLIENT)
             EngineManager::GetInstance().GetWindow()->Clear();
 
         for (ISystem* sys : m_phases[i])
@@ -22,11 +36,11 @@ void SystemScheduler::Run(float _dt)
                     m_accumulator -= 0.016666667f;
                 }
             }
-            else
+            else if ( (sys->networkFlags & flag) )
                 sys->Update(_dt);
         }
 
-        if (i == Phase::PostRender)
+        if (i == Phase::PostRender && (flag & CLIENT) == CLIENT)
             EngineManager::GetInstance().GetWindow()->Display();
     }
 }

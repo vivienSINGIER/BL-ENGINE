@@ -1,7 +1,7 @@
 #ifndef CONSOL_H_DEFINED
 #define CONSOL_H_DEFINED
 
-#include <Windows.h>
+#include "define.h"
 #include <iostream>
 
 class Console

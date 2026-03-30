@@ -2,9 +2,9 @@
 #define QUERY_HPP_DEFINED
 
 #include "../define.h"
-#include "Archetype.hpp"
-#include "ArchetypeRegistry.h"
-#include "ComponentRegistry.hpp"
+#include "ComponentId.hpp"
+
+struct Archetype;
 
 struct QueryBase
 {
@@ -19,14 +19,14 @@ struct Query : QueryBase
 {
     Query()
     {
-        (required.set(ComponentRegistry::Id<Ts>()), ...);
+        (required.set(ComponentType::Id<Ts>()), ...);
     }
 
     template<typename... orTs>
     void Any()
     {
         ComponentMask mask;
-        (mask.set(ComponentRegistry::Id<orTs>()), ...);
+        (mask.set(ComponentType::Id<orTs>()), ...);
         orMasks.push_back(mask);
     }
 };
