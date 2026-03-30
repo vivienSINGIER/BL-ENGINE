@@ -1,7 +1,7 @@
 #ifndef PHYSIC_SYSTEM_H_DEFINED
 #define PHYSIC_SYSTEM_H_DEFINED
 
-#include "../ECS/ISystem.hpp"
+#include "../ECS/ISystem.h"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/PhysicComponent.hpp"

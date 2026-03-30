@@ -2,6 +2,7 @@
 #include "Utils.hpp"
 #include <cmath>
 #include <iostream>
+#include "../ECS/World.h"
 
 namespace
 {
