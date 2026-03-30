@@ -10,6 +10,7 @@ struct Contact
 	EntityId a;
 	EntityId b;
 	XMFLOAT3 normal;
+	XMFLOAT3 point;
 	float penetration;
 };
 
@@ -38,8 +39,10 @@ private:
 
 	void UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform);
 	void CalculateWorldAABB(ColliderComponent& _collider, TransformComponent& _transform);
+	float OBBRadius(OBB& obb, XMFLOAT3& axis);
+	bool OverlapOnAxis(OBB& obbA, OBB& obbB, XMFLOAT3& axis);
 
-	bool CheckBoxToBox(ColliderComponent& _boxA, TransformComponent& _transformA, ColliderComponent& _boxB, TransformComponent& _transformB);
+	bool CheckOBBToOBB(ColliderComponent& _boxA, ColliderComponent& _boxB);
 	bool CheckSphereToSphere(ColliderComponent& _sphereA, TransformComponent& _transformA, ColliderComponent& _sphereB, TransformComponent& _transformB);
 	bool CheckBoxToSphere(ColliderComponent& _box, TransformComponent& _transformBox, ColliderComponent& _sphere, TransformComponent& _transformSphere);
 	

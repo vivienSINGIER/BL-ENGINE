@@ -8,7 +8,7 @@ struct ISystem;
 
 enum Phase
 {
-    PreUpdate, Update, PostUpdate, PreRender, Render, PostRender, Count
+    PreUpdate, Update, FixedUpdate, PostUpdate, PreRender, Render, PostRender, Count
 };
 
 class SystemScheduler
@@ -22,6 +22,7 @@ public:
     
 private:
     Array<Vector<ISystem*>, Phase::Count> m_phases;
+    float m_accumulator = 0.0f;
 };
 
 #include "SystemScheduler.inl"

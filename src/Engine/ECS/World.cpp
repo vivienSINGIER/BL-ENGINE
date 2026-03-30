@@ -24,11 +24,7 @@ void World::DestroyEntity(EntityId _entity)
 {
     assert(m_entityManager.IsAlive(_entity) && "Destroying dead entity");
 
-    NotifyScripts(_entity, &IScript::Destroy);
-    
-    EntityRecord& rec = m_entityManager.GetRecord(_entity);
-    RemoveFromArchetype(_entity, rec);
-    m_entityManager.Destroy(_entity);
+    m_commandQueue.EmplaceDestroy(_entity);
 }
 
 void World::SetActive(EntityId _entity)
@@ -51,6 +47,7 @@ bool World::IsActive(EntityId _entity)
 void World::Update(float _dt)
 {
     m_systemScheduler.Run(_dt);
+    m_commandQueue.Flush(this);
 }
 
 void World::RegisterQuery(QueryBase* _query)
@@ -128,7 +125,7 @@ void World::RemoveFromArchetype(EntityId _e, EntityRecord& _rec)
 
 Archetype* World::GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add)
 {
-    Array<Archetype*, MAX_COMPONENTS>& edges = _add ? _src->EdgeAdd : _src->EdgeRemove;
+    Array<Archetype*, MAX_COMPONENTS>& edges = _add ? _src->edgeAdd : _src->edgeRemove;
 
     if (edges[_cid] != nullptr)
     {
@@ -140,6 +137,13 @@ Archetype* World::GetOrCreateEdge(Archetype* _src, ComponentId _cid, bool _add)
 
     Archetype* dst = m_archetypeRegistry.GetOrCreate(newMask);
     edges[_cid] = dst;
+
+    Array<Archetype*, MAX_COMPONENTS>& opEdges = !_add ? dst->edgeAdd : dst->edgeRemove;
+    if (opEdges[_cid] == nullptr)
+    {
+        opEdges[_cid] = _src;
+    }
+    
     return dst;
 }
 

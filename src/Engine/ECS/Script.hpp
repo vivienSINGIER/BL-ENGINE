@@ -41,12 +41,11 @@ struct IScript
 
     virtual ~IScript() = default;
 
+    template<typename T> T&     AddComponent() { return world->AddComponent<T>(entity); }
+    template<typename T> void   RemoveComponent() { world->RemoveComponent<T>(entity); }
     template<typename T> T&     GetComponent() { return world->GetComponent<T>(entity); }
     template<typename T> bool   HasComponent() { return world->HasComponent<T>(entity); }
-
-    // TODO add command queue system to allow following
-    // template<typename T> T&     AddComponent() { return world->AddComponent<T>(entity); }
-    // template<typename T> void   RemoveComponent() { world->RemoveComponent<T>(entity); }
+    
 
 private:
     bool m_isStarted = false;
