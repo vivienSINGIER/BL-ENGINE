@@ -1,11 +1,12 @@
 #include "PhysicSystem.h"
 #include "Utils.hpp"
 #include <cmath>
+#include <iostream>
 
 namespace
 {
-    constexpr float kPenetrationSlop = 0.001f;
-    constexpr float kPenetrationPercent = 0.6f;
+    constexpr float kPenetrationSlop = 0.005f;
+    constexpr float kPenetrationPercent = 0.8f;
 
     constexpr float kTangentEpsilonSq = 1e-6f;
     constexpr float kRestitutionThreshold = 0.2f;
@@ -45,7 +46,11 @@ void PhysicSystem::ResolveAllOverlaps()
         PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
         PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
 
-        UpdateSupportContact(physicA, physicB, contact);
+        if (contact.a == 4 && contact.b == 5)
+        {
+            int o = 0;
+        }
+
 		WakeBodiesFromContact(physicA, physicB, contact);
         ResolveOverlap(physicA, physicB, contact);
     }
@@ -127,23 +132,19 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
     float invMassA = _physicA.massInverse;
     float invMassB = _physicB.massInverse;
 
-    if (invMassA + invMassB <= 0.0f)
-        return;
-
-    int pointCount = (_contact.pointCount > 0) ? _contact.pointCount : 1;
-
+    if (invMassA + invMassB <= 0.0f) return;
+        
     ContactPointContext ctx = BuildContactPointContext(_physicA, _physicB, _contact.a, _contact.b, _point);
-
     float velocityNormal = Dot(ctx.relativeVelocity, _contact.normal);
-    if (velocityNormal >= 0.0f)
-        return;
+
+    if (velocityNormal >= 0.0f) return;
 
     // -----------------------------
     // Impulsion normale
     // -----------------------------
-    float normalImpulseScalar = ComputeNormalImpulseScalar(_physicA, _physicB, _contact, ctx, pointCount);
-    if (normalImpulseScalar <= 0.0f)
-        return;
+    float normalImpulseScalar = ComputeNormalImpulseScalar(_physicA, _physicB, _contact, ctx, _contact.pointCount);
+
+    if (normalImpulseScalar <= 0.0f) return;
 
     XMFLOAT3 normalImpulse = Mul(_contact.normal, normalImpulseScalar);
 
@@ -174,7 +175,6 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
         return;
 
     tangent = Normalize(tangent);
-
     float velocityTangent = Dot(ctx.relativeVelocity, tangent);
 
     // Contact quasi au repos : on ignore les micro-frictions parasites
@@ -186,7 +186,7 @@ void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicCompon
     // -----------------------------
     // Impulsion tangentielle
     // -----------------------------
-    float tangentImpulseScalar = ComputeTangentImpulseScalar(_physicA, _physicB, _contact, ctx, tangent, pointCount);
+    float tangentImpulseScalar = ComputeTangentImpulseScalar(_physicA, _physicB, _contact, ctx, tangent, _contact.pointCount);
     if (tangentImpulseScalar == 0.0f)
         return;
 
@@ -335,6 +335,15 @@ XMFLOAT3 PhysicSystem::GetVelocityAtPoint(const PhysicComponent& _physic, Entity
     return Add(_physic.velocity, angularContribution);
 }
 
+bool PhysicSystem::isStableSupport(const PhysicComponent& _physic)
+{
+    if (_physic.type == BodyType::Static) return true;
+    if (_physic.isSleeping) return true;
+    if (_physic.hasSupportContact == false) return false;
+
+    return false;
+}
+
 void PhysicSystem::WakeBodiesFromContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
 {
     // Gestion support
@@ -361,28 +370,5 @@ void PhysicSystem::WakeBodiesFromContact(PhysicComponent& _physicA, PhysicCompon
     {
         _physicA.WakeUp();
         _physicB.WakeUp();
-    }
-}
-
-void PhysicSystem::UpdateSupportContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
-{
-    // contact.normal = A -> B
-    // direction pour sortir A = -normal
-    // direction pour sortir B = +normal
-
-    XMFLOAT3 normalForA = Inverse(_contact.normal);
-    XMFLOAT3 normalForB = _contact.normal;
-
-    // Un support est un contact dont la normale de sortie pointe suffisamment vers le haut
-    if (normalForA.y > 0.5f)
-    {
-        _physicA.hasSupportContact = true;
-        _physicA.supportNormal = normalForA;
-    }
-
-    if (normalForB.y > 0.5f)
-    {
-        _physicB.hasSupportContact = true;
-        _physicB.supportNormal = normalForB;
     }
 }

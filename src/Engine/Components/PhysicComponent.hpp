@@ -14,9 +14,9 @@ struct PhysicComponent
 {
     float mass = 1.0f;
 	float massInverse = 1.0f;
-	float restitution = 0.5f;
-    float staticFriction = 0.1f;
-    float dynamicFriction = 0.05f;
+	float restitution = 0.0f;
+    float staticFriction = 0.6f;
+    float dynamicFriction = 0.4f;
 
     XMFLOAT3 velocity = { 0,0,0 };
     XMFLOAT3 acceleration = { 0,0,0 };

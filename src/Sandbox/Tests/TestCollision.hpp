@@ -177,8 +177,8 @@ public:
         // TEST D : empilement
         // -----------------------------
         CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
-        CreateCube(world, XMFLOAT3(8.0f, 1.1f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
-        CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
+        //CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
 
         // -----------------------------
         // TEST E : collision latérale

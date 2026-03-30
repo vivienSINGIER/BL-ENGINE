@@ -56,6 +56,7 @@ private:
 
     XMFLOAT3 GetCenter(EntityId _e) const;
     XMFLOAT3 GetVelocityAtPoint(const PhysicComponent& _physic, EntityId _e, const XMFLOAT3& _point) const;
+    bool isStableSupport(const PhysicComponent& _physic);
 
     void WakeBodiesFromContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
     void UpdateSupportContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);

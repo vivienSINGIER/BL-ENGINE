@@ -5,7 +5,7 @@ namespace
 {
     constexpr float kSleepLinearThreshold = 0.05f;
     constexpr float kSleepAngularThreshold = 0.05f;
-	constexpr float kSleepTimeThreshold = 0.5f;
+	constexpr float kSleepTimeThreshold = 0.2f;
 
 	constexpr float kAngularDamping = 2.0f;
 }
@@ -27,11 +27,6 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
         BoxInertie(_physic, _collider);
     else
         SphereInertie(_physic, _collider);
-
-    if (_e == 5 || _e == 6)
-    {
-		int o = 0;
-	}
 
     if (_physic.rotation)
     {
