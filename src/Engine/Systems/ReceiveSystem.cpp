@@ -79,10 +79,9 @@ void ReceiveSystem::HandleClientReceive()
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
                     
-                    if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
-
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
-
+                    
+                    if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
                     if (EngineManager::GetServer() != nullptr) break;
 
                     scene->world->CreateEntity(p.header.entityId, true);
@@ -183,12 +182,17 @@ void ReceiveSystem::HandleServerReceive()
             case PacketType::Connect:
                 {
                     m_server->AddClient(addr);
+                    
+                    ClientInfo* c = m_server->FindClient(addr);
 
+                    if (c->isConnected == true) return;
+                    c->isConnected = true;
+                    
                     Packet np;
                     np.header.type = PacketType::ConnectAck;
                     np.header.ackId = p.header.ackId;
                     np.connect.addr = m_server->GetSocket()->GetAddr();
-                    np.connect.cliendId = m_server->FindClient(addr)->id;
+                    np.connect.cliendId = c->id;
                         
                     m_server->RegisterTargetedPacket(np, addr);
 

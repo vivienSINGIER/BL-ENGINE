@@ -9,6 +9,7 @@
 #endif
 #include <windows.h>
 
+#include <iostream>
 #include <any>
 #include <DirectXCollision.h>
 #include <string>

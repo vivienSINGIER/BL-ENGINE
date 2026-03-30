@@ -10,6 +10,7 @@ struct ClientInfo
 	String ip;
 	int port;
 	uint32 id;
+	bool isConnected = false;
 };
 
 class Server : public INetworkBase

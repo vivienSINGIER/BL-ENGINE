@@ -29,6 +29,8 @@ public:
     {
         void Awake()
         {
+            if (EngineManager::GetServer() == nullptr) return;
+            
             CameraComponent& cam = world->AddComponent<CameraComponent>(entity);
             cam.isMainCamera = true;
             cam.camId = RessourceManager::GetCameraId("Default");

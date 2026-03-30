@@ -38,8 +38,8 @@ void Server::SendPackets()
 		{
 			m_socket->Send(pending.packet.Data(), pending.packet.Size(), pending.target);
 			pending.timer = 0.0f;
-			pending.retryCount++;
 			pending.canResend = false;
+			std::cout << "Resend pending message :" << pending.ackId << " | Try nb : " << (int)pending.retryCount << std::endl;
 		}
 	}
 }
@@ -133,12 +133,12 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 {
 	Scene* s = SceneManager::GetSceneWithId(_sceneId);
 	
-	// Packet sp;
-	// sp.header.type = PacketType::Spawn;
-	// sp.header.sceneId = _sceneId;
-	// sp.header.entityId = _e;
-	//
-	// SendReliablePacket(sp, _addr);
+	Packet sp;
+	sp.header.type = PacketType::Spawn;
+	sp.header.sceneId = _sceneId;
+	sp.header.entityId = _e;
+	
+	SendReliablePacket(sp, _addr);
 
 	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
 	Archetype* arch = rec.archetype;

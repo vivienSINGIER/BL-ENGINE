@@ -57,6 +57,7 @@ void INetworkBase::TickAck(float _deltaTime)
             if (pending.retryCount >= MAX_RETRIES)
             {
                 m_pendingPackets.erase(m_pendingPackets.begin() + i);
+                std::cout << "Cleared pending message :" << pending.ackId << std::endl;
                 continue;
             }
             
@@ -75,6 +76,7 @@ void INetworkBase::OnAckReceived(uint16 _ackId)
         if (m_pendingPackets[i].ackId == _ackId)
         {
             isSelf = true;
+            std::cout << "Cleared pending message :" << m_pendingPackets[i].ackId << std::endl;
             m_pendingPackets.erase(m_pendingPackets.begin() + i);
             break;
         }
@@ -89,6 +91,6 @@ void INetworkBase::SendAck(uint16 _ackId, sockaddr_in _target)
     packet.header.type = PacketType::Ack;
 
     // TODO add tick in packet
-
+    std::cout << "Send ack :" << _ackId << std::endl;
     m_socket->Send(packet.Data(), packet.Size(), _target);
 }

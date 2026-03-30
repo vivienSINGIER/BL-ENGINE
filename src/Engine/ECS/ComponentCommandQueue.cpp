@@ -106,8 +106,11 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld)
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
-    if (src->mask.test(cid)) // Component already present
+    if (src->mask.test(cid))
+    {
+        m_toAdd.pop_back();
         return;
+    }
         
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, true);
 
@@ -150,13 +153,15 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     ComponentId cid = cmd.component;
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
-
+    
     if (!src->mask.test(cid)) // Component not present
+    {
+        m_toRemove.pop_back();
         return;
+    }
         
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, false);
     _pWorld->MoveEntity(cmd.entity, rec, src, dst);
-    m_toRemove.pop_back();
     
     Server* server = EngineManager::GetServer();
     if (server == nullptr) return;

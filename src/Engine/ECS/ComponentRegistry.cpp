@@ -37,8 +37,12 @@ IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
 IScript* ComponentRegistry::ConstructScript(ComponentId _id, void* ptr)
 {
     for (auto& info : m_registeredComponents)
+    {
         if (info.id == _id)
+        {
             return info.scriptConstructor(ptr);
+        }
+    }
     
     return nullptr;
 }
