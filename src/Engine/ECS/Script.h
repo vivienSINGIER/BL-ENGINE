@@ -31,7 +31,7 @@ struct ScriptRegistry
 struct IScript
 {
     EntityId entity = 0;
-    World* world = nullptr;
+    uint32 sceneId = 0;
     
     virtual void Awake() {}
     virtual void Start() {}

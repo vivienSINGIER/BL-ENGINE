@@ -10,7 +10,7 @@ public:
     {
         void Update(float dt) override
         {
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
+            Transform& transform = GetComponent<TransformComponent>().local;
             InputManager::HandleInput();
 
             if (InputManager::IsKey(Z))
@@ -55,8 +55,8 @@ public:
     {
         void Update(float dt) override
         {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
+            ColliderComponent& collider = GetComponent<ColliderComponent>();
+            Transform& transform = GetComponent<TransformComponent>().local;
 
             transform.SetPosition(collider.aabb.min);
         }
@@ -66,8 +66,8 @@ public:
     {
         void Update(float dt) override
         {
-            ColliderComponent& collider = world->GetComponent<ColliderComponent>(1);
-            Transform& transform = world->GetComponent<TransformComponent>(entity).local;
+            ColliderComponent& collider = GetComponent<ColliderComponent>();
+            Transform& transform = GetComponent<TransformComponent>().local;
 
             transform.SetPosition(collider.aabb.max);
         }

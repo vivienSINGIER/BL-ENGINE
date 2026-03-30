@@ -98,7 +98,7 @@ T& World::AddScript(EntityId _e)
 
     T& script = m_commandQueue.EmplaceAdd<T>(_e);
     
-    script.world = this;
+    script.sceneId = m_sceneId;
     script.entity = _e;
 
     ComponentId cid = ComponentType::Id<T>();

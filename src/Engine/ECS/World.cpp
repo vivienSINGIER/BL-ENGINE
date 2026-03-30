@@ -108,7 +108,7 @@ void World::AddRawScript(EntityId _e, ComponentId _cid)
     void* ptr = m_commandQueue.EmplaceAddRaw(_e, _cid, ComponentRegistry::GetSize(_cid), nullptr);
     IScript* script = ComponentRegistry::ConstructScript(_cid, ptr);
     
-    script->world = this;
+    script->sceneId = m_sceneId;
     script->entity = _e;
 
     ComponentId cid = _cid;

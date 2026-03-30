@@ -55,6 +55,8 @@ public:
     void OnArchetypeCreated(Archetype* _arch);
 
 private:
+    uint32 m_sceneId = 0;
+    
     ArchetypeRegistry m_archetypeRegistry;
     Vector<QueryBase*> m_queries;
     ComponentCommandQueue m_commandQueue;
@@ -67,6 +69,7 @@ private:
     static void TryMatchQuery(QueryBase* _query, Archetype* _arch);
 
     friend class ComponentCommandQueue;
+    friend class Scene;
 };
 
 #include "World.inl"

@@ -11,11 +11,11 @@ public:
     {
         void Awake()
         {
-            MeshRenderer& m = world->AddComponent<MeshRenderer>(entity);
+            MeshRenderer& m = AddComponent<MeshRenderer>();
             m.geoId = RessourceManager::GetGeometryId("Cube");
             m.materialId = RessourceManager::GetMaterialId("White");
             
-            TransformComponent& t = world->AddComponent<TransformComponent>(entity);
+            TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
         }
         
@@ -31,11 +31,11 @@ public:
         {
             if (EngineManager::GetServer() == nullptr) return;
             
-            CameraComponent& cam = world->AddComponent<CameraComponent>(entity);
+            CameraComponent& cam = AddComponent<CameraComponent>();
             cam.isMainCamera = true;
             cam.camId = RessourceManager::GetCameraId("Default");
             
-            TransformComponent& t = world->AddComponent<TransformComponent>(entity);
+            TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
         }
         
