@@ -1,6 +1,7 @@
 ﻿#include "ReceiveSystem.h"
 
 #include "EngineManager.h"
+#include "InputManager.h"
 #include "Scene.h"
 #include "SceneManager.h"
 #include "Network/Client.h"
@@ -48,6 +49,7 @@ void ReceiveSystem::HandleClientReceive()
                 {
                     m_client->OnAckReceived(p.header.ackId);
                     m_client->Connect(p.connect.addr);
+                    m_client->SetId(p.connect.cliendId);
                     break;
                 }
             case PacketType::AddScene:
@@ -74,17 +76,14 @@ void ReceiveSystem::HandleClientReceive()
                 }
             case PacketType::Spawn:
                 {
-                    Server* server = EngineManager::GetServer();
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
-
-                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
-                        break;
                     
+                    if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
+
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
 
-                    if (server != nullptr)
-                        break;
+                    if (EngineManager::GetServer() != nullptr) break;
 
                     scene->world->CreateEntity(p.header.entityId, true);
 
@@ -92,70 +91,68 @@ void ReceiveSystem::HandleClientReceive()
                 }
             case PacketType::AddComponent:
                 {
-                    Server* server = EngineManager::GetServer();
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
 
-                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
-                        break;
-
+                    if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
+                    
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
 
-                    if (server != nullptr)
-                        break;
+                    if (EngineManager::GetServer() != nullptr) break;
 
                     scene->world->AddRawComponent(p.header.entityId, p.addComponent.ComponentId, p.addComponent.size, p.addComponent.data);
+                    break;
                 }
             case PacketType::AddScript:
                 {
-                    Server* server = EngineManager::GetServer();
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
 
-                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
-                        break;
-
+                    if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
+                    
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
 
-                    if (server != nullptr)
-                        break;
+                    if (EngineManager::GetServer() != nullptr) break;
 
                     scene->world->AddRawScript(p.header.entityId, p.addScript.ComponentId);
+                    break;
                 }
             case PacketType::RemoveComponent:
                 {
-                    Server* server = EngineManager::GetServer();
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
 
-                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
-                        break;
+                    if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
                     
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
-                    
-                    if (server != nullptr)
-                        break;
+
+                    if (EngineManager::GetServer() != nullptr) break;
                     
                     if (ComponentRegistry::IsScript(p.removeComponent.cid))
                         scene->world->RemoveRawScript(p.header.entityId, p.removeComponent.cid);
                     else
                         scene->world->RemoveRawComponent(p.header.entityId, p.removeComponent.cid);
+                    
+                    break;
                 }
             case PacketType::Delete:
                 {
-                    Server* server = EngineManager::GetServer();
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
 
-                    if (scene->world->entityManager.IsAlive(p.header.entityId) == true && server == nullptr)
-                        break;
-                    
+                    if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
+
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
                     
-                    if (server != nullptr)
-                        break;
+                    if (EngineManager::GetServer() != nullptr) break;
                     
                     scene->world->DestroyEntity(p.header.entityId);
+                    break;
+                }
+            case PacketType::Update:
+                {
+                    HandleUpdatePacket(p);
+                    break;
                 }
             default:
                 break;
@@ -191,11 +188,19 @@ void ReceiveSystem::HandleServerReceive()
                     np.header.type = PacketType::ConnectAck;
                     np.header.ackId = p.header.ackId;
                     np.connect.addr = m_server->GetSocket()->GetAddr();
+                    np.connect.cliendId = m_server->FindClient(addr)->id;
                         
                     m_server->RegisterTargetedPacket(np, addr);
 
                     m_server->QueueSyncPackets(addr);
                     
+                    break;
+                }
+            case PacketType::MousePosUpdate:
+            case PacketType::KeyUpdate:
+            case PacketType::MouseButtonUpdate:
+                {
+                    InputManager::UpdateFromPacket(p, m_server->FindClient(addr)->id);
                     break;
                 }
             default:
@@ -204,6 +209,30 @@ void ReceiveSystem::HandleServerReceive()
     }
     vReceived.clear();
     m_server->GetCritSection().Leave();
+}
+
+void ReceiveSystem::HandleUpdatePacket(Packet& p)
+{
+    Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+    if (scene == nullptr) return;
+    
+    if (scene->world->entityManager.IsAlive(p.header.entityId) == false)
+        return;
+    
+    EntityRecord& rec = scene->world->entityManager.GetRecord(p.header.entityId);
+    Archetype* arch = rec.archetype;
+    
+    for (auto& [cid, col] : arch->storage.columns)
+    {
+        for (int i = 0; i < p.update.componentCount; i++)
+        {
+            ComponentEntry entry = p.update.components[i];
+            
+            if (cid != entry.ComponentId) continue;
+            
+            memcpy(arch->storage.GetRaw(cid, rec.row), entry.data, entry.size);
+        }
+    }
 }
 
 

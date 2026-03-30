@@ -55,7 +55,7 @@ public:
         EntityId e = scene->world->CreateEntity();
         scene->world->AddComponent<TransformComponent>(e);
         MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        m.geoId = RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
         scene->world->AddScript<TestScript>(e);
 
         EntityId e1 = scene->world->CreateEntity();
@@ -63,7 +63,7 @@ public:
         t1.SetParent(e);
         t1.local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
         MeshRenderer& m1 = scene->world->AddComponent<MeshRenderer>(e1);
-        m.geo = GeometryFactory::BuildCube(EngineManager::GetDevice());
+        m.geoId = RessourceManager::GetGeometryId("Cube");
         scene->world->AddScript<TestScript2>(e1);
 
         Camera cam;

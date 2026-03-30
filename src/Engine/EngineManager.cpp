@@ -65,12 +65,12 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
     ComponentRegistry::Init();
 
     SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::Update);
-    SystemScheduler::Get().RegisterSystem<MeshRendererSystem>(Phase::Render);
-    SystemScheduler::Get().RegisterSystem<CameraSystem>(Phase::PreRender);
-    SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender);
+    SystemScheduler::Get().RegisterSystem<MeshRendererSystem>(Phase::Render, NetworkFlag::CLIENT);
+    SystemScheduler::Get().RegisterSystem<CameraSystem>(Phase::PreRender, NetworkFlag::CLIENT);
+    SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);
     SystemScheduler::Get().RegisterSystem<SendSystem>(Phase::NetworkSend);
-    SystemScheduler::Get().RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
+    SystemScheduler::Get().RegisterSystem<ColliderSystem>(Phase::FixedUpdate, NetworkFlag::SERVER);
 }
 
 void EngineManager::Run()
@@ -82,7 +82,23 @@ void EngineManager::Run()
         m_deltaTime = m_chrono.Reset();
         
         m_pWindow->Update();
+        
         InputManager::HandleInput();
+        
+        Packet kP;
+        if (InputManager::BuildKeyboardPacket(kP))
+            m_pClient->RegisterPacket(kP);
+        
+        Packet mbP;
+        if (InputManager::BuildMouseButtonPacket(mbP))
+            m_pClient->RegisterPacket(mbP);
+        
+        Packet mP;
+        if (InputManager::BuildMousePacket(mP))
+            m_pClient->RegisterPacket(mP);
+        
+        InputManager::UpdateRemoteStates();
+        
         m_pSceneManager->GetCurrentScene()->Update(m_deltaTime);
     }
 }

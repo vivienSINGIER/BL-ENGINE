@@ -9,13 +9,14 @@ struct ClientInfo
 	sockaddr_in udpAddr;
 	String ip;
 	int port;
+	uint32 id;
 };
 
 class Server : public INetworkBase
 {
 public:
 	Server();
-	void Initialize(std::string _ip, int _port);
+	void Initialize(String _ip, int _port);
 	void Update(float _dt) override;
 	void Shutdown() { m_isRunning = false; }
 	
@@ -31,6 +32,7 @@ public:
 private:
 	static DWORD WINAPI ReceiveThread(LPVOID lpParam);
 	Vector<ClientInfo> m_clients;
+	uint32 m_clientIdCount = 1;
 
 	void QueueEntitySyncPackets(EntityId _e, uint32  _sceneId, const sockaddr_in& _addr);
 

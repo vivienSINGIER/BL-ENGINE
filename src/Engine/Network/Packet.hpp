@@ -5,6 +5,11 @@
 #include "define.h"
 
 #define MAGIC_WORD 0b1010101111001101
+#define MAX_INPUT_COUNT 32
+#define MAX_COMPONENT_DATA_SIZE 1024
+#define MAX_COMPONENT_UPDATE_COUNT 10
+#define MAX_MESSAGE_LENGTH 256
+#define MAX_SCENE_NAME 25
 
 enum class PacketType : uint8
 {
@@ -24,7 +29,9 @@ enum class PacketType : uint8
 	RemoveScript,
 	Update,
 	
-	InputUpdate,
+	KeyUpdate,
+	MouseButtonUpdate,
+	MousePosUpdate,
 	Chat,
 };
 
@@ -42,20 +49,21 @@ struct ConnectPacket
 {
 	PacketHeader header;
 	sockaddr_in addr;
+	uint32 cliendId;
 };
 
 struct AddScenePacket
 {
 	PacketHeader header;
 	uint8 nameSize;
-	char name[25];
+	char name[MAX_SCENE_NAME];
 };
 
 struct ComponentEntry
 {
 	uint32	ComponentId;
 	uint32	size;
-	Byte	data[1024];
+	Byte	data[MAX_COMPONENT_DATA_SIZE];
 };
 
 struct AddComponentPacket
@@ -63,7 +71,7 @@ struct AddComponentPacket
 	PacketHeader header;
 	uint32	ComponentId;
 	uint32	size;
-	Byte	data[1024];
+	Byte	data[MAX_COMPONENT_DATA_SIZE];
 };
 
 struct AddScriptPacket
@@ -78,13 +86,11 @@ struct RemoveComponentPacket
 	ComponentId cid;
 };
 
-struct StatePacket
+struct UpdatePacket
 {
 	PacketHeader    header;
-	ComponentMask   componentMask;
-	uint32			dataSize;
 	uint8			componentCount;
-	ComponentEntry	components[10];
+	ComponentEntry	components[MAX_COMPONENT_UPDATE_COUNT];
 };
 
 struct InputEntry
@@ -97,29 +103,40 @@ struct InputPacket
 {
 	PacketHeader    header;
 	uint32          inputCount;
-	InputEntry      inputs[32];
+	InputEntry      inputs[MAX_INPUT_COUNT];
+};
+
+struct MousePosUpdate
+{
+	PacketHeader header;
+	
+	bool cursorLocked = false;
+	bool cursorVisible = false;
+	int32 x, y;
+	float dx, dy;
 };
 
 struct ChatPacket
 {
 	PacketHeader    header;
 	uint32          messageLength;
-	char            message[256];
+	char            message[MAX_MESSAGE_LENGTH];
 };
 
 struct Packet
 {
 	union
 	{
-		PacketHeader    header;
-		ConnectPacket   connect;
-		AddScenePacket  addScene;
-		AddComponentPacket addComponent;
-		AddScriptPacket  addScript;
-		RemoveComponentPacket removeComponent;
-		StatePacket     state;
-		InputPacket     input;
-		ChatPacket      chat;
+		PacketHeader			header;
+		ConnectPacket			connect;
+		AddScenePacket			addScene;
+		AddComponentPacket		addComponent;
+		AddScriptPacket			addScript;
+		RemoveComponentPacket	removeComponent;
+		UpdatePacket			update;
+		InputPacket				input;
+		MousePosUpdate			mouse;
+		ChatPacket				chat;
 	};
 
 	Packet() { memset(this, 0, sizeof(Packet)); }
@@ -130,7 +147,7 @@ struct Packet
 		{
 		case PacketType::Spawn:				return sizeof(PacketHeader);
 		case PacketType::Delete:			return sizeof(PacketHeader);
-		case PacketType::Update:			
+		case PacketType::Update:			return sizeof(PacketHeader) + sizeof(uint8) + update.componentCount * sizeof(ComponentEntry);
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
 		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
@@ -138,7 +155,9 @@ struct Packet
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentId) + sizeof(uint32) + addComponent.size;
 		case PacketType::AddScript:			return sizeof(AddScriptPacket);
 		case PacketType::RemoveComponent:   return sizeof(RemoveComponentPacket);
-		case PacketType::InputUpdate:       return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
+		case PacketType::KeyUpdate:			return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
+		case PacketType::MouseButtonUpdate: return sizeof(PacketHeader) + sizeof(uint32) + sizeof(InputEntry) * input.inputCount;
+		case PacketType::MousePosUpdate:	return sizeof(MousePosUpdate);
 		case PacketType::Chat:              return sizeof(PacketHeader) + sizeof(uint32) + chat.messageLength;
 		default:                            return sizeof(PacketHeader);
 		}

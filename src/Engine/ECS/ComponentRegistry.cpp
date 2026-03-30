@@ -13,6 +13,7 @@
 #include "../Components/PhysicComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
 
+
 void ComponentRegistry::Init()
 {
     RegisterComponent<TransformComponent>();
@@ -22,6 +23,7 @@ void ComponentRegistry::Init()
     RegisterComponent<ColliderComponent>();
     RegisterComponent<PhysicComponent>();
     RegisterComponent<NetworkComponent>();
+    RegisterComponent<ScriptRegistry>();
 }
 
 IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
@@ -29,6 +31,15 @@ IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
     for (auto& info : m_registeredComponents)
         if (info.id == _id && info.scriptAccessor)
             return info.scriptAccessor(_e, _w);
+    return nullptr;
+}
+
+IScript* ComponentRegistry::ConstructScript(ComponentId _id, void* ptr)
+{
+    for (auto& info : m_registeredComponents)
+        if (info.id == _id)
+            return info.scriptConstructor(ptr);
+    
     return nullptr;
 }
 

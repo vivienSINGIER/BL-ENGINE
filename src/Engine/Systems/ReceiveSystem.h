@@ -3,6 +3,7 @@
 
 #include "../ECS/ISystem.h"
 #include "../Components/NetworkComponent.hpp"
+#include "Network/Packet.hpp"
 
 class Server;
 class Client;
@@ -18,6 +19,7 @@ struct ReceiveSystem : public System<NetworkComponent>
     void HandleClientReceive();
     void HandleServerReceive();
     
+    void HandleUpdatePacket(Packet& p);
 private:
     Server* m_server = nullptr;
     Client* m_client = nullptr;

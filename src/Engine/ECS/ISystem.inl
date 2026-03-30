@@ -2,6 +2,7 @@
 #define ISYSTEM_INL_DEFINED
 
 #include "ISystem.h"
+#include "Components/NetworkComponent.hpp"
 
 template <typename... TComponents>
 void System<TComponents...>::OnRegister(World* _world)
@@ -10,6 +11,18 @@ void System<TComponents...>::OnRegister(World* _world)
     query.matched.clear();
     _world->RegisterQuery(&query);
     world = _world;
+}
+
+template <typename ... TComponents>
+template <typename TComponent>
+void System<TComponents...>::SetNetworkDirty(EntityId _e)
+{
+    if (world->HasComponent<NetworkComponent>(_e) == true)
+    {
+        NetworkComponent& n = world->GetComponent<NetworkComponent>(_e);
+        n.dirty = true;
+        n.mask.set(ComponentType::Id<TComponent>());
+    }
 }
 
 template <typename... TComponents>
@@ -39,6 +52,8 @@ void ScriptSystem<TScript>::OnUpdate(float _dt, EntityId _e, TScript& _script)
     }
         
     _script.Update(_dt);
+    this->SetNetworkDirty<TScript>(_e);
 }
+
 
 #endif

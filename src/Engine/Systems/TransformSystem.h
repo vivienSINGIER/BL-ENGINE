@@ -11,7 +11,7 @@ public:
 
 private:
     bool IsDirty(Transform& _transform, uint32 _flag);
-    void UpdateMatrix(TransformComponent& _t);
+    void UpdateMatrix(TransformComponent& _t, EntityId _e);
 };
 
 #endif

@@ -1,20 +1,22 @@
 #include "CameraSystem.h"
 
+#include "RessourceManager.h"
 #include "../../Render/Generic/Render.h"
 #include "../EngineManager.h"
 
 void CameraSystem::OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, TransformComponent& _transform)
 {
-    if (_camera.camera == nullptr) return;
+    Camera* cam = RessourceManager::GetCamera(_camera.camId);
+    if (cam == nullptr) return;
     
     Device* d = EngineManager::GetInstance().GetDevice();
 
     if ((_transform.world.dirty & (uint8)DIRTY_FLAG::WORLD) == (uint8)DIRTY_FLAG::WORLD)
     {
-        _camera.camera->SetWorld(_transform.world.GetMatrix());
+        cam->SetWorld(_transform.world.GetMatrix());
         if (_camera.isMainCamera)
         {
-            d->SetMainCamera(_camera.camera);
+            d->SetMainCamera(cam);
             _transform.world.dirty &= ~(uint8)DIRTY_FLAG::WORLD;
         }   
     }

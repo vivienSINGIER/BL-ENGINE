@@ -36,7 +36,7 @@ void SystemScheduler::Run(float _dt)
                     m_accumulator -= 0.016666667f;
                 }
             }
-            else if ( (sys->networkFlags & flag) == sys->networkFlags )
+            else if ( (sys->networkFlags & flag) )
                 sys->Update(_dt);
         }
 

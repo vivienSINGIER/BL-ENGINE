@@ -24,7 +24,8 @@ void ComponentRegistry::RegisterScript(uint8 _nFlag)
 
     m_registeredComponents.push_back({ 
         cid, sizeof(T), true, _nFlag,
-        [](EntityId _e, World& _w) -> IScript* { return &_w.GetComponent<T>(_e); }
+        [](EntityId _e, World& _w) -> IScript* { return &_w.GetComponent<T>(_e); },
+        [](void* ptr) -> IScript* { return new (ptr) T(); }
     });
 
     SystemScheduler::Get().RegisterSystem<ScriptSystem<T>>(Phase::Update, _nFlag);

@@ -6,6 +6,7 @@
 #include "EngineManager.h"
 #include "Scene.h"
 #include "SceneManager.h"
+#include "Components/NetworkComponent.hpp"
 #include "Network/Packet.hpp"
 #include "Network/Server.h"
 
@@ -87,6 +88,8 @@ void ComponentCommandQueue::FlushCreate(World* _pWorld)
     Server* server = EngineManager::GetServer();
     if (server == nullptr) return;
 
+    _pWorld->AddComponent<NetworkComponent>(cmd.entity);
+    
     Packet p;
     p.header.type = PacketType::Spawn;
     p.header.entityId = cmd.entity;
@@ -103,7 +106,8 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld)
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
-    assert(!src->mask.test(cid) && "Component already present");
+    if (src->mask.test(cid)) // Component already present
+        return;
         
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, true);
 
@@ -147,7 +151,8 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
-    assert(src->mask.test(cid) && "Component not present");
+    if (!src->mask.test(cid)) // Component not present
+        return;
         
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, false);
     _pWorld->MoveEntity(cmd.entity, rec, src, dst);

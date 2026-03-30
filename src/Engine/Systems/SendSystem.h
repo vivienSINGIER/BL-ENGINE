@@ -12,6 +12,8 @@ struct SendSystem : public System<NetworkComponent>
     void OnInit() override;
     
     void OnStartUpdate(float _dt) override;
+    void OnUpdate(float _dt, EntityId _e, NetworkComponent& _n) override;
+    void OnEndUpdate(float _dt) override;
 
 private:
     Server* m_server = nullptr;

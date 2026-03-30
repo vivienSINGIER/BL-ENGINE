@@ -23,6 +23,9 @@ struct System : public ISystem
     World* world;
 
     void OnRegister(World* _world);
+    
+    template <typename TComponent>
+    void SetNetworkDirty(EntityId _e);
 
     virtual void OnInit() {};
     

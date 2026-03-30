@@ -88,7 +88,7 @@ template <typename T>
 T& World::AddScript(EntityId _e)
 {
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
-    assert(!ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Script should not be a component");
+    assert(ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Script should not be a component");
     
     ScriptRegistry* reg = nullptr;
     if (!HasComponent<ScriptRegistry>(_e))

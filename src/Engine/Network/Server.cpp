@@ -80,7 +80,7 @@ ClientInfo* Server::FindClient(const sockaddr_in& _addr)
 	return nullptr;
 }
 
-void Server::Initialize(std::string _ip, int _port)
+void Server::Initialize(String _ip, int _port)
 {
 	m_socket->Connect(_ip, _port);
 	m_isRunning = true;
@@ -96,6 +96,7 @@ void Server::AddClient(const sockaddr_in& _addr)
 	client.udpAddr = _addr;
 	client.ip = GetSocket()->GetIP(_addr);
 	client.port = GetSocket()->GetPort(_addr);
+	client.id = m_clientIdCount++;
 	m_clients.push_back(client);
 }
 
@@ -132,12 +133,12 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 {
 	Scene* s = SceneManager::GetSceneWithId(_sceneId);
 	
-	Packet sp;
-	sp.header.type = PacketType::Spawn;
-	sp.header.sceneId = _sceneId;
-	sp.header.entityId = _e;
-
-	SendReliablePacket(sp, _addr);
+	// Packet sp;
+	// sp.header.type = PacketType::Spawn;
+	// sp.header.sceneId = _sceneId;
+	// sp.header.entityId = _e;
+	//
+	// SendReliablePacket(sp, _addr);
 
 	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
 	Archetype* arch = rec.archetype;
