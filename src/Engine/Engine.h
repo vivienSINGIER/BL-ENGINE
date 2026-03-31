@@ -28,6 +28,8 @@
 #include "Systems/CameraSystem.h"
 #include "Systems/ColliderSystem.h"
 #include "Systems/LightSystem.h"
+#include "Systems/PhysicSystem.h"
+#include "Systems/PhysicIntegrateSystem.h"	
 #include "Systems/ReceiveSystem.h"
 #include "Systems/SendSystem.h"
 

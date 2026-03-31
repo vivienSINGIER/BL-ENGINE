@@ -12,6 +12,7 @@ class Window;
 class Scene;
 class Camera;
 class RessourceManager;
+class ContactManager;
 class SceneManager;
 class Client;
 class Server;
@@ -34,6 +35,8 @@ public:
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }
     static Device* GetDevice() { return GetInstance().m_pDevice; }
+    static ContactManager* GetContactManager() { return GetInstance().m_pContactManager; }
+    
 	static uint8 GetNetworkFlag() { return GetInstance().m_networkFlag; }
 
 	static Client* GetClient() { return GetInstance().m_pClient; }
@@ -53,6 +56,7 @@ private:
     SceneManager* m_pSceneManager;
     RessourceManager* m_pRessourceManager;
 
+	ContactManager* m_pContactManager;
 	Client* m_pClient = nullptr;
 	Server* m_pServer = nullptr;
     

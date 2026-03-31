@@ -32,6 +32,7 @@ private:
     Vector<EntityRecord> m_vRecords;
     Vector<uint32> m_freeList;
 
+
 };
 
 #endif
