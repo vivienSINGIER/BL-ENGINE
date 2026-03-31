@@ -43,6 +43,7 @@ struct PacketHeader
 	PacketType  type;
 	EntityId    entityId;
 	uint32      sceneId;
+	uint32		clientId;
 };
 
 struct ConnectPacket

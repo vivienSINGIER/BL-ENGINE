@@ -33,5 +33,4 @@ bool IScript::HasComponent()
     return s->world->HasComponent<T>(entity);
 }
 
-
 #endif

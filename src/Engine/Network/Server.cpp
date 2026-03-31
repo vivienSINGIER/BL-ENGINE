@@ -20,6 +20,7 @@ void Server::SendPackets()
 	{
 		for (int j = 0; j < m_packets.size(); j++)
 		{
+			m_packets[i].header.clientId = 0;
 			m_socket->Send(m_packets[j].Data(), m_packets[j].Size(), m_clients[i].udpAddr);
 		}
 	}
@@ -27,6 +28,7 @@ void Server::SendPackets()
 
 	for (int i = 0; i < m_targetedPackets.size(); i++)
 	{
+		m_targetedPackets[i].first.header.clientId = 0;
 		m_socket->Send(m_targetedPackets[i].first.Data(), m_targetedPackets[i].first.Size(), m_targetedPackets[i].second);
 	}
 	m_targetedPackets.clear();
@@ -36,6 +38,7 @@ void Server::SendPackets()
 		PendingPacket& pending = m_pendingPackets[i];
 		if (pending.canResend)
 		{
+			pending.packet.header.clientId = 0;
 			m_socket->Send(pending.packet.Data(), pending.packet.Size(), pending.target);
 			pending.timer = 0.0f;
 			pending.canResend = false;

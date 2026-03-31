@@ -150,6 +150,10 @@ void ReceiveSystem::HandleClientReceive()
                 }
             case PacketType::Update:
                 {
+                    if (p.header.clientId == m_client->GetId())
+                        break;
+                    if (m_server != nullptr && p.header.clientId == 0)
+                        break;
                     HandleUpdatePacket(p);
                     break;
                 }
@@ -164,7 +168,7 @@ void ReceiveSystem::HandleClientReceive()
 void ReceiveSystem::HandleServerReceive()
 {
     Vector<ReceivedPacket>& vReceived = m_server->GetReceived();
-
+    
     m_server->GetCritSection().Enter();
     for (ReceivedPacket& received : vReceived)
     {

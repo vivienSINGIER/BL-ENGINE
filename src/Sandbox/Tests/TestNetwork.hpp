@@ -9,7 +9,7 @@ class TestNetwork : public Test
 public:
     struct TestScript : public IScript
     {
-        void Awake()
+        void Start()
         {
             MeshRenderer& m = AddComponent<MeshRenderer>();
             m.geoId = RessourceManager::GetGeometryId("Cube");
@@ -27,33 +27,49 @@ public:
     
     struct TestScript2 : public IScript
     {
-        void Awake()
+        uint32 camId;
+        uint32 clientId;
+        
+        void Start()
         {
             if (EngineManager::GetServer() == nullptr) return;
+
+            MeshRenderer& m = AddComponent<MeshRenderer>();
+            m.geoId = RessourceManager::GetGeometryId("Cube");
+            m.materialId = RessourceManager::GetMaterialId("White");
             
             CameraComponent& cam = AddComponent<CameraComponent>();
             cam.isMainCamera = true;
-            cam.camId = RessourceManager::GetCameraId("Default");
+            cam.camId = camId;
             
             TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
+
+            OwnerComponent& o = AddComponent<OwnerComponent>();
+            o.ownerId = clientId;
         }
         
         void Update(float _dt) override
         {
+            if (HasComponent<TransformComponent>() == false)
+                return;
+            if (HasComponent<OwnerComponent>() == false)
+                return;
+            
             TransformComponent& t = GetComponent<TransformComponent>();
-
-            if (InputManager::IsKey(Z))
+            OwnerComponent& o = GetComponent<OwnerComponent>();
+            
+            if (InputManager::IsKey(Z, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * _dt));
-            if (InputManager::IsKey(S))
+            if (InputManager::IsKey(S, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * _dt));
-            if (InputManager::IsKey(Q))
+            if (InputManager::IsKey(Q, o.ownerId))
                 t.local.Move(XMFLOAT3(-1.0f * _dt, 0.0f, 0.0f));
-            if (InputManager::IsKey(D))
+            if (InputManager::IsKey(D, o.ownerId))
                 t.local.Move(XMFLOAT3(1.0f * _dt, 0.0f, 0.0f));
-            if (InputManager::IsKey(SPACE))
+            if (InputManager::IsKey(SPACE, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 1.0f * _dt, 0.0f));
-            if (InputManager::IsKey(LCONTROL))
+            if (InputManager::IsKey(LCONTROL, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, -1.0f * _dt, 0.0f));
         }
     };
@@ -73,7 +89,8 @@ public:
         Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
         RessourceManager::AddMaterial("White", white);
         
-        RessourceManager::AddCamera("Default");
+        RessourceManager::AddCamera("Default1");
+        RessourceManager::AddCamera("Default2");
         
         if (isHost)
         {
@@ -82,10 +99,14 @@ public:
             Scene* scene = SceneManager::SetCurrentScene("Default");
         
             EntityId e = scene->world->CreateEntity();
-            scene->world->AddScript<TestScript>(e);
+            TestScript2& s = scene->world->AddScript<TestScript2>(e);
+            s.clientId = 1;
+            s.camId = RessourceManager::GetCameraId("Default1");
             
             EntityId e2 = scene->world->CreateEntity();
-            scene->world->AddScript<TestScript2>(e2);
+            TestScript2& s2 = scene->world->AddScript<TestScript2>(e2);
+            s.clientId = 2;
+            s.camId = RessourceManager::GetCameraId("Default2");
         }
         else
             EngineManager::GetInstance().Connect("127.0.0.1", 1888);
