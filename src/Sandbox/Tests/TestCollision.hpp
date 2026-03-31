@@ -57,6 +57,8 @@ public:
             p.type = BodyType::Dynamic;
             p.SetMass(mass);
             p.useGravity = useGravity;
+            p.rotation = rotation;
+            p.velocity = velocity;
             p.staticFriction = staticFriction;
             p.dynamicFriction = dynamicFriction;
             p.restitution = restitution;
@@ -124,7 +126,7 @@ public:
             otherMat,
             true,
             1.0f,
-            true,
+            false,
             false,
             XMFLOAT3(0, 0, 0),
             0.0f,
@@ -142,7 +144,7 @@ public:
             otherMat,
             true,
             1.0f,
-            true,
+            false,
             false,
             XMFLOAT3(-3.0f, 0.0f, 0.0f),
             0.0f,
@@ -160,7 +162,7 @@ public:
             otherMat,
             true,
             1.0f,
-            true,
+            false,
             false,
             XMFLOAT3(-3.0f, 0.0f, 0.0f),
             0.5f,
@@ -171,8 +173,8 @@ public:
         // -----------------------------
         // TEST D : empilement
         // -----------------------------
-        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
-        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
+        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, false, true);
+        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, false, true);
         //CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
 
         // -----------------------------
@@ -211,8 +213,8 @@ public:
         // -----------------------------
 		// TEST F : Rotation
         // -----------------------------
-        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
-        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, false, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, false, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
 
         // -----------------------------
         // CAMERA

@@ -16,7 +16,6 @@ void ColliderSystem::OnStartUpdate(float _dt)
 void ColliderSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform)
 {
     CalculateWorldAABB(_collider, _transform);
-    InsertIntoPartitionGrid(_e, _collider);
 }
 
 void ColliderSystem::OnEndUpdate(float _dt)
@@ -25,38 +24,34 @@ void ColliderSystem::OnEndUpdate(float _dt)
     NarrowPhase();
 }
 
-void ColliderSystem::InitializePartitionGrid(XMINT2 _mapSize, int _cellSize)
-{
-    assert(_cellSize > 0 && "Cell size must be greater than zero.");
-    assert(_mapSize.x > 0 && _mapSize.y > 0 && "Map size must be greater than zero.");
-    assert(_mapSize.x % _cellSize == 0 && _mapSize.y % _cellSize == 0 && "Map size must be divisible by cell size.");
-
-    m_partitionGrid.cellSize = _cellSize;
-    m_partitionGrid.numCellsX = (_mapSize.x + _cellSize - 1) / _cellSize;
-    m_partitionGrid.numCellsY = (_mapSize.y + _cellSize - 1) / _cellSize;
-
-    m_partitionGrid.cells.clear();
-    m_partitionGrid.cells.reserve(m_partitionGrid.numCellsX);
-
-    for (int x = 0; x < m_partitionGrid.numCellsX; ++x)
-    {
-        Vector<Vector<EntityId>> column;
-        column.reserve(m_partitionGrid.numCellsY);
-
-        for (int y = 0; y < m_partitionGrid.numCellsY; ++y)
-            column.push_back(Vector<EntityId>());
-
-        m_partitionGrid.cells.push_back(column);
-    }
-}
 
 void ColliderSystem::ClearPartitionGrid()
 {
-    for (int x = 0; x < m_partitionGrid.numCellsX; ++x)
-    {
-        for (int y = 0; y < m_partitionGrid.numCellsY; ++y)
-            m_partitionGrid.cells[x][y].clear();
-    }
+
+}
+
+void ColliderSystem::InsertIntoSpatialHash(EntityId _e, const ColliderComponent& _collider)
+{
+}
+
+uint32 ColliderSystem::CellKey(const XMFLOAT3& _pos)
+{
+    int cellx = static_cast<int>(floorf(_pos.x / m_spatialHash.cellSize));
+    int celly = static_cast<int>(floorf(_pos.y / m_spatialHash.cellSize));
+    int cellz = static_cast<int>(floorf(_pos.z / m_spatialHash.cellSize));
+    return HashCell(cellx, celly, cellz);
+}
+
+uint32 ColliderSystem::HashCell(int _x, int _y, int _z)
+{
+    return static_cast<uint32>(_x * 73856093) ^ (_y * 19349663) ^ (_z * 83492791);
+}
+
+uint64 ColliderSystem::MakePaireKey(EntityId _a, EntityId _b)
+{
+    if (_a > _b) 
+        std::swap(_a, _b);
+    return (static_cast<uint64>(static_cast<uint32>(_a)) << 32) | static_cast<uint32>(_b);
 }
 
 void ColliderSystem::UpdateCollider(ColliderComponent& _collider, TransformComponent& _transform)

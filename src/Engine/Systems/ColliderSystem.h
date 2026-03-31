@@ -6,12 +6,22 @@
 #include "../Components/TransformComponent.hpp"
 #include "../ContactManager.hpp"
 
-struct PartitionGrid
+
+struct SpatialHashEntry
 {
-    int cellSize = 0;
-    int numCellsX = 0;
-    int numCellsY = 0;
-    Vector<Vector<Vector<EntityId>>> cells;
+    uint32 cellKey;
+    EntityId entityId;
+
+    bool operator<(const SpatialHashEntry& _other)
+    {
+        return cellKey < _other.cellKey;
+    }
+};
+
+struct SpatialHash
+{
+    int cellSize = 4;
+    Vector<SpatialHashEntry> entries;
 };
 
 class ColliderSystem : public System<ColliderComponent, TransformComponent>
@@ -21,12 +31,16 @@ public:
     void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override;
     void OnEndUpdate(float _dt) override;
 
-    void InitializePartitionGrid(XMINT2 _mapSize, int _cellSize);
+    void SetCellSize(int _cellSize) { m_spatialHash.cellSize = _cellSize; }
     void SetContactManager(ContactManager* _contactManager) { m_pContactManager = _contactManager; }
 
 private:
     void ClearPartitionGrid();
-    void InsertIntoPartitionGrid(EntityId _e, const ColliderComponent& _collider);
+    void InsertIntoSpatialHash(EntityId _e, const ColliderComponent& _collider);
+    uint32 CellKey(const XMFLOAT3& _pos);
+    uint32 HashCell(int _x, int _y, int _z);
+    uint64 MakePaireKey(EntityId _a, EntityId _b);
+
     void BuildCandidatePairs();
     void NarrowPhase();
 
@@ -60,8 +74,10 @@ private:
     unsigned long long MakePairKey(EntityId _a, EntityId _b) const;
 
 private:
-    PartitionGrid m_partitionGrid;
+    SpatialHash m_spatialHash;
     Vector<std::pair<EntityId, EntityId>> m_candidatePairs;
+    Vector<uint64> m_pairKeys;
+     
     ContactManager* m_pContactManager = nullptr;
     Contact m_contactHolder;
 };

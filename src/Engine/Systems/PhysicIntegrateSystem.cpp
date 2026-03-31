@@ -33,11 +33,11 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
     if (_physic.allowRotation)
         UpdateWorldInertiaTensor(_physic, _transform);
 
-    // ─── 2. Intégration linéaire ──────────────────────────────────────────────
+    // 2. Intégration linéaire
     XMFLOAT3 deltaPosition = IntegrateLinearVelocity(_physic, _dt);
     _transform.local.Move(deltaPosition);
 
-    // ─── 3. Intégration angulaire ─────────────────────────────────────────────
+    // 3. Intégration angulaire 
     if (_physic.allowRotation)
     {
         XMFLOAT3 deltaAngle = IntegrateAngularVelocity(_physic, _dt);
@@ -51,7 +51,7 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
         _physic.torque = XMFLOAT3(0.0f, 0.0f, 0.0f);
     }
 
-    // ─── 4. Sleep ─────────────────────────────────────────────────────────────
+    // 4. Sleep 
     float linearSq = NormSquared(_physic.linearVelocity);
     float angularSq = NormSquared(_physic.angularVelocity);
 
@@ -77,10 +77,6 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _p
 void PhysicIntegrateSystem::OnEndUpdate(float _dt)
 {
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tenseurs d'inertie
-// ─────────────────────────────────────────────────────────────────────────────
 
 void PhysicIntegrateSystem::ComputeBodyInertiaTensor(PhysicComponent& _physic, ColliderComponent& _collider)
 {
@@ -132,7 +128,6 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(PhysicComponent& _physic, T
 {
     // I_world     = R * I_body     * R^T
     // I_world_inv = R * I_body_inv * R^T
-    //
     // XMMatrixTranspose est le moyen le moins coûteux d'obtenir R^T puisque
     // R est une matrice de rotation pure (orthonormale → R^T == R^-1).
 
@@ -144,10 +139,6 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(PhysicComponent& _physic, T
     _physic.inertiaTensorWorldInverse = R * _physic.inertiaTensorBodyInverse * RT;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Intégration linéaire
-// ─────────────────────────────────────────────────────────────────────────────
-
 XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(PhysicComponent& _physic, float _dt)
 {
     // Accumulation des accélérations (on travaille en accélérations, pas en forces,
@@ -157,8 +148,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(PhysicComponent& _physic
     // Contribution des forces accumulées (F = ma → a = F/m)
     acceleration = Add(acceleration, Mul(_physic.force, _physic.massInverse));
 
-    // Gravité : appliquée directement comme accélération, pas comme force,
-    // ce qui la rend indépendante de la masse (comportement correct en physique).
+    // Gravité : appliquée directement comme accélération, pas comme force
     if (_physic.useGravity)
         acceleration = Add(acceleration, Mul(m_gravity, _physic.gravityScale));
 
@@ -177,10 +167,6 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(PhysicComponent& _physic
 
     return Mul(_physic.linearVelocity, _dt);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Intégration angulaire
-// ─────────────────────────────────────────────────────────────────────────────
 
 XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(PhysicComponent& _physic, float _dt)
 {
@@ -208,20 +194,10 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(PhysicComponent& _physi
     return Mul(_physic.angularVelocity, _dt);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mise à jour du quaternion
-// ─────────────────────────────────────────────────────────────────────────────
-
 void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
-    // On crée un quaternion représentant la rotation différentielle de cette frame.
-    // XMQuaternionRotationRollPitchYaw est correct pour de petits angles (ce que
-    // _deltaAngle est toujours à 60Hz avec des vitesses angulaires raisonnables).
     XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
     XMVECTOR qDelta = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
-
-    // Composition : qNew = qDelta * qCurrent (ordre important — la rotation delta
-    // est appliquée dans l'espace monde, donc elle se multiplie à gauche).
     XMVECTOR qNew = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
     XMFLOAT4 out;

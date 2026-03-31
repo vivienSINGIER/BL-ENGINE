@@ -56,7 +56,7 @@ struct OBB
 //  Séparation claire entre :
 //   1. Définition locale (forme, offset) — set once, read-only après init.
 //   2. Cache monde (aabb, obb, worldCenter, worldRadius) — écrit par ColliderSystem.
-//
+// 
 //  L'union garantit qu'on n'alloue que ce dont on a besoin selon le type.
 //  Initialiser via SetBox() ou SetSphere() plutôt qu'en accédant à shape directement.
 struct ColliderComponent
