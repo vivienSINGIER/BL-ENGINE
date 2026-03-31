@@ -10,12 +10,25 @@ void MainScene::OnInit()
     RessourceManager::AddMaterial("White", white);
 	RessourceManager::AddCamera("Default");
 
+	Texture* wallTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Bricks/bricks.dds");
+	RessourceManager::AddTexture("Wall", wallTexture);
+	uint32 shaderTextId = RessourceManager::AddShader("Textured", ShaderFactory::CreateLitTextured(EngineManager::GetDevice()));
+	Material* wallMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+	wallMat->SetTexture("Albedo", RessourceManager::GetTexture("Wall"));
+	RessourceManager::AddMaterial("WallMaterial", wallMat);
+
+	Texture* groundTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Rock/Albedo.dds");
+	RessourceManager::AddTexture("Ground", groundTexture);
+	Material* groundMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+	groundMat->SetTexture("Albedo", RessourceManager::GetTexture("Ground"));
+	RessourceManager::AddMaterial("GroundMaterial", groundMat);
+
 	ComponentRegistry::RegisterScript<Labyrinthe::LabyScript>();
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
 
 	m_camera = world->CreateEntity();
 	TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
-	t.world.SetPosition(XMFLOAT3(0.0f, 4.0f, -19.0f));
+	t.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
 	t.world.LookTo(XMFLOAT3(-1.0f,-1.0f,-1.0f));
 	CameraComponent& cam = world->AddComponent<CameraComponent>(m_camera);
 	cam.camId = RessourceManager::GetCameraId("Default");

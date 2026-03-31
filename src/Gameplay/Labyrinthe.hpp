@@ -200,6 +200,10 @@ class Labyrinthe
         float offsetX = (_grid.size() - 1) * 0.5f;
         float offsetY = (_grid[0].size() - 1) * 0.5f;
 
+		float wallHeight = 15.0f;
+
+		float cellSize = 3.0f; 
+
 		Vector<Vector<bool>> visited(_grid.size(), Vector<bool>(_grid[0].size(), false));
 
         for (int x = 0; x < _grid.size(); x++)
@@ -233,20 +237,19 @@ class Labyrinthe
                         for (int dy = 0; dy < lenY; dy++)
 							visited[x + dx][y + dy] = true;
 
-					float cx = x + (lenX - 1) * 0.5f - offsetX;
-					float cy = y + (lenY - 1) * 0.5f - offsetY;
+					float cx = x * cellSize + (lenX - 1) * cellSize / 2 - offsetX * cellSize;
+					float cy = y * cellSize + (lenY - 1) * cellSize / 2 - offsetY * cellSize;
 
                     EntityId e = scene->world->CreateEntity();
                     TransformComponent& t = scene->world->AddComponent<TransformComponent>(e);
                     MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
                     m.geoId = RessourceManager::GetGeometryId("Cube");
-                    m.materialId = RessourceManager::GetMaterialId("White");
-                    t.local.SetPosition(XMFLOAT3(cx, 0.0f, cy));
-                    t.local.SetScale(XMFLOAT3((float)lenX, 1.0f, (float)lenY));
-                    ColliderComponent& col = scene->world->AddComponent<ColliderComponent>(e);
+                    m.materialId = RessourceManager::GetMaterialId("WallMaterial");
+                    t.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
+                    t.local.SetScale(XMFLOAT3((float)lenX * cellSize, wallHeight, (float)lenY * cellSize));
+                    /*ColliderComponent& col = scene->world->AddComponent<ColliderComponent>(e);
                     PhysicComponent& phys = scene->world->AddComponent<PhysicComponent>(e);
-                    phys.SetStatic();
-					std::cout << e << std::endl;
+                    phys.SetStatic();*/
                 }
                     
             }
@@ -256,9 +259,9 @@ class Labyrinthe
         TransformComponent& t = scene->world->AddComponent<TransformComponent>(ground);
         MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(ground);
 		m.geoId = RessourceManager::GetGeometryId("Cube");
-        m.materialId = RessourceManager::GetMaterialId("White");
-        t.local.SetPosition(XMFLOAT3(0.0f, -1.0f,0.0f));
-		t.local.SetScale(XMFLOAT3(_grid.size(), 1.0f, _grid[0].size()));
+        m.materialId = RessourceManager::GetMaterialId("GroundMaterial");
+        t.local.SetPosition(XMFLOAT3(0.0f, 0.0f,0.0f));
+		t.local.SetScale(XMFLOAT3(_grid.size()* cellSize, 1.0f, _grid[0].size()* cellSize));
 		ColliderComponent& col = scene->world->AddComponent<ColliderComponent>(ground);
 		PhysicComponent& phys = scene->world->AddComponent<PhysicComponent>(ground);
 		phys.SetStatic();
@@ -269,8 +272,8 @@ public:
 	{
 		void Awake() override
         {
-			int m_widthGrid = 31; // doit être impair
-			int m_heightGrid = 31; // doit être impair
+			int m_widthGrid = 21; // doit être impair
+			int m_heightGrid = 21; // doit être impair
 
             std::vector<std::vector<char>> grid(m_widthGrid, std::vector<char>(m_heightGrid, ' '));
 
