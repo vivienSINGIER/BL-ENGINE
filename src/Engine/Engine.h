@@ -31,6 +31,8 @@
 #include "Systems/LightSystem.h"
 #include "Systems/BroadPhaseSystem.h"
 #include "Systems/NarrowPhaseSystem.h"
+#include "Systems/PhysicSystem.h"
+#include "Systems/PhysicIntegrateSystem.h"
 #include "Systems/ReceiveSystem.h"
 #include "Systems/SendSystem.h"
 

@@ -32,6 +32,10 @@ struct MotionComponent
     XMFLOAT3 force  = { 0.0f, 0.0f, 0.0f };
     XMFLOAT3 torque = { 0.0f, 0.0f, 0.0f };
 
+    // Pseudo-vitesses — corrigent la position sans affecter la vraie vélocité.
+    XMFLOAT3 pseudoLinearVelocity = { 0,0,0 };
+    XMFLOAT3 pseudoAngularVelocity = { 0,0,0 };
+
     // ─── Sleep ────────────────────────────────────────────────────────────────
     bool  isSleeping = false;
     float sleepTimer = 0.0f;

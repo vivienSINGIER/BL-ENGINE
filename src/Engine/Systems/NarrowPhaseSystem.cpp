@@ -2,6 +2,7 @@
 #include <cfloat>
 #include "../ECS/World.h"
 #include <Utils.hpp>
+#include <iostream>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Update principal
@@ -680,21 +681,29 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         for (int i = 0; i < 4; ++i) clip0[i] = incFace[i];
         int count = 4;
 
+        // Plan -ax1 (bord gauche de la face de référence)
         count = ClipPolygonAgainstPlane(clip0, count, clip1,
-            Add(refFace[0], Scale(axesA[ax1], -h1)), axesA[ax1]);
+            Subtract(refCenter, Scale(axesA[ax1], h1)),   // point sur le plan
+            axesA[ax1]);                                   // normale : garder côté +ax1
         if (count <= 0) return;
 
+        // Plan +ax1 (bord droit)
         count = ClipPolygonAgainstPlane(clip1, count, clip2,
-            Add(refFace[0], Scale(axesA[ax1], h1)), { -axesA[ax1].x, -axesA[ax1].y, -axesA[ax1].z });
+            Add(refCenter, Scale(axesA[ax1], h1)),
+            { -axesA[ax1].x, -axesA[ax1].y, -axesA[ax1].z });
         if (count <= 0) return;
 
+        // Plan -ax2 (bord bas)
         count = ClipPolygonAgainstPlane(clip2, count, clip3,
-            Add(refFace[0], Scale(axesA[ax2], -h2)), axesA[ax2]);
+            Subtract(refCenter, Scale(axesA[ax2], h2)),
+            axesA[ax2]);
         if (count <= 0) return;
 
+        // Plan +ax2 (bord haut)
         XMFLOAT3 clip4[8];
         count = ClipPolygonAgainstPlane(clip3, count, clip4,
-            Add(refFace[0], Scale(axesA[ax2], h2)), { -axesA[ax2].x, -axesA[ax2].y, -axesA[ax2].z });
+            Add(refCenter, Scale(axesA[ax2], h2)),
+            { -axesA[ax2].x, -axesA[ax2].y, -axesA[ax2].z });
         if (count <= 0) return;
 
         // Garder uniquement les points sous le plan de la face de référence.
@@ -706,10 +715,20 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
             float sep = Dot(Subtract(clip4[i], refCenter), facePlaneNormal);
             if (sep <= 0.01f)
             {
+                // Projeter le point sur le plan de la face de référence.
+                // Cela garantit que tous les points sont coplanaires — indispensable
+                // pour que le solver applique des impulsions uniformes sur la face.
+                XMFLOAT3 projected =
+                {
+                    clip4[i].x - facePlaneNormal.x * sep,
+                    clip4[i].y - facePlaneNormal.y * sep,
+                    clip4[i].z - facePlaneNormal.z * sep
+                };
+
                 ContactPoint newCp;
-                newCp.position    = clip4[i];
-                newCp.localPointA = clip4[i];
-                newCp.localPointB = clip4[i];
+                newCp.position = projected;
+                newCp.localPointA = projected;
+                newCp.localPointB = projected;
                 _manifold.points[_manifold.pointCount++] = newCp;
             }
         }

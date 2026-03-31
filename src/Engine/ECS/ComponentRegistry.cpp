@@ -9,8 +9,9 @@
 #include "../Components/MeshRenderer.hpp"
 #include "../Components/CameraComponent.hpp"
 #include "../Components/LightComponent.hpp"
-#include "../Components/ColliderComponent.hpp"
-#include "../Components/PhysicComponent.hpp"
+#include "../Components/MotionComponent.hpp"
+#include "../Components/RigidBodyComponent.hpp"
+#include "../Components/ShapeComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
 
 
@@ -20,8 +21,9 @@ void ComponentRegistry::Init()
     RegisterComponent<MeshRenderer>();
     RegisterComponent<CameraComponent>();
     RegisterComponent<LightComponent>();
-    RegisterComponent<ColliderComponent>();
-    RegisterComponent<PhysicComponent>();
+    RegisterComponent<MotionComponent>();
+    RegisterComponent<RigidBodyComponent>();
+	RegisterComponent<ShapeComponent>();
     RegisterComponent<NetworkComponent>();
     RegisterComponent<ScriptRegistry>();
 }

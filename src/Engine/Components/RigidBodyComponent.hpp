@@ -76,7 +76,7 @@ struct RigidBodyComponent
     // Modèle multiplicatif : 1 / (1 + damping * dt). Stable inconditionnellement.
     // 0 = aucun amortissement. Valeurs typiques : 0.05 – 0.3.
     float linearDamping  = 0.05f;
-    float angularDamping = 0.1f;
+    float angularDamping = 2.0f;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers d'initialisation
