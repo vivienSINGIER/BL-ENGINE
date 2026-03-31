@@ -6,6 +6,7 @@ void Movement::ScriptMovement::Awake()
 	m_pitch = 0.0f;
 	InputManager::LockMouseCursor();
 	InputManager::HideMouseCursor();
+	bool cursorLocked = true;
 }
 
 void Movement::ScriptMovement::Update(float dt)
@@ -17,9 +18,12 @@ void Movement::ScriptMovement::Update(float dt)
 	m_yaw += mouseDelta.x * mouseSensitivity;
 	m_pitch += mouseDelta.y * mouseSensitivity;
 
-	m_pitch = max(-89.0f, min(89.0f, m_pitch)); // Limiter la rotation verticale
+	m_pitch = Clamp(m_pitch, -XM_PIDIV2 + 0.01f, XM_PIDIV2 - 0.01f);
 
-	t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
+	if (m_cursorLocked)
+	{
+		t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
+	}
 
 	float moveSpeed = 5.0f;
 
@@ -38,9 +42,19 @@ void Movement::ScriptMovement::Update(float dt)
 		t.local.Move(XMFLOAT3(0.0f, moveSpeed * dt, 0.0f));
 	if (InputManager::IsKey(LCONTROL))
 		t.local.Move(XMFLOAT3(0.0f, -moveSpeed * dt, 0.0f));
-	if(InputManager::IsKey(ESCAPE))
+	if(InputManager::IsKeyDown(ESCAPE))
 	{
-		InputManager::UnlockMouseCursor();
-		InputManager::ShowMouseCursor();
+		if(m_cursorLocked)
+		{
+			InputManager::UnlockMouseCursor();
+			InputManager::ShowMouseCursor();
+			m_cursorLocked = false;
+		}
+		else
+		{
+			InputManager::LockMouseCursor();
+			InputManager::HideMouseCursor();
+			m_cursorLocked = true;
+		}
 	}
 }

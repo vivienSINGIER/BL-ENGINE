@@ -200,18 +200,56 @@ class Labyrinthe
         float offsetX = (_grid.size() - 1) * 0.5f;
         float offsetY = (_grid[0].size() - 1) * 0.5f;
 
+		Vector<Vector<bool>> visited(_grid.size(), Vector<bool>(_grid[0].size(), false));
+
         for (int x = 0; x < _grid.size(); x++)
         {
             for (int y = 0; y < _grid[0].size(); y++)
-                if (_grid[x][y] == 'X')
+            {
+                if (_grid[x][y] == 'X' && !visited[x][y])
                 {
-					EntityId e = scene->world->CreateEntity();
+                    int lenY = 1;
+
+                    while (y + lenY < _grid[0].size() && _grid[x][y + lenY] == 'X' && !visited[x][y + lenY])
+                        lenY++;
+					
+					int lenX = 1;
+                    while (x + lenX < _grid.size())
+                    {
+						bool rowValid = true;
+                        for (int j = 0; j < lenY; j++)
+                        {
+                            if (_grid[x + lenX][y + j] != 'X' || visited[x + lenX][y + j])
+                            {
+                                rowValid = false;
+                                break;
+                            }
+                        }
+                        if (!rowValid) break;
+						lenX++;
+                    }
+
+                    for(int dx = 0; dx < lenX; dx++)
+                        for (int dy = 0; dy < lenY; dy++)
+							visited[x + dx][y + dy] = true;
+
+					float cx = x + (lenX - 1) * 0.5f - offsetX;
+					float cy = y + (lenY - 1) * 0.5f - offsetY;
+
+                    EntityId e = scene->world->CreateEntity();
                     TransformComponent& t = scene->world->AddComponent<TransformComponent>(e);
                     MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
                     m.geoId = RessourceManager::GetGeometryId("Cube");
-					m.materialId = RessourceManager::GetMaterialId("White");
-                    t.local.SetPosition(XMFLOAT3(x - offsetX, 0.0f, y - offsetY));
+                    m.materialId = RessourceManager::GetMaterialId("White");
+                    t.local.SetPosition(XMFLOAT3(cx, 0.0f, cy));
+                    t.local.SetScale(XMFLOAT3((float)lenX, 1.0f, (float)lenY));
+                    ColliderComponent& col = scene->world->AddComponent<ColliderComponent>(e);
+                    PhysicComponent& phys = scene->world->AddComponent<PhysicComponent>(e);
+                    phys.SetStatic();
+					std::cout << e << std::endl;
                 }
+                    
+            }
         }
 
 		EntityId ground = scene->world->CreateEntity();
@@ -221,6 +259,9 @@ class Labyrinthe
         m.materialId = RessourceManager::GetMaterialId("White");
         t.local.SetPosition(XMFLOAT3(0.0f, -1.0f,0.0f));
 		t.local.SetScale(XMFLOAT3(_grid.size(), 1.0f, _grid[0].size()));
+		ColliderComponent& col = scene->world->AddComponent<ColliderComponent>(ground);
+		PhysicComponent& phys = scene->world->AddComponent<PhysicComponent>(ground);
+		phys.SetStatic();
     }
 
 public:
@@ -228,8 +269,8 @@ public:
 	{
 		void Awake() override
         {
-			int m_widthGrid = 51; // doit être impair
-			int m_heightGrid = 51; // doit être impair
+			int m_widthGrid = 31; // doit être impair
+			int m_heightGrid = 31; // doit être impair
 
             std::vector<std::vector<char>> grid(m_widthGrid, std::vector<char>(m_heightGrid, ' '));
 
@@ -283,7 +324,6 @@ public:
             Lobby(grid, rxMin, rxMax, ryMin, ryMax);
             Laby3d(grid);
 
-            system("cls");
             bfs_check(grid);
             printGrid(grid);
 

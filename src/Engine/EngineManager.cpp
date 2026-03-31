@@ -76,7 +76,7 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
     SystemScheduler::Get().RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
 	SystemScheduler::Get().RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
     SystemScheduler::Get().GetSystem<ColliderSystem>()->SetContactManager(GetContactManager());
-    SystemScheduler::Get().GetSystem<ColliderSystem>()->InitializePartitionGrid(XMINT2(200, 200), 10);
+    SystemScheduler::Get().GetSystem<ColliderSystem>()->InitializePartitionGrid(XMINT2(100, 100), 2);
 	SystemScheduler::Get().GetSystem<PhysicSystem>()->SetContactManager(GetContactManager());
 }
 

@@ -13,6 +13,7 @@ public:
 	private:
 		float m_yaw;
 		float m_pitch;
+		bool m_cursorLocked;
 	};
 };
 

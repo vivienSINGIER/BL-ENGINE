@@ -17,16 +17,18 @@ void MainScene::OnInit()
 	TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
 	t.world.SetPosition(XMFLOAT3(0.0f, 4.0f, -19.0f));
 	t.world.LookTo(XMFLOAT3(-1.0f,-1.0f,-1.0f));
-
 	CameraComponent& cam = world->AddComponent<CameraComponent>(m_camera);
 	cam.camId = RessourceManager::GetCameraId("Default");
 	cam.isMainCamera = true;
 	world->AddScript<Movement::ScriptMovement>(m_camera);
+	PhysicComponent& phys = world->AddComponent<PhysicComponent>(m_camera);
+	ColliderComponent& col = world->AddComponent<ColliderComponent>(m_camera);
+	phys.SetMass(1.0f);
+	phys.ToggleGravity();
 
 	EntityId light = world->CreateEntity();
 	TransformComponent& lt = world->AddComponent<TransformComponent>(light);
 	lt.local.SetPosition(XMFLOAT3(0.0f, 50.0f,0.0f));
-
 	LightComponent& l = world->AddComponent<LightComponent>(light);
 	l.type = LightType::Point;
 	l.SetStrength(1.0f);
