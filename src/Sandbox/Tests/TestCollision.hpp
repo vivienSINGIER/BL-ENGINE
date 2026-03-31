@@ -57,8 +57,6 @@ public:
             p.type = BodyType::Dynamic;
             p.SetMass(mass);
             p.useGravity = useGravity;
-            p.rotation = rotation;
-            p.velocity = velocity;
             p.staticFriction = staticFriction;
             p.dynamicFriction = dynamicFriction;
             p.restitution = restitution;

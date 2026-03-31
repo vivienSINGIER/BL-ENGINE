@@ -28,12 +28,15 @@ void SystemScheduler::Run(float _dt)
 
         if (i == Phase::FixedUpdate)
         {
-            while (m_accumulator >= 0.016666667f)
+			const float m_fixedDeltaTime = 1.0f / 60.0f;
+            while (m_accumulator >= m_fixedDeltaTime)
             {
                 for (ISystem* sys : m_phases[i])
-                    sys->Update(0.016666667f);
-
-                m_accumulator -= 0.016666667f;
+                {
+                    if ((sys->networkFlags & flag))
+                        sys->Update(m_fixedDeltaTime);
+                }
+                m_accumulator -= m_fixedDeltaTime;
             }
         }
         else
@@ -44,6 +47,7 @@ void SystemScheduler::Run(float _dt)
                     sys->Update(_dt);
             }
         }
+        
 
 		if (i == Phase::PostRender && (flag & CLIENT) == CLIENT)
 			EngineManager::GetInstance().GetWindow()->Display();
