@@ -3,6 +3,7 @@
 
 #include "Test.h"
 #include "../Engine/Engine.h"
+#include "Network/Client.h"
 
 class TestNetwork : public Test
 {
@@ -39,8 +40,10 @@ public:
             m.materialId = RessourceManager::GetMaterialId("White");
             
             CameraComponent& cam = AddComponent<CameraComponent>();
-            cam.isMainCamera = true;
             cam.camId = camId;
+            
+            if (EngineManager::GetClient()->GetId() == clientId)
+                cam.isMainCamera = true;    
             
             TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
@@ -105,8 +108,8 @@ public:
             
             EntityId e2 = scene->world->CreateEntity();
             TestScript2& s2 = scene->world->AddScript<TestScript2>(e2);
-            s.clientId = 2;
-            s.camId = RessourceManager::GetCameraId("Default2");
+            s2.clientId = 2;
+            s2.camId = RessourceManager::GetCameraId("Default2");
         }
         else
             EngineManager::GetInstance().Connect("127.0.0.1", 1888);
