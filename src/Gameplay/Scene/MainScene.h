@@ -21,6 +21,7 @@ private:
 	bool m_opened;
 	float m_timer;
 	float m_openDuration;
+	float cellSize;
 
 	bool m_started;
 
@@ -40,8 +41,9 @@ private:
 	void PierceWallV(Vector<Vector<char>>& _grid, int _x, int _yStart, int _yEnd, int _widthGrid);
 	void printGrid(Vector<Vector<char>>& _grid);
 	void bfs_check(Vector<Vector<char>>& grid);
+	void SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, int _xMax, int _yMin, int _yMax);
 
-	Vector<EntityId> m_wallEntities;
+	Vector<EntityId> m_Entities;
 	EntityId m_groundEntity;
 };
 

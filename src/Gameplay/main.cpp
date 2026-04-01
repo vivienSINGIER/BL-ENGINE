@@ -9,6 +9,7 @@
 #ifdef _DEBUG
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
+    srand(time(NULL));
     Console::InitConsol();
     
     EngineManager engineManager;

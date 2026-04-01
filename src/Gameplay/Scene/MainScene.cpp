@@ -15,6 +15,7 @@ void MainScene::OnInit()
     RessourceManager::AddMaterial("White", white);
 	RessourceManager::AddCamera("Default");
 
+	RessourceManager::AddGeometry("WaterBottle", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/WaterBottle.obj"));
 	Camera* camObj = RessourceManager::GetCamera("Default");
 	camObj->nearPlane = 0.01f;
 
@@ -36,6 +37,12 @@ void MainScene::OnInit()
 	Material* doorMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
 	doorMat->SetTexture("Albedo", RessourceManager::GetTexture("Door"));
 	RessourceManager::AddMaterial("DoorMaterial", doorMat);
+
+	Texture* waterBottleTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Water.dds");
+	RessourceManager::AddTexture("WaterBottle", waterBottleTexture);
+	Material* waterBottleMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+	waterBottleMat->SetTexture("Albedo", RessourceManager::GetTexture("WaterBottle"));
+	RessourceManager::AddMaterial("WaterBottleMaterial", waterBottleMat);
 
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
 
@@ -264,6 +271,7 @@ void MainScene::printGrid(Vector<Vector<char>>& _grid)
             if (c == 'X') std::cout << "WW";
             else if (c == '?') std::cout << "??"; // visible !
             else if (c == 'D') std::cout << "DD";
+			else if (c == 'I') std::cout << "II";
             else               std::cout << "  ";
         }
         std::cout << '\n';
@@ -305,6 +313,52 @@ void MainScene::bfs_check(Vector<Vector<char>>& grid)
     std::cerr << "Cellules inaccessibles : " << unreachable << "\n";
 }
 
+void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, int _xMax, int _yMin, int _yMax)
+{
+	int width = _grid.size();
+	int height = _grid[0].size();
+
+	std::vector<std::pair<int, int>> emptyCells;
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            if(_grid[x][y] == ' ' && !(x >= _xMin && x <= _xMax && y >= _yMin && y <= _yMax))
+				emptyCells.push_back({ x, y });
+        }
+	}
+
+    for(int i = emptyCells.size() - 1; i > 0; i--)
+		std::swap(emptyCells[i], emptyCells[RandomInt(0, i)]);
+
+	int placed = 0;
+
+    for (const auto& cell : emptyCells)
+    {
+        if (placed >= _count) break;
+        int x = cell.first;
+        int y = cell.second;
+        EntityId itemEntity = world->CreateEntity();
+        m_Entities.push_back(itemEntity);
+        TransformComponent& tItem = world->AddComponent<TransformComponent>(itemEntity);
+        MeshRenderer& m = world->AddComponent<MeshRenderer>(itemEntity);
+        m.geoId = RessourceManager::GetGeometryId("WaterBottle");
+        m.materialId = RessourceManager::GetMaterialId("WaterBottleMaterial");
+
+		ColliderComponent& col = world->AddComponent<ColliderComponent>(itemEntity);
+		PhysicComponent& phys = world->AddComponent<PhysicComponent>(itemEntity);
+		phys.SetStatic();
+
+        cellSize = 3.0f;
+        float offsetX = _grid.size() * 0.5f * cellSize - cellSize / 2;
+        float offsetY = _grid[0].size() * 0.5f * cellSize - cellSize / 2;
+        tItem.local.SetPosition(XMFLOAT3(x * cellSize - offsetX, 1.0f, y * cellSize - offsetY));
+		_grid[x][y] = 'I';
+        placed++;
+	}
+}
+
 void MainScene::Laby3d(Vector<Vector<char>>& _grid)
 {
 
@@ -316,7 +370,7 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
 
     float wallHeight = 15.0f;
 
-    float cellSize = 3.0f;
+    cellSize = 3.0f;
 
     int doorCount = 0;
 
@@ -357,7 +411,7 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
                 float cy = y * cellSize + (lenY - 1) * cellSize / 2 - offsetY * cellSize;
 
                 EntityId e = world->CreateEntity();
-				m_wallEntities.push_back(e);
+                m_Entities.push_back(e);
                 TransformComponent& tWall = world->AddComponent<TransformComponent>(e);
                 MeshRenderer& m = world->AddComponent<MeshRenderer>(e);
                 m.geoId = RessourceManager::GetGeometryId("Cube");
@@ -371,7 +425,7 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
             if (_grid[x][y] == 'D')
             {
                 EntityId doorEntity = world->CreateEntity();
-				m_wallEntities.push_back(doorEntity);
+                m_Entities.push_back(doorEntity);
                 m_doors[doorCount] = doorEntity;
                 TransformComponent& tDoor = world->AddComponent<TransformComponent>(doorEntity);
                 MeshRenderer& m = world->AddComponent<MeshRenderer>(doorEntity);
@@ -392,7 +446,7 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
 
     EntityId ground = world->CreateEntity();
 	m_groundEntity = ground;
-	m_wallEntities.push_back(ground);
+    m_Entities.push_back(ground);
     TransformComponent& tGround = world->AddComponent<TransformComponent>(ground);
     MeshRenderer& m = world->AddComponent<MeshRenderer>(ground);
     m.geoId = RessourceManager::GetGeometryId("Cube");
@@ -456,12 +510,12 @@ void MainScene::CreateLabyrinthe(int _width, int _height)
     PierceWallV(grid, rxMax, ryMax, _height - 1, _width);
 
     Lobby(grid, rxMin, rxMax, ryMin, ryMax);
-
     Laby3d(grid);
+	SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax);
 
     bfs_check(grid);
     printGrid(grid);
-    m_loadLaby = false;
+
 }
 
 void MainScene::ReloadLabyrinthe(int _width, int _height)
@@ -479,9 +533,9 @@ void MainScene::ReloadLabyrinthe(int _width, int _height)
 
 void MainScene::DestroyLabyrinthe()
 {
-    for (EntityId e : m_wallEntities)
+    for (EntityId e : m_Entities)
         world->DestroyEntity(e);
 
-    m_wallEntities.clear();
+    m_Entities.clear();
 	m_groundEntity = 0;
 }
