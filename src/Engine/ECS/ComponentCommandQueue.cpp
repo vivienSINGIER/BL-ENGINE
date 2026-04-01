@@ -172,7 +172,7 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
 
 void ComponentCommandQueue::FlushDestroy(World* _pWorld)
 {
-    Command& cmd = m_toRemove.back();
+    Command& cmd = m_toDestroy.back();
 
     ComponentId cid = cmd.component;
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
