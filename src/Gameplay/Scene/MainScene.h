@@ -17,13 +17,13 @@ private:
 	EntityId m_laby;
 
 	bool m_loadLaby;
-	EntityId m_doors[4];
 	bool m_opened;
 	float m_timer;
 	float m_openDuration;
 	float cellSize;
 
 	bool m_started;
+
 
 	//LABYRINTHE//
 	void CreateLabyrinthe(int _width, int _height);
@@ -45,6 +45,13 @@ private:
 
 	Vector<EntityId> m_Entities;
 	EntityId m_groundEntity;
+	EntityId m_doors[4];
+
+	//LEVEL MANAGER//
+	void LoadLevel(int levelNb, int nbPlayer);
+
+	int m_levelNb;
+	int m_nbPlayer;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED

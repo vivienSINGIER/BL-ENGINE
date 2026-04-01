@@ -25,7 +25,7 @@ void Movement::ScriptMovement::Update(float dt)
 		t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
 	}
 
-	float moveSpeed = 5.0f;
+	float moveSpeed = 30.0f;
 
 	XMFLOAT3 forward = t.local.GetForward();
 	XMFLOAT3 right = t.local.GetRight();

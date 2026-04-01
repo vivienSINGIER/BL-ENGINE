@@ -8,6 +8,8 @@ void MainScene::OnInit()
 	m_openDuration = 5.0f;
 	m_opened = false;
 	m_started = false;
+	m_levelNb = 1;
+	m_nbPlayer = 4;
 
     RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
     uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
@@ -79,8 +81,7 @@ void MainScene::OnUpdate(float _dt)
 	}
 	if(InputManager::IsKeyDown(J))
 	{
-		std::cout << "Reloading Labyrinthe...\n";
-		ReloadLabyrinthe(31, 31);
+		LoadLevel(m_levelNb, m_nbPlayer);
 	}
 
     if (m_started == true)
@@ -116,7 +117,7 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-	CreateLabyrinthe(21, 21);
+    LoadLevel(m_levelNb, m_nbPlayer);
 }
 
 void MainScene::OnEnd()
@@ -320,6 +321,8 @@ void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, in
 
 	std::vector<std::pair<int, int>> emptyCells;
 
+    _count += (m_levelNb - 1) * m_nbPlayer;
+
     for (int x = 0; x < width; x++)
     {
         for (int y = 0; y < height; y++)
@@ -357,6 +360,14 @@ void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, in
 		_grid[x][y] = 'I';
         placed++;
 	}
+}
+
+void MainScene::LoadLevel(int levelNb, int nbPlayer)
+{
+	int levelSize = 21 + ((levelNb - 1) * 2 * nbPlayer);
+	ReloadLabyrinthe(levelSize, levelSize);
+	std::cout << "Level " << levelNb << " loaded with " << nbPlayer << " player(s) " << "LevelSize " << levelSize << std::endl;
+    std::cout << "Labyrinthe generated with " << m_Entities.size() << " entities.\n";
 }
 
 void MainScene::Laby3d(Vector<Vector<char>>& _grid)
@@ -443,7 +454,6 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
         }
     }
 
-
     EntityId ground = world->CreateEntity();
 	m_groundEntity = ground;
     m_Entities.push_back(ground);
@@ -456,6 +466,7 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
     ColliderComponent& col = world->AddComponent<ColliderComponent>(ground);
     PhysicComponent& phys = world->AddComponent<PhysicComponent>(ground);
     phys.SetStatic();
+
 }
 
 void MainScene::CreateLabyrinthe(int _width, int _height)
@@ -511,7 +522,7 @@ void MainScene::CreateLabyrinthe(int _width, int _height)
 
     Lobby(grid, rxMin, rxMax, ryMin, ryMax);
     Laby3d(grid);
-	SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax);
+	SpawnItems(grid, 3, rxMin, rxMax, ryMin, ryMax);
 
     bfs_check(grid);
     printGrid(grid);
@@ -529,6 +540,7 @@ void MainScene::ReloadLabyrinthe(int _width, int _height)
     CreateLabyrinthe(_width, _height);
 
     m_loadLaby = false;
+	m_levelNb++;
 }
 
 void MainScene::DestroyLabyrinthe()
