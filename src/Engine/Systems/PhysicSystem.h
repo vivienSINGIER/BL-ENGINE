@@ -40,6 +40,8 @@ public:
                   TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
+    void Update(float _dt) override;
+
     void SetNarrowPhaseSystem(NarrowPhaseSystem* _np) { m_narrowPhase = _np; }
 
 private:
@@ -112,7 +114,7 @@ private:
 private:
     NarrowPhaseSystem* m_narrowPhase = nullptr;
 
-    static constexpr int   kSolverIterations    = 10;
+    static constexpr int   kSolverIterations    = 2;
     static constexpr float kWarmStartFactor      = 0.8f;
     static constexpr float kPenetrationSlop      = 0.005f;
     static constexpr float kPenetrationPercent   = 0.8f;

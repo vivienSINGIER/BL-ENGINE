@@ -74,6 +74,8 @@ public:
     void OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
+    void Update(float _dt) override;
+
     void SetBroadPhaseSystem(BroadPhaseSystem* _bp) { m_broadPhase = _bp; }
 
     ContactManifoldCache& GetManifoldCache() { return m_cache; }

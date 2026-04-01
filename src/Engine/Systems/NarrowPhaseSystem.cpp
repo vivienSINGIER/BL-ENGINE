@@ -22,6 +22,12 @@ void NarrowPhaseSystem::OnEndUpdate(float _dt)
         ProcessPair(pair.a, pair.b);
 }
 
+void NarrowPhaseSystem::Update(float _dt)
+{
+    OnStartUpdate(_dt);
+    OnEndUpdate(_dt);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Traitement d'une paire
 // ─────────────────────────────────────────────────────────────────────────────

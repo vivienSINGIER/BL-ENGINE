@@ -2,33 +2,27 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include "../ECS/World.h"
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Update
-// ─────────────────────────────────────────────────────────────────────────────
+#include "../Components/RigidBodyComponent.hpp"
 
 void BroadPhaseSystem::OnStartUpdate(float _dt)
 {
-    // Réinitialisation sans réallocation si la capacité est déjà suffisante.
-    m_entries.clear();
     m_candidatePairs.clear();
 }
 
-void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e,
-    ShapeComponent& _shape, TransformComponent& _transform)
+void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform)
 {
-    ComputeWorldAABB(_shape, _transform);
-    InsertIntoSpatialHash(_e, _shape);
+    if (_shape.toHash)
+    {
+        ComputeWorldAABB(_shape, _transform);
+        InsertIntoGrid(_e, _shape);
+        _shape.toHash = false;
+    }
 }
 
 void BroadPhaseSystem::OnEndUpdate(float _dt)
 {
     BuildCandidatePairs();
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Calcul de l'AABB monde
-// ─────────────────────────────────────────────────────────────────────────────
 
 void BroadPhaseSystem::ComputeWorldAABB(ShapeComponent& _shape, TransformComponent& _transform)
 {
@@ -137,75 +131,75 @@ void BroadPhaseSystem::ComputeWorldAABB(ShapeComponent& _shape, TransformCompone
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Spatial hash — insertion
-// ─────────────────────────────────────────────────────────────────────────────
-
-void BroadPhaseSystem::InsertIntoSpatialHash(EntityId _e, ShapeComponent& _shape)
+void BroadPhaseSystem::InsertIntoGrid(EntityId _e, ShapeComponent& _shape)
 {
-    int cxMin = static_cast<int>(floorf(_shape.aabb.min.x / m_cellSize));
-    int cyMin = static_cast<int>(floorf(_shape.aabb.min.y / m_cellSize));
-    int czMin = static_cast<int>(floorf(_shape.aabb.min.z / m_cellSize));
-    int cxMax = static_cast<int>(floorf(_shape.aabb.max.x / m_cellSize));
-    int cyMax = static_cast<int>(floorf(_shape.aabb.max.y / m_cellSize));
-    int czMax = static_cast<int>(floorf(_shape.aabb.max.z / m_cellSize));
+    int cellSize = m_grid.cellSize;
 
-    for (int x = cxMin; x <= cxMax; ++x)
-        for (int y = cyMin; y <= cyMax; ++y)
-            for (int z = czMin; z <= czMax; ++z)
-                m_entries.push_back({ HashCell(x, y, z), _e });
+    int cxMin = static_cast<int>(floorf(_shape.aabb.min.x / cellSize));
+    int cyMin = static_cast<int>(floorf(_shape.aabb.min.y / cellSize));
+    int czMin = static_cast<int>(floorf(_shape.aabb.min.z / cellSize));
+    int cxMax = static_cast<int>(floorf(_shape.aabb.max.x / cellSize));
+    int cyMax = static_cast<int>(floorf(_shape.aabb.max.y / cellSize));
+    int czMax = static_cast<int>(floorf(_shape.aabb.max.z / cellSize));
+
+    for (int x = cxMin; x <= cxMax; x++)
+        for (int y = cyMin; y <= cyMax; y++)
+            for (int z = czMin; z <= czMax; z++)
+                m_grid.Insert(HashCell(x, y, z), _e);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Construction des paires candidates
-//
-//  1. Tri par cellKey  →  O(N log N), accès séquentiel, cache-friendly.
-//  2. Pour chaque run de même clé, génère toutes les paires (i, j).
-//  3. Tri des clés de paires + std::unique  →  déduplication sans HashMap.
-// ─────────────────────────────────────────────────────────────────────────────
 
 void BroadPhaseSystem::BuildCandidatePairs()
 {
-    if (m_entries.empty())
-        return;
-
-    std::sort(m_entries.begin(), m_entries.end());
-
     m_pairKeys.clear();
+    m_grid.ForEachCell([&](const Vector<EntityId>& bucket)
+        {
+            for (size_t i = 0; i < bucket.size(); i++)
+            {
+                EntityId e1 = bucket[i];
+                BodyType e1Type = BodyType::Static;
 
-    size_t i = 0;
-    while (i < m_entries.size())
-    {
-        // Trouver la fin du run de même cellKey.
-        size_t j = i + 1;
-        while (j < m_entries.size() && m_entries[j].cellKey == m_entries[i].cellKey)
-            ++j;
+                if (world->HasComponent<RigidBodyComponent>(e1))
+                    e1Type = world->GetComponent<RigidBodyComponent>(e1).type;
 
-        // Générer toutes les paires dans ce run.
-        for (size_t a = i; a < j; ++a)
-            for (size_t b = a + 1; b < j; ++b)
-                m_pairKeys.push_back(MakePairKey(m_entries[a].entityId, m_entries[b].entityId));
+                if (e1Type != BodyType::Dynamic)
+                    continue;
+                
+                for (size_t j = i + 1; j < bucket.size(); j++)
+                {
+                    EntityId e2 = bucket[j];
+                    m_pairKeys.push_back(MakePairKey(e1, e2));
+                }
+            }
+        });
 
-        i = j;
-    }
-
-    // Déduplication.
     std::sort(m_pairKeys.begin(), m_pairKeys.end());
     auto last = std::unique(m_pairKeys.begin(), m_pairKeys.end());
     m_pairKeys.erase(last, m_pairKeys.end());
 
-    // Reconstruction des paires (EntityId, EntityId).
     m_candidatePairs.reserve(m_pairKeys.size());
     for (uint64 key : m_pairKeys)
     {
         EntityId a = static_cast<EntityId>(key >> 32);
         EntityId b = static_cast<EntityId>(key & 0xFFFFFFFF);
 
-        // Test AABB final — filtre les faux positifs du hash (collisions de clé).
         ShapeComponent& shapeA = world->GetComponent<ShapeComponent>(a);
         ShapeComponent& shapeB = world->GetComponent<ShapeComponent>(b);
 
         if (shapeA.aabb.Overlaps(shapeB.aabb))
             m_candidatePairs.push_back({ a, b });
     }
+}
+
+uint32 BroadPhaseSystem::HashCell(int _x, int _y, int _z) const
+{
+    return static_cast<uint32>(
+        (_x * 73856093) ^
+        (_y * 19349663) ^
+        (_z * 83492791) );
+}
+
+uint64 BroadPhaseSystem::MakePairKey(EntityId _a, EntityId _b) const
+{
+    if (_a > _b) std::swap(_a, _b);
+    return (static_cast<uint64>(static_cast<uint32>(_a)) << 32) | static_cast<uint32>(_b);
 }

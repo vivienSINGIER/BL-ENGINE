@@ -25,6 +25,11 @@ void PhysicSystem::OnEndUpdate(float _dt)
     WakeBodies();
 }
 
+void PhysicSystem::Update(float _dt)
+{
+    OnEndUpdate(_dt);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mise à jour des tenseurs monde
 //
@@ -436,16 +441,6 @@ void PhysicSystem::SolveTangentConstraint(
 
     float delta = _accumulated - oldAccum;
     if (Abs(delta) < 1e-8f) return;
-
-    std::cout << "[FRICTION]"
-        << " vt=" << vt
-        << " lambda=" << lambda
-        << " oldAccum=" << oldAccum
-        << " newAccum=" << _accumulated
-        << " maxStatic=" << maxStatic
-        << " maxDynamic=" << maxDynamic
-        << " delta=" << delta
-        << "\n";
 
     XMFLOAT3 J = Mul(_tangent, delta);
     ApplyImpulse(_motionA, _rigidA, J, _ctx.rA, -1.0f);

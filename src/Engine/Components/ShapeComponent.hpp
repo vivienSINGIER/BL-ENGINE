@@ -120,8 +120,8 @@ struct ShapeComponent
     XMFLOAT4 localRotation = { 0.0f, 0.0f, 0.0f, 1.0f };  // quaternion identité
 
     // ─── Flags ────────────────────────────────────────────────────────────────
-    // isTrigger : génère des événements OnEnter/OnExit mais pas de réponse physique.
-    bool isTrigger = false;
+    bool isTrigger = false; // isTrigger : génère des événements OnEnter/OnExit mais pas de réponse physique.
+    bool toHash = true; 
 
     // ─── Cache monde (écrit exclusivement par BroadPhaseSystem) ──────────────
     AABB     aabb;
