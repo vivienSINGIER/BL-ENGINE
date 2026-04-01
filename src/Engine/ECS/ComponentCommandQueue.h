@@ -15,11 +15,11 @@ public:
     void EmplaceCreate(EntityId _e);
     
     template <typename T>
-    T& EmplaceAdd(EntityId _e, T const& _val = {});
+    T& EmplaceAdd(EntityId _e, bool _isClientSide = false, T const& _val = {});
     void* EmplaceAddRaw(EntityId _e, ComponentId _cid, uint64 _size, const void* _data = nullptr);
     
     template <typename T>
-    void EmplaceRemove(EntityId _e);
+    void EmplaceRemove(EntityId _e, bool _isClientSide);
     void EmplaceRemoveRaw(EntityId _e, ComponentId _cid);
 
     void EmplaceDestroy(EntityId _e);
@@ -33,6 +33,7 @@ private:
         ComponentId component;
 
         bool isScript = false;
+        bool isClientSide = false;
         
         uint64 size;
         uint64 offset;

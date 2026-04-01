@@ -42,8 +42,8 @@ struct IScript
 
     virtual ~IScript() = default;
 
-    template<typename T> T&     AddComponent();
-    template<typename T> void   RemoveComponent();
+    template<typename T> T&     AddComponent(bool _isClientSide = false);
+    template<typename T> void   RemoveComponent(bool _isClientSide = false);
     template<typename T> T&     GetComponent();
     template<typename T> bool   HasComponent();
     

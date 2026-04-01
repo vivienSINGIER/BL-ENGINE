@@ -7,22 +7,22 @@
 #include "Script.h"
 
 template <typename T>
-T& World::AddComponent(EntityId _e, T const& _val)
+T& World::AddComponent(EntityId _e, bool _isClientSide, T const& _val)
 {
     assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
     assert(!ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Component should not be a script");
 
-    return m_commandQueue.EmplaceAdd<T>(_e, _val);
+    return m_commandQueue.EmplaceAdd<T>(_e, _isClientSide, _val);
 }
 
 template <typename T>
-void World::RemoveComponent(EntityId _e)
+void World::RemoveComponent(EntityId _e, bool _isClientSide)
 {
     assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
-    m_commandQueue.EmplaceRemove<T>(_e);
+    m_commandQueue.EmplaceRemove<T>(_e, _isClientSide);
 }
 
 template <typename T>
@@ -85,7 +85,7 @@ bool World::IsActiveComponent(EntityId _e)
 }
 
 template <typename T>
-T& World::AddScript(EntityId _e)
+T& World::AddScript(EntityId _e, bool _isClientSide)
 {
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     assert(ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Script should not be a component");
@@ -96,7 +96,7 @@ T& World::AddScript(EntityId _e)
     else
         reg = &GetComponent<ScriptRegistry>(_e);
 
-    T& script = m_commandQueue.EmplaceAdd<T>(_e);
+    T& script = m_commandQueue.EmplaceAdd<T>(_e, _isClientSide);
     
     script.sceneId = m_sceneId;
     script.entity = _e;
@@ -110,12 +110,12 @@ T& World::AddScript(EntityId _e)
 }
 
 template <typename T>
-void World::RemoveScript(EntityId _e)
+void World::RemoveScript(EntityId _e, bool _isClientSide)
 {
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
     
     GetComponent<T>(_e).Destroy();
-    m_commandQueue.EmplaceRemove<T>(_e);
+    m_commandQueue.EmplaceRemove<T>(_e, _isClientSide);
 
     ScriptRegistry& reg = GetComponent<ScriptRegistry>(_e);
     ComponentId cid = ComponentType::Id<T>();

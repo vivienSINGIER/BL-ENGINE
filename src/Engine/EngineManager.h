@@ -36,8 +36,9 @@ public:
     static Device* GetDevice() { return GetInstance().m_pDevice; }
 	static uint8 GetNetworkFlag() { return GetInstance().m_networkFlag; }
 
-	static Client* GetClient() { return GetInstance().m_pClient; }
-	static Server* GetServer() { return GetInstance().m_pServer; }
+	static bool		IsServer()	{ return GetInstance().m_pServer != nullptr; }
+	static Client*	GetClient() { return GetInstance().m_pClient; }
+	static Server*	GetServer() { return GetInstance().m_pServer; }
 
 private:
     static EngineManager* s_pInstance;

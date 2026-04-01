@@ -33,23 +33,24 @@ public:
         
         void Start()
         {
-            if (EngineManager::GetServer() == nullptr) return;
+            if (EngineManager::IsServer() == false) return;
 
             MeshRenderer& m = AddComponent<MeshRenderer>();
             m.geoId = RessourceManager::GetGeometryId("Cube");
             m.materialId = RessourceManager::GetMaterialId("White");
-            
-            CameraComponent& cam = AddComponent<CameraComponent>();
-            cam.camId = camId;
-            
-            if (EngineManager::GetClient()->GetId() == clientId)
-                cam.isMainCamera = true;    
             
             TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
 
             OwnerComponent& o = AddComponent<OwnerComponent>();
             o.ownerId = clientId;
+            
+            if (clientId == EngineManager::GetClient()->GetId())
+            {
+                CameraComponent& cam = AddComponent<CameraComponent>(true);
+                cam.camId = camId;
+                cam.isMainCamera = true;   
+            }    
         }
         
         void Update(float _dt) override

@@ -29,19 +29,20 @@ public:
     void AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data);
     void RemoveRawComponent(EntityId _e, ComponentId _cid);
     void* GetRawComponent(EntityId _e, ComponentId _cid);
+    
     void AddRawScript(EntityId _e, ComponentId _cid);
     void RemoveRawScript(EntityId _e, ComponentId _cid);
     IScript* GetRawScript(EntityId _e, ComponentId _cid);
     
-    template <typename T> T& AddComponent(EntityId _e, T const& _val = T{});
-    template <typename T> void RemoveComponent(EntityId _e);
+    template <typename T> T& AddComponent(EntityId _e, bool _isClientSide = false, T const& _val = T{});
+    template <typename T> void RemoveComponent(EntityId _e, bool _isClientSide = false);
     template <typename T> T& GetComponent(EntityId _e);
     template <typename T> bool HasComponent(EntityId _e);
     template <typename T> void SetActiveComponent(EntityId _e, bool _value);
     template <typename T> bool IsActiveComponent(EntityId _e);
 
-    template <typename T> T& AddScript(EntityId _e);
-    template <typename T> void RemoveScript(EntityId _e);
+    template <typename T> T& AddScript(EntityId _e, bool _isClientSide = false);
+    template <typename T> void RemoveScript(EntityId _e, bool _isClientSide = false);
     template <typename T> T& GetScript(EntityId _e);
     template <typename T> bool HasScript(EntityId _e);
     template <typename T> void SetActiveScript(EntityId _e, bool _value);

@@ -7,17 +7,17 @@
 #include "World.h"
 
 template<typename T>
-T& IScript::AddComponent()
+T& IScript::AddComponent(bool _isClientSide)
 {
     Scene* s = SceneManager::GetSceneWithId(sceneId);
-    return s->world->AddComponent<T>(entity);
+    return s->world->AddComponent<T>(entity, _isClientSide);
 }
 template<typename T>
-void IScript::RemoveComponent()
+void IScript::RemoveComponent(bool _isClientSide)
 {
     assert(m_isStarted && "Cannot call RemoveComponent before Start, use Start instead of Awake");
     Scene* s = SceneManager::GetSceneWithId(sceneId);
-    s->world->RemoveComponent<T>(entity);
+    s->world->RemoveComponent<T>(entity, _isClientSide);
 }
 template<typename T>
 T& IScript::GetComponent()

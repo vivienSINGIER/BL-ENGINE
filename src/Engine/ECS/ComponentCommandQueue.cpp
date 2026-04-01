@@ -121,6 +121,7 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld)
         
     Server* server = EngineManager::GetServer();
     if (server == nullptr) return;
+    if (cmd.isClientSide == true) return;
         
     Packet p;
 
@@ -165,6 +166,7 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     
     Server* server = EngineManager::GetServer();
     if (server == nullptr) return;
+    if (cmd.isClientSide == true) return;
         
     Packet p;
     p.header.type = PacketType::RemoveComponent;

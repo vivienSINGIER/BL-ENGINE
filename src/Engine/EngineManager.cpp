@@ -113,6 +113,8 @@ void EngineManager::HostServer(int _port)
     m_pServer = new Server();
     m_networkFlag |= NetworkFlag::SERVER;
 
+    m_pClient->SetId(1);
+
     // TODO Check & Force server and connexion success
     
     m_pServer->Initialize("127.0.0.1", _port);

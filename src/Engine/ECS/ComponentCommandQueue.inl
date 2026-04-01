@@ -5,7 +5,7 @@
 #include "ComponentId.hpp"
 
 template <typename T>
-T& ComponentCommandQueue::EmplaceAdd(EntityId _e, T const& _val)
+T& ComponentCommandQueue::EmplaceAdd(EntityId _e, bool _isClientSide, T const& _val)
 {
     Command cmd;
     cmd.entity = _e;
@@ -13,6 +13,7 @@ T& ComponentCommandQueue::EmplaceAdd(EntityId _e, T const& _val)
     cmd.size = sizeof(T);
     cmd.offset = m_offset;
     cmd.isScript = ComponentRegistry::IsScript(ComponentType::Id<T>());
+    cmd.isClientSide = _isClientSide;
         
     T* ptr = reinterpret_cast<T*>(m_componentSideBuffer + m_offset);
     memcpy(ptr, &_val, sizeof(T));
@@ -29,12 +30,13 @@ T& ComponentCommandQueue::EmplaceAdd(EntityId _e, T const& _val)
 }
 
 template <typename T>
-void ComponentCommandQueue::EmplaceRemove(EntityId _e)
+void ComponentCommandQueue::EmplaceRemove(EntityId _e, bool _isClientSide)
 {
     Command cmd;
     cmd.entity = _e;
     cmd.component = ComponentType::Id<T>();
-    cmd.isScript = ComponentRegistry::IsScript(ComponentType::Id<T>());;
+    cmd.isScript = ComponentRegistry::IsScript(ComponentType::Id<T>());
+    cmd.isClientSide = _isClientSide;
     m_toRemove.emplace(m_toRemove.begin(), cmd);
 }
 
