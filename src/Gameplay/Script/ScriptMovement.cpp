@@ -18,7 +18,7 @@ void Movement::ScriptMovement::Update(float dt)
 	m_yaw += mouseDelta.x * mouseSensitivity;
 	m_pitch += mouseDelta.y * mouseSensitivity;
 
-	m_pitch = Clamp(m_pitch, -59.0f * (XM_PI / 180.0f), 59.0f * (XM_PI / 180.0f));
+	m_pitch = Clamp(m_pitch, -59.0f * (XM_PI / 180.0f), 89.0f * (XM_PI / 180.0f));
 
 	if (m_cursorLocked)
 	{

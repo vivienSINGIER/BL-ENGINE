@@ -1,14 +1,19 @@
 #include "MainScene.h"
-#include "Labyrinthe.hpp"
 #include "../Gameplay/Script/ScriptMovement.h"
+#include "../Gameplay/Script/LabyrintheS.h"
 
 void MainScene::OnInit()
 {
+	m_loadLaby = false;
+
     RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
     uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
     Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
     RessourceManager::AddMaterial("White", white);
 	RessourceManager::AddCamera("Default");
+
+	Camera* camObj = RessourceManager::GetCamera("Default");
+	camObj->nearPlane = 0.01f;
 
 	Texture* wallTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Bricks/bricks.dds");
 	RessourceManager::AddTexture("Wall", wallTexture);
@@ -22,6 +27,12 @@ void MainScene::OnInit()
 	Material* groundMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
 	groundMat->SetTexture("Albedo", RessourceManager::GetTexture("Ground"));
 	RessourceManager::AddMaterial("GroundMaterial", groundMat);
+
+	Texture* doorTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Albedo.dds");
+	RessourceManager::AddTexture("Door", doorTexture);
+	Material* doorMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+	doorMat->SetTexture("Albedo", RessourceManager::GetTexture("Door"));
+	RessourceManager::AddMaterial("DoorMaterial", doorMat);
 
 	ComponentRegistry::RegisterScript<Labyrinthe::LabyScript>();
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
@@ -47,17 +58,29 @@ void MainScene::OnInit()
 	l.SetStrength(1.0f);
 	l.SetPoint(1.0f, 100.0f);
 	
-	EntityId e = world->CreateEntity();
-	world->AddScript<Labyrinthe::LabyScript>(e);
+	m_laby = world->CreateEntity();
+	world->AddScript<Labyrinthe::LabyScript>(m_laby);
+	
 }
 
 void MainScene::OnUpdate(float _dt)
 {
-
+	if(InputManager::IsKeyDown(H))
+	{
+		Labyrinthe::LabyScript& labyScript = world->GetScript<Labyrinthe::LabyScript>(m_laby);
+		labyScript.SetStarted(true);
+	}
+	if(InputManager::IsKeyDown(J))
+	{
+		Labyrinthe::LabyScript& labyScript = world->GetScript<Labyrinthe::LabyScript>(m_laby);
+		labyScript.SetStarted(false);
+		labyScript.ReloadLabyrinthe(31, 31);
+	}
 }
 
 void MainScene::OnStart()
 {
+	
 }
 
 void MainScene::OnEnd()

@@ -14,6 +14,10 @@ public:
 private:
 	EntityId m_camera;
 	EntityId m_test;
+	EntityId m_laby;
+
+	bool m_loadLaby;
+
 };
 
 #endif // !MAIN_SCENE_H_DEFINED
