@@ -9,23 +9,7 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
     if (_rigid.allowRotation)
         UpdateWorldInertiaTensor(_rigid, _transform);
 
-    // ── Correction positionnelle via pseudo-vitesse (split impulse) ───────────
-    // Appliquée en premier, indépendamment de l'intégration normale.
-    // Ne modifie PAS linearVelocity → le sleep peut se déclencher correctement.
-    if (_motion.pseudoLinearVelocity.x != 0.0f ||
-        _motion.pseudoLinearVelocity.y != 0.0f ||
-        _motion.pseudoLinearVelocity.z != 0.0f)
-    {
-        _transform.local.Move({
-            _motion.pseudoLinearVelocity.x * _dt,
-            _motion.pseudoLinearVelocity.y * _dt,
-            _motion.pseudoLinearVelocity.z * _dt
-            });
-        // Pas de mise à jour du quaternion depuis pseudoAngularVelocity pour l'instant —
-        // suffisant pour les contacts sol/objets simples.
-    }
-
-    // ── Intégration normale ───────────────────────────────────────────────────
+    // Intégration normale
     XMFLOAT3 deltaPos = IntegrateLinearVelocity(_rigid, _motion, _dt);
     _transform.local.Move(deltaPos);
 
@@ -40,7 +24,7 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
         _motion.torque = { 0,0,0 };
     }
 
-    // ── Sleep ─────────────────────────────────────────────────────────────────
+    // Sleep
     float linearSq = _motion.linearVelocity.x * _motion.linearVelocity.x
         + _motion.linearVelocity.y * _motion.linearVelocity.y
         + _motion.linearVelocity.z * _motion.linearVelocity.z;
@@ -55,35 +39,6 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
     if (lowMotion) { _motion.sleepTimer += _dt; if (_motion.sleepTimer >= kSleepTimeThreshold) _motion.Sleep(); }
     else { _motion.sleepTimer = 0.0f; }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tenseur d'inertie corps
-//
-//  Formules analytiques pour chaque forme primaire.
-//  La matrice résultante est diagonale — on n'utilise que les 3 composantes
-//  diagonales pour remplir les 9 floats (les 6 autres restent à 0).
-//
-//  Box (pavé droit de masse m, demi-extents hx, hy, hz) :
-//   Ixx = m/12 * (4hy² + 4hz²)
-//   Iyy = m/12 * (4hx² + 4hz²)
-//   Izz = m/12 * (4hx² + 4hy²)
-//
-//  Sphère (masse m, rayon r) :
-//   Ixx = Iyy = Izz = 2/5 * m * r²
-//
-//  Capsule (masse m, rayon r, demi-hauteur hh) :
-//   Masse cylindre  = m * (2hh) / (2hh + 4/3 * r)
-//   Masse sphère    = m - masseCylindre
-//
-//   Ixx_cyl = masseCyl/12 * (3r² + (2hh)²)
-//   Iyy_cyl = masseCyl/2  * r²
-//
-//   Ixx_sph = 2/5 * masseSph * r²  + masseSph * (hh + 3r/8)²  (théorème Huygens)
-//   Iyy_sph = 2/5 * masseSph * r²
-//
-//   Ixx = Izz = Ixx_cyl + 2 * Ixx_sph    (axe perpendiculaire à l'axe capsule Y)
-//   Iyy       = Iyy_cyl + 2 * Iyy_sph    (axe capsule Y)
-// ─────────────────────────────────────────────────────────────────────────────
 
 void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid, ColliderComponent& _shape)
 {
@@ -151,13 +106,6 @@ void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid,
     _rigid.SetDiagonalInertiaTensor(ixx, iyy, izz);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Tenseur monde
-//
-//  I_world_inv = R * I_body_inv * R^T
-//  Stocké en float[9] — pas de XMMATRIX dans le composant pour l'alignement.
-// ─────────────────────────────────────────────────────────────────────────────
-
 void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,  TransformComponent& _transform)
 {
     const float* bi = _rigid.inertiaTensorBodyInverse;
@@ -184,19 +132,7 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,
             wi[r*3+c] = tmp.m[r][c];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Intégration linéaire — Euler symplectique
-//
-//  On met à jour la vitesse AVANT la position (symplectique).
-//  Plus stable énergétiquement que l'Euler explicite classique.
-//
-//  Amortissement multiplicatif : 1 / (1 + damping * dt)
-//  Inconditionnellement stable, contrairement au modèle additif.
-// ─────────────────────────────────────────────────────────────────────────────
-
-XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rigid,
-                                                          MotionComponent& _motion,
-                                                          float _dt)
+XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rigid, MotionComponent& _motion, float _dt)
 {
     XMFLOAT3 accel = { 0.0f, 0.0f, 0.0f };
 
@@ -235,16 +171,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Intégration angulaire
-//
-//  α = I_world_inv · τ  (accélération angulaire)
-//  ω += α * dt
-// ─────────────────────────────────────────────────────────────────────────────
-
-XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _rigid,
-                                                           MotionComponent& _motion,
-                                                           float _dt)
+XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _rigid, MotionComponent& _motion, float _dt)
 {
     // α = I_world_inv · τ
     const float* wi = _rigid.inertiaTensorWorldInverse;
@@ -282,19 +209,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
     };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mise à jour du quaternion
-//
-//  qDelta = quaternion représentant la rotation différentielle de cette frame.
-//  Pour de petits angles (ce que _deltaAngle est toujours à 60Hz),
-//  XMQuaternionRotationRollPitchYaw est correct et stable.
-//
-//  Ordre de composition : qNew = qDelta * qCurrent
-//  La rotation delta est appliquée en espace monde (multiplication à gauche).
-// ─────────────────────────────────────────────────────────────────────────────
-
-void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform,
-                                              const XMFLOAT3& _deltaAngle)
+void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
     XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
     XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);

@@ -3,46 +3,16 @@
 
 #include "define.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MotionComponent
-//
-//  Contient l'état cinématique du corps : vitesses, accumulateurs de forces,
-//  et gestion du sleep.
-//
-//  Séparé de RigidBodyComponent intentionnellement :
-//   - RigidBodyComponent = propriétés quasi-statiques (masse, matériau, type)
-//   - MotionComponent    = état dynamique qui change chaque frame
-//
-//  Cette séparation permet de récupérer uniquement les vitesses sans charger
-//  les tenseurs, ce qui est utile pour le character controller et les triggers.
-//
-//  Note sur le sleep :
-//  Un corps s'endort quand sa vitesse linéaire et angulaire sont toutes deux
-//  sous le seuil pendant kSleepTimeThreshold secondes consécutives.
-//  Un corps endormi est skippé par l'intégrateur et le solver — mais il
-//  se réveille dès qu'un contact le touche (géré par PhysicSystem).
-// ─────────────────────────────────────────────────────────────────────────────
 struct MotionComponent
 {
-    // ─── État cinématique ─────────────────────────────────────────────────────
     XMFLOAT3 linearVelocity  = { 0.0f, 0.0f, 0.0f };
     XMFLOAT3 angularVelocity = { 0.0f, 0.0f, 0.0f };
 
-    // ─── Accumulateurs (remis à zéro après intégration) ───────────────────────
     XMFLOAT3 force  = { 0.0f, 0.0f, 0.0f };
     XMFLOAT3 torque = { 0.0f, 0.0f, 0.0f };
 
-    // Pseudo-vitesses — corrigent la position sans affecter la vraie vélocité.
-    XMFLOAT3 pseudoLinearVelocity = { 0,0,0 };
-    XMFLOAT3 pseudoAngularVelocity = { 0,0,0 };
-
-    // ─── Sleep ────────────────────────────────────────────────────────────────
     bool  isSleeping = false;
     float sleepTimer = 0.0f;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // API publique — utilisée par les scripts et systèmes gameplay
-    // ─────────────────────────────────────────────────────────────────────────
 
     // Impulsion instantanée (changement de vitesse immédiat, indépendant du dt).
     // Usage : saut, coup, explosion.
@@ -93,10 +63,6 @@ struct MotionComponent
             linearVelocity.z + (angularVelocity.x * _r.y - angularVelocity.y * _r.x)
         };
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Sleep
-    // ─────────────────────────────────────────────────────────────────────────
 
     void WakeUp()
     {

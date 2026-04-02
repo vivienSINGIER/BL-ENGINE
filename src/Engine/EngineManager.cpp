@@ -114,7 +114,6 @@ void EngineManager::Run()
 void EngineManager::Exit()
 {
     delete m_pRessourceManager;
-    delete m_pContactManager;
 }
 
 void EngineManager::HostServer(int _port)

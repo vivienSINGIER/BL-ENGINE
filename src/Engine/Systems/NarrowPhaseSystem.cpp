@@ -28,10 +28,6 @@ void NarrowPhaseSystem::Update(float _dt)
     OnEndUpdate(_dt);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Traitement d'une paire
-// ─────────────────────────────────────────────────────────────────────────────
-
 bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
 {
     if (!world->HasComponent<ColliderComponent>(_a) || !world->HasComponent<ColliderComponent>(_b))
@@ -65,17 +61,7 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
     return true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Fonctions support
-//
-//  Le point "support" d'une forme convexe dans une direction d est le point
-//  de la forme qui maximise le produit scalaire avec d.
-//  C'est la brique fondamentale de GJK — chaque forme doit pouvoir répondre
-//  à cette question efficacement.
-// ─────────────────────────────────────────────────────────────────────────────
-
-XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformComponent& _transform,
-                                     const XMFLOAT3& _dir) const
+XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
 {
     switch (_collider.type)
     {
@@ -86,8 +72,7 @@ XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformCompo
     return { 0,0,0 };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformComponent& _transform,
-                                        const XMFLOAT3& _dir) const
+XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
 {
     // Transformer la direction en espace local pour éviter de tourner les 8 coins.
     // En espace local, le support d'un AABB centré en zéro est simplement
@@ -125,8 +110,7 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformCo
     return { result.x + pos.x, result.y + pos.y, result.z + pos.z };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, TransformComponent& _transform,
-                                           const XMFLOAT3& _dir) const
+XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
 {
     // Support d'une sphère : centre + rayon * normalize(direction).
     const XMFLOAT3& scale = _transform.world.GetScale();
@@ -144,8 +128,7 @@ XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, Transfor
     };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _collider, TransformComponent& _transform,
-                                            const XMFLOAT3& _dir) const
+XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
 {
     // La capsule est un segment + sphère.
     // Support = choisir l'extrémité du segment la plus dans la direction,
@@ -479,8 +462,7 @@ bool NarrowPhaseSystem::EPA(
     return false;
 }
 
-EPAFace NarrowPhaseSystem::MakeFace(const GJKSupportPoint& _a, const GJKSupportPoint& _b,
-                                    const GJKSupportPoint& _c) const
+EPAFace NarrowPhaseSystem::MakeFace(const GJKSupportPoint& _a, const GJKSupportPoint& _b, const GJKSupportPoint& _c) const
 {
     EPAFace face;
     face.a = _a;
@@ -575,7 +557,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         }
 
         // Face de référence centrée autour du point support.
-        bool positiveFace = Dot(_normal, axesA[refAxis]) < 0.0f;
+        bool positiveFace = Dot(_normal, axesA[refAxis]) > 0.0f;
         float hRef = (refAxis==0 ? hA.x*scaleA.x : refAxis==1 ? hA.y*scaleA.y : hA.z*scaleA.z);
         const XMFLOAT3& posA = _transformA.world.GetPosition();
         float sign = positiveFace ? 1.0f : -1.0f;
@@ -620,7 +602,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
             if (d > incDot) { incDot = d; incAxis = i; }
         }
 
-        bool positiveFaceB = Dot(_normal, axesB[incAxis]) > 0.0f;
+        bool positiveFaceB = Dot(_normal, axesB[incAxis]) < 0.0f;
         float hIncRef = (incAxis==0 ? hB.x*scaleB.x : incAxis==1 ? hB.y*scaleB.y : hB.z*scaleB.z);
         const XMFLOAT3& posB2 = _transformB.world.GetPosition();
         float signB = positiveFaceB ? 1.0f : -1.0f;

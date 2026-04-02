@@ -6,91 +6,34 @@
 #include "../Components/MotionComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "NarrowPhaseSystem.h"
+#include "../Core/Utils.hpp"
 
-class PhysicSystem : public System<RigidBodyComponent, MotionComponent, TransformComponent>
+class PhysicSystem : public System<>
 {
 public:
-    void OnEndUpdate(float _dt) override;
-
     void Update(float _dt) override;
-
     void SetNarrowPhaseSystem(NarrowPhaseSystem* _np) { m_narrowPhase = _np; }
 
 private:
-    struct ContactCtx
-    {
-        XMFLOAT3 rA;               // centerA → point de contact
-        XMFLOAT3 rB;               // centerB → point de contact
-        XMFLOAT3 relativeVelocity; // vitesse relative au point (vB - vA)
-    };
+    void ResolvePenetrations();
+    void ResolveVelocities();
 
-    void ResetPseudoVelocities();
+    XMFLOAT3 VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3& _r) const;
+    void ApplyImpulse(MotionComponent& _motion, RigidBodyComponent& _rigid, const XMFLOAT3& _impulse, const XMFLOAT3& _r, float _sign) const;
+    XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const;
+    float AngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _t[9]) const;
 
-    void UpdateWorldInertias();
-    void WarmStart();
-    void ResolveOverlaps();
-    void SolveConstraints(int _iterations);
-	void SolvePositionConstraints(int _iterations);
-    void WakeBodies();
-
-    // ─── Résolution par contact ───────────────────────────────────────────────
-    void ResolveOverlap(RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
-                        MotionComponent& _motionA,   MotionComponent& _motionB,
-                        ContactManifold& _manifold);
-
-    void SolveNormalConstraint(RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
-                               MotionComponent& _motionA,   MotionComponent& _motionB,
-                               ContactManifold& _manifold,  ContactPoint& _cp,
-                               const ContactCtx& _ctx);
-
-    void SolveTangentConstraint(RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
-                                MotionComponent& _motionA,   MotionComponent& _motionB,
-                                float _maxFriction,
-                                ContactManifold& _manifold,  ContactPoint& _cp,
-                                const ContactCtx& _ctx,
-                                const XMFLOAT3& _tangent,    float& _accumulated);
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-    ContactCtx BuildCtx(MotionComponent& _motionA, MotionComponent& _motionB,
-                        EntityId _eA, EntityId _eB, const XMFLOAT3& _point) const;
-
-    void ApplyImpulse(MotionComponent& _motion, RigidBodyComponent& _rigid,
-                      const XMFLOAT3& _impulse, const XMFLOAT3& _r, float _sign) const;
-
-    XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _tensor[9]) const;
-    float    ComputeAngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _tensorInv[9]) const;
-    void     UpdateWorldInertia(RigidBodyComponent& _rigid, TransformComponent& _transform) const;
-    XMFLOAT3 GetCenter(EntityId _e) const;
-
-    inline XMFLOAT3 Cross(const XMFLOAT3& a, const XMFLOAT3& b) const
-    { return {a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x}; }
-    inline float    Dot(const XMFLOAT3& a, const XMFLOAT3& b) const
-    { return a.x*b.x+a.y*b.y+a.z*b.z; }
-    inline XMFLOAT3 Sub(const XMFLOAT3& a, const XMFLOAT3& b) const
-    { return {a.x-b.x,a.y-b.y,a.z-b.z}; }
-    inline XMFLOAT3 Add(const XMFLOAT3& a, const XMFLOAT3& b) const
-    { return {a.x+b.x,a.y+b.y,a.z+b.z}; }
-    inline XMFLOAT3 Mul(const XMFLOAT3& v, float s) const
-    { return {v.x*s,v.y*s,v.z*s}; }
-    inline float LenSq(const XMFLOAT3& v) const
-    { return v.x*v.x+v.y*v.y+v.z*v.z; }
-    inline XMFLOAT3 Normalize(const XMFLOAT3& v) const
-    { float l=sqrtf(LenSq(v)); return l<1e-8f?XMFLOAT3{0,1,0}:Mul(v,1.f/l); }
-    inline float Max(float a, float b) const { return a>b?a:b; }
-    inline float Min(float a, float b) const { return a<b?a:b; }
-    inline float Clamp(float v, float lo, float hi) const { return Max(lo,Min(hi,v)); }
-    inline float Abs(float v) const { return v<0?-v:v; }
+    MotionComponent&    GetMotion(EntityId _e);
+    RigidBodyComponent* GetRigid(EntityId _e);
+    XMFLOAT3            GetCenter(EntityId _e) const;
 
 private:
     NarrowPhaseSystem* m_narrowPhase = nullptr;
+    MotionComponent    m_nullMotion;   // fallback pour entités sans MotionComponent
 
-    static constexpr int   kSolverIterations    = 2;
-    static constexpr float kWarmStartFactor      = 0.8f;
-    static constexpr float kPenetrationSlop      = 0.005f;
-    static constexpr float kPenetrationPercent   = 0.8f;
-    static constexpr float kRestitutionThreshold = 0.2f;
-    static constexpr float kTangentEpsilonSq     = 1e-6f;
-    static constexpr float kWakeThreshold        = 0.3f;
+    static constexpr float kPenetrationSlop = 0.01f;
+    static constexpr float kBeta = 0.5f;
+    static constexpr float kRestitutionThreshold = 0.3f;  // en dessous : restitution = 0
 };
 
 #endif // !PHYSIC_SYSTEM_H_DEFINED
