@@ -1,7 +1,8 @@
 #include "LabyrintheManager.h"
 #include "LabyrintheHelper.h"
+#include <iostream>
 
-int      LabyrintheManager::m_cellSize = 0;
+float LabyrintheManager::m_cellSize = 0;
 Scene* LabyrintheManager::m_scene = nullptr;
 Vector<EntityId> LabyrintheManager::m_Entities;
 int      LabyrintheManager::m_levelNb = 0;
@@ -10,6 +11,7 @@ int      LabyrintheManager::m_nbPlayer = 0;
 
 void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 {
+	std::cout << m_cellSize << std::endl;
 
     float gridW = (float)_grid.size();
     float gridH = (float)_grid[0].size();

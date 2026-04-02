@@ -9,14 +9,14 @@ public:
 	static void Init(int _nbPlayer);
 	static void LoadLevel();
 	static void ReloadLabyrinthe(int _width, int _height);
-	static void SetCellSize(int _cellSize) { m_cellSize = _cellSize; }
+	static void SetCellSize(float _cellSize) { m_cellSize = _cellSize; }
 	static void CloseDoor(int doorIndex);
 	static void OpenDoor(int doorIndex);
 	static float GetLightPosXStart() { return m_lightPosXStart; }
 	static float GetLightTravelDistance() { return m_lightTravelDistance; }
 
 private:
-	static int m_cellSize;
+	static float m_cellSize;
 	static Scene* m_scene;
 	static int m_levelSize;
 	static int m_levelNb;

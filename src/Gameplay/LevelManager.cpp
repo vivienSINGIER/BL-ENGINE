@@ -2,7 +2,7 @@
 #include "LabyrintheManager.h"
 #include <iostream>
 
-int   LevelManager::m_cellSize = 0;
+float   LevelManager::m_cellSize = 0;
 Scene* LevelManager::m_scene = nullptr;
 int   LevelManager::m_levelSize = 0;
 int   LevelManager::m_levelNb = 0;

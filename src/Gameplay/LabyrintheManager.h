@@ -19,7 +19,7 @@ public:
 	static void OpenDoor(int doorIndex);
 
 private:
-	static int m_cellSize;
+	static float m_cellSize;
 	static Scene* m_scene;
 	static Vector<EntityId> m_Entities;
 	static int m_levelNb;
