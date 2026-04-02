@@ -234,11 +234,19 @@ void ReceiveSystem::HandleUpdatePacket(Packet& p)
     {
         for (int i = 0; i < p.update.componentCount; i++)
         {
-            ComponentEntry entry = p.update.components[i];
+            ComponentEntry& entry = p.update.components[i];
             
             if (cid != entry.ComponentId) continue;
-            
-            memcpy(arch->storage.GetRaw(cid, rec.row), entry.data, entry.size);
+
+            if (ComponentRegistry::IsScript(cid))
+            {
+                IScript* before = reinterpret_cast<IScript*>(arch->storage.GetRaw(cid, rec.row));
+                IScript* s = reinterpret_cast<IScript*>(entry.data);
+                s->m_isSynced = before->m_isSynced;
+                memcpy(arch->storage.GetRaw(cid, rec.row), before, entry.size);
+            }
+            else
+                memcpy(arch->storage.GetRaw(cid, rec.row), entry.data, entry.size);
         }
     }
 }

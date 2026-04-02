@@ -88,6 +88,17 @@ uint8 ComponentRegistry::GetNetworkFlag(ComponentId _id)
     return 0;
 }
 
+void ComponentRegistry::ClearClientSideBits(ComponentMask& _mask)
+{
+    for (uint32 i = 0; i < ComponentType::Count(); i++)
+    {
+        if (IsRegistered(i) == false) continue;
+        if (IsClientOnly(i) == false) continue;
+
+        _mask.reset(i);
+    }
+}
+
 ComponentId ComponentRegistry::NextId()
 {
     static ComponentId counter = 0;

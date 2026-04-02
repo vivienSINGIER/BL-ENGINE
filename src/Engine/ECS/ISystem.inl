@@ -50,6 +50,11 @@ void ScriptSystem<TScript>::OnUpdate(float _dt, EntityId _e, TScript& _script)
         _script.m_isStarted = true;
         _script.Start();
     }
+    if (_script.m_isSynced == false)
+    {
+        _script.m_isSynced = true;
+        _script.OnSync(EngineManager::GetClient()->GetId());
+    }
         
     _script.Update(_dt);
     this->SetNetworkDirty<TScript>(_e);

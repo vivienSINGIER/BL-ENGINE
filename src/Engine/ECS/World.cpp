@@ -113,9 +113,8 @@ void World::AddRawScript(EntityId _e, ComponentId _cid)
     
     script->sceneId = m_sceneId;
     script->entity = _e;
+    script->m_isSynced = false;
     
-    script->OnSync(EngineManager::GetClient()->GetId());
-
     ComponentId cid = _cid;
     reg->push_back(cid);
 

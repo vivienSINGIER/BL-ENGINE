@@ -34,7 +34,7 @@ void* ComponentCommandQueue::EmplaceAddRaw(EntityId _e, ComponentId _cid, uint64
     Command& ref = m_toAdd.front();;
     
     ref.data.resize(ref.size);
-    Byte* ptr = reinterpret_cast<Byte*>(cmd.data.data());
+    void* ptr = ref.data.data();
     if (_data != nullptr)
         memcpy(ptr, _data, _size);
     

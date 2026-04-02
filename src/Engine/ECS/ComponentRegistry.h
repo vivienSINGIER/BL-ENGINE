@@ -38,6 +38,8 @@ public:
     
     static uint32 GetSize(ComponentId _id);
     static uint8 GetNetworkFlag(ComponentId _id);
+
+    static void ClearClientSideBits(ComponentMask& _mask);
     
 private: 
     static ComponentId NextId();

@@ -52,11 +52,13 @@ struct IScript
 
 private:
     bool m_isStarted = false;
+    bool m_isSynced  = false;
 
     template <typename T>
     friend struct ScriptSystem;
     
     friend class World;
+    friend struct ReceiveSystem;
 };
 
 #include "Script.inl"

@@ -110,12 +110,12 @@ T& World::AddScript(EntityId _e)
     
     script.sceneId = m_sceneId;
     script.entity = _e;
+    script.m_isSynced = false;
 
     ComponentId cid = ComponentType::Id<T>();
     reg->push_back(cid);
 
     script.Awake();
-    script.OnSync(EngineManager::GetClient()->GetId());
 
     return script;
 }
