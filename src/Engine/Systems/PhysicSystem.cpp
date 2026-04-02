@@ -30,13 +30,6 @@ void PhysicSystem::Update(float _dt)
     OnEndUpdate(_dt);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mise à jour des tenseurs monde
-//
-//  I_world_inv = R * I_body_inv * R^T
-//  Calculé ici une seule fois par frame pour tous les corps Dynamic qui
-//  ont des contacts actifs, plutôt que dans l'intégrateur.
-// ─────────────────────────────────────────────────────────────────────────────
 
 void PhysicSystem::ResetPseudoVelocities()
 {

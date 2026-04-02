@@ -7,37 +7,9 @@
 #include "../Components/TransformComponent.hpp"
 #include "NarrowPhaseSystem.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PhysicSystem — solver PGS (Projected Gauss-Seidel)
-//
-//  Pipeline par frame (dans OnEndUpdate) :
-//   1. UpdateWorldInertias — met à jour I_world_inv pour chaque corps Dynamic.
-//   2. WarmStart           — réinjecte les impulsions de la frame précédente.
-//   3. ResolveOverlaps     — correction positionnelle.
-//   4. SolveConstraints    — N itérations PGS sur tous les manifolds.
-//   5. WakeBodies          — réveille les corps en contact significatif.
-//
-//  Accumulation clampée (PGS) :
-//   Au lieu d'appliquer l'impulsion calculée directement, on l'ajoute à un
-//   accumulateur clampé. Le delta réellement appliqué est la différence entre
-//   le nouvel accumulateur et l'ancien. Ce clamping est ce qui stabilise
-//   les empilements — sans lui le solver oscille.
-//
-//  Warm start :
-//   Les accumulateurs sont persistés entre frames par ContactManifoldCache.
-//   Au début de chaque frame on les réinjecte (× kWarmStartFactor) pour que
-//   le solver parte d'un état déjà proche de la solution.
-//
-//  Ordre d'exécution : après NarrowPhaseSystem dans Phase::FixedUpdate.
-// ─────────────────────────────────────────────────────────────────────────────
 class PhysicSystem : public System<RigidBodyComponent, MotionComponent, TransformComponent>
 {
 public:
-    void OnStartUpdate(float _dt) override {}
-    void OnUpdate(float _dt, EntityId _e,
-                  RigidBodyComponent& _rigid,
-                  MotionComponent&    _motion,
-                  TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
     void Update(float _dt) override;
@@ -45,7 +17,6 @@ public:
     void SetNarrowPhaseSystem(NarrowPhaseSystem* _np) { m_narrowPhase = _np; }
 
 private:
-    // ─── Contexte par point de contact ───────────────────────────────────────
     struct ContactCtx
     {
         XMFLOAT3 rA;               // centerA → point de contact
@@ -53,7 +24,6 @@ private:
         XMFLOAT3 relativeVelocity; // vitesse relative au point (vB - vA)
     };
 
-    // ─── Pipeline ─────────────────────────────────────────────────────────────
     void ResetPseudoVelocities();
 
     void UpdateWorldInertias();

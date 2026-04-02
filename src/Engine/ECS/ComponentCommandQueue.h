@@ -39,7 +39,7 @@ private:
         std::function<void(ComponentId, const void*, ComponentStorage&)> applyFunc;
     };
     
-    static constexpr uint64 BUFFER_SIZE = 1024 * 1024;
+    static constexpr uint64 BUFFER_SIZE = 2048 * 2048;
 
     uint8 m_componentSideBuffer[BUFFER_SIZE] = {};
     uint64 m_offset = 0;

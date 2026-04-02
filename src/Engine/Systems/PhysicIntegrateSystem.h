@@ -7,8 +7,7 @@
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 
-class PhysicIntegrateSystem : public System<RigidBodyComponent, MotionComponent,
-                                            ColliderComponent,     TransformComponent>
+class PhysicIntegrateSystem : public System<RigidBodyComponent, MotionComponent, ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override {}

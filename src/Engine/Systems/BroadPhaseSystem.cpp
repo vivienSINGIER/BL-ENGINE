@@ -3,10 +3,6 @@
 #include <algorithm>
 #include "../ECS/World.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SpatialHashGrid — suppression ciblée
-// ─────────────────────────────────────────────────────────────────────────────
-
 void SpatialHashGrid::RemoveAll(uint32 _key, EntityId _e)
 {
     auto it = cells.find(_key);
@@ -24,10 +20,6 @@ void SpatialHashGrid::RemoveDynamic(uint32 _key, EntityId _e)
     auto& v = it->second.dynamic;
     v.erase(std::remove(v.begin(), v.end(), _e), v.end());
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Update
-// ─────────────────────────────────────────────────────────────────────────────
 
 void BroadPhaseSystem::OnStartUpdate(float _dt)
 {

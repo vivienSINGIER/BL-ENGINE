@@ -1,12 +1,6 @@
 #include "PhysicIntegrateSystem.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OnUpdate
-// ─────────────────────────────────────────────────────────────────────────────
-
-void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e,
-    RigidBodyComponent& _rigid, MotionComponent& _motion,
-    ColliderComponent& _shape, TransformComponent& _transform)
+void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent& _rigid, MotionComponent& _motion, ColliderComponent& _shape, TransformComponent& _transform)
 {
     if (_rigid.type != BodyType::Dynamic) return;
     if (_motion.isSleeping) return;
