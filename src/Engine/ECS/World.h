@@ -19,7 +19,7 @@ public:
 
     Vector<EntityId> GetEntities();
     
-    EntityId CreateEntity(EntityId _id = 0, bool isCopied = false);
+    EntityId CreateEntity(EntityId _id = 0, bool isCopied = false, ComponentMask _requiredMask = 0);
     void DestroyEntity(EntityId _entity);
     
     void SetActive(EntityId _entity);
@@ -34,15 +34,15 @@ public:
     void RemoveRawScript(EntityId _e, ComponentId _cid);
     IScript* GetRawScript(EntityId _e, ComponentId _cid);
     
-    template <typename T> T& AddComponent(EntityId _e, bool _isClientSide = false, T const& _val = T{});
-    template <typename T> void RemoveComponent(EntityId _e, bool _isClientSide = false);
+    template <typename T> T& AddComponent(EntityId _e, T const& _val = T{});
+    template <typename T> void RemoveComponent(EntityId _e);
     template <typename T> T& GetComponent(EntityId _e);
     template <typename T> bool HasComponent(EntityId _e);
     template <typename T> void SetActiveComponent(EntityId _e, bool _value);
     template <typename T> bool IsActiveComponent(EntityId _e);
 
-    template <typename T> T& AddScript(EntityId _e, bool _isClientSide = false);
-    template <typename T> void RemoveScript(EntityId _e, bool _isClientSide = false);
+    template <typename T> T& AddScript(EntityId _e);
+    template <typename T> void RemoveScript(EntityId _e);
     template <typename T> T& GetScript(EntityId _e);
     template <typename T> bool HasScript(EntityId _e);
     template <typename T> void SetActiveScript(EntityId _e, bool _value);

@@ -38,12 +38,14 @@ struct IScript
     virtual void Update(float _dt) {}
     virtual void Destroy() {}
     
+    virtual void OnSync(uint32 _clientId) {}
+    
     // TODO Add OnCollide & OnTrigger methods
 
     virtual ~IScript() = default;
 
-    template<typename T> T&     AddComponent(bool _isClientSide = false);
-    template<typename T> void   RemoveComponent(bool _isClientSide = false);
+    template<typename T> T&     AddComponent();
+    template<typename T> void   RemoveComponent();
     template<typename T> T&     GetComponent();
     template<typename T> bool   HasComponent();
     
@@ -53,6 +55,8 @@ private:
 
     template <typename T>
     friend struct ScriptSystem;
+    
+    friend class World;
 };
 
 #include "Script.inl"

@@ -12,6 +12,7 @@ struct ComponentInfo
     ComponentId id;
     uint32      size;
     bool        isScript;
+    bool        isClientOnly;
     uint8       networkFlag;
     std::function<IScript*(EntityId, World&)> scriptAccessor;
     std::function<IScript*(void* ptr)> scriptConstructor;
@@ -23,14 +24,17 @@ public:
     static void Init();
 
     template <typename T>
-    static void RegisterComponent();
+    static void RegisterComponent(bool _isClientOnly = false);
 
     template <typename T>
-    static void RegisterScript(uint8 _nFlag = NetworkFlag::ALL);
+    static void RegisterScript(uint8 _nFlag = NetworkFlag::ALL, bool _isClientOnly = false);
+    
     static IScript* GetScript(ComponentId _id, EntityId _e, World& _w);
     static IScript* ConstructScript(ComponentId _id, void* ptr);
-    static bool IsRegistered(ComponentId _id);
     static bool IsScript(ComponentId _id);
+    
+    static bool IsRegistered(ComponentId _id);
+    static bool IsClientOnly(ComponentId _id);
     
     static uint32 GetSize(ComponentId _id);
     static uint8 GetNetworkFlag(ComponentId _id);

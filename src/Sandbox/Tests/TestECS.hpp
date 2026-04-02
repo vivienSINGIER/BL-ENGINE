@@ -64,14 +64,14 @@ public:
 
         // ── Test 1: basic entity creation ──────────
         EntityId e1 = world.CreateEntity();
-        world.AddComponent<Position>(e1, false, {0.f, 0.f});
-        world.AddComponent<Velocity>(e1, false, {1.f, 2.f});
-        world.AddComponent<Health>(e1, false, {100.f});
+        world.AddComponent<Position>(e1, {0.f, 0.f});
+        world.AddComponent<Velocity>(e1, {1.f, 2.f});
+        world.AddComponent<Health>(e1, {100.f});
 
         // Entity with no velocity — should not move
         EntityId e2 = world.CreateEntity();
-        world.AddComponent<Position>(e2, false, {5.f, 5.f});
-        world.AddComponent<Health>(e2, false, {50.f});
+        world.AddComponent<Position>(e2, {5.f, 5.f});
+        world.AddComponent<Health>(e2, {50.f});
 
         printf("e1 id=0x%llx\n", (unsigned long long)e1);
         printf("e2 id=0x%llx\n", (unsigned long long)e2);
@@ -102,7 +102,7 @@ public:
         printf("\nDestroyed e2. Creating e3 (should reuse slot)...\n");
 
         EntityId e3 = world.CreateEntity();
-        world.AddComponent<Position>(e3, false, {99.f, 99.f});
+        world.AddComponent<Position>(e3,{99.f, 99.f});
 
         printf("e3 id=0x%llx\n", (unsigned long long)e3);
         // The lower 32 bits should match e2's index (slot reuse)

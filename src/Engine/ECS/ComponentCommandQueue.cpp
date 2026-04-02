@@ -23,22 +23,37 @@ void* ComponentCommandQueue::EmplaceAddRaw(EntityId _e, ComponentId _cid, uint64
     cmd.entity = _e;
     cmd.component = _cid;
     cmd.size = _size;
-    cmd.offset = m_offset;
     cmd.isScript = ComponentRegistry::IsScript(_cid);
-        
-    Byte* ptr = reinterpret_cast<Byte*>(m_componentSideBuffer + m_offset);
-    if (_data != nullptr)
-        memcpy(ptr, _data, _size);
 
     cmd.applyFunc = [_size](ComponentId _cid, const void* _data, ComponentStorage& _storage) -> void
     {
         _storage.PushRaw(_cid, static_cast<const Byte*>(_data), _size);
     };
-
-    m_offset += cmd.size;
+    
     m_toAdd.emplace(m_toAdd.begin(), cmd);
-
+    Command& ref = m_toAdd.front();;
+    
+    ref.data.resize(ref.size);
+    Byte* ptr = reinterpret_cast<Byte*>(cmd.data.data());
+    if (_data != nullptr)
+        memcpy(ptr, _data, _size);
+    
+    if (ref.isScript)
+        ComponentRegistry::ConstructScript(ref.component, ptr);
+    
+    if (m_requiredMasks.contains(_e))
+    {
+        m_requiredMasks[_e].reset(cmd.component);
+        if (m_requiredMasks[_e] == 0)
+            m_requiredMasks.erase(_e);
+    }
+    
     return ptr;
+}
+
+void ComponentCommandQueue::SetRequiredMask(EntityId _e, ComponentMask _mask)
+{
+    m_requiredMasks[_e] = _mask;
 }
 
 void ComponentCommandQueue::EmplaceRemoveRaw(EntityId _e, ComponentId _cid)
@@ -63,9 +78,12 @@ void ComponentCommandQueue::Flush(World* _pWorld)
     {
         FlushCreate(_pWorld);
     }
-    while (m_toAdd.empty() == false)
+    auto it = m_toAdd.end();
+    while (it != m_toAdd.begin())
     {
-        FlushAdd(_pWorld);
+        --it;
+        FlushAdd(_pWorld, it);
+        if (m_toAdd.empty()) break;
     }
     while (m_toRemove.empty() == false)
     {
@@ -75,8 +93,36 @@ void ComponentCommandQueue::Flush(World* _pWorld)
     {
         FlushDestroy(_pWorld);
     }
+}
 
-    m_offset = 0;
+void* ComponentCommandQueue::GetComponent(EntityId _e, ComponentId _cid)
+{
+    if (m_toAdd.empty() == true) return nullptr;
+    
+    for (Command& cmd : m_toAdd)
+    {
+        if (cmd.entity != _e)       continue;
+        if (cmd.component != _cid)  continue;
+        
+        return cmd.data.data();
+    }
+    
+    return nullptr;
+}
+
+bool ComponentCommandQueue::HasComponent(EntityId _e, ComponentId _cid)
+{
+    if (m_toAdd.empty() == true) return false;
+    
+    for (Command& cmd : m_toAdd)
+    {
+        if (cmd.entity != _e)       continue;
+        if (cmd.component != _cid)  continue;
+        
+        return true;
+    }
+    
+    return false;
 }
 
 void ComponentCommandQueue::FlushCreate(World* _pWorld)
@@ -98,30 +144,33 @@ void ComponentCommandQueue::FlushCreate(World* _pWorld)
     server->SendGeneralReliablePacket(p);
 }
 
-void ComponentCommandQueue::FlushAdd(World* _pWorld)
+void ComponentCommandQueue::FlushAdd(World* _pWorld, Vector<Command>::iterator& _it)
 {
-    Command& cmd = m_toAdd.back();
+    Command& cmd = *_it;
             
+    if (m_requiredMasks.contains(cmd.entity)) return;
+    
     ComponentId cid = cmd.component;
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
     if (src->mask.test(cid))
     {
-        m_toAdd.pop_back();
+        _it = m_toAdd.erase(_it);
         return;
     }
         
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, true);
 
     _pWorld->MoveEntity(cmd.entity, rec, src, dst);
-    (cmd.applyFunc)(cid, m_componentSideBuffer + cmd.offset, dst->storage);
-
-    m_toAdd.pop_back();
+    (cmd.applyFunc)(cid, cmd.data.data(), dst->storage);
         
     Server* server = EngineManager::GetServer();
-    if (server == nullptr) return;
-    if (cmd.isClientSide == true) return;
+    if (server == nullptr || cmd.isClientSide == true)
+    {
+        _it = m_toAdd.erase(_it);
+        return;
+    }
         
     Packet p;
 
@@ -133,7 +182,7 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld)
 
         p.addComponent.ComponentId = cid;
         p.addComponent.size = cmd.size;
-        memcpy(p.addComponent.data, m_componentSideBuffer + cmd.offset, cmd.size);   
+        memcpy(p.addComponent.data, cmd.data.data(), cmd.size);   
     }
     else
     {
@@ -145,6 +194,7 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld)
     }
         
     server->SendGeneralReliablePacket(p);
+    _it = m_toAdd.erase(_it);
 }
 
 void ComponentCommandQueue::FlushRemove(World* _pWorld)
@@ -164,6 +214,8 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     Archetype* dst = _pWorld->GetOrCreateEdge(src, cid, false);
     _pWorld->MoveEntity(cmd.entity, rec, src, dst);
     
+    m_toRemove.pop_back();
+    
     Server* server = EngineManager::GetServer();
     if (server == nullptr) return;
     if (cmd.isClientSide == true) return;
@@ -179,7 +231,7 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
 
 void ComponentCommandQueue::FlushDestroy(World* _pWorld)
 {
-    Command& cmd = m_toRemove.back();
+    Command& cmd = m_toDestroy.back();
 
     ComponentId cid = cmd.component;
     EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);

@@ -84,7 +84,7 @@ void ReceiveSystem::HandleClientReceive()
                     if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
                     if (EngineManager::GetServer() != nullptr) break;
 
-                    scene->world->CreateEntity(p.header.entityId, true);
+                    scene->world->CreateEntity(p.header.entityId, true, p.createEntity.componentMask);
 
                     break;
                 }

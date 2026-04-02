@@ -1,5 +1,6 @@
 #include "World.h"
 #include "ComponentRegistry.h"
+#include "Network/Client.h"
 
 World::World()
 {
@@ -17,7 +18,7 @@ Vector<EntityId> World::GetEntities()
     return entities;
 }
 
-EntityId World::CreateEntity(EntityId _id, bool isCopied)
+EntityId World::CreateEntity(EntityId _id, bool isCopied, ComponentMask _requiredMask)
 {
     EntityId e;
     if (isCopied == true)
@@ -34,6 +35,8 @@ EntityId World::CreateEntity(EntityId _id, bool isCopied)
     root->storage.FinishPush();
 
     m_commandQueue.EmplaceCreate(e);
+    if (_requiredMask.count() > 0)
+        m_commandQueue.SetRequiredMask(_id, _requiredMask);
     
     return e;
 }
@@ -110,6 +113,8 @@ void World::AddRawScript(EntityId _e, ComponentId _cid)
     
     script->sceneId = m_sceneId;
     script->entity = _e;
+    
+    script->OnSync(EngineManager::GetClient()->GetId());
 
     ComponentId cid = _cid;
     reg->push_back(cid);

@@ -141,13 +141,16 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 	sp.header.sceneId = _sceneId;
 	sp.header.entityId = _e;
 	
-	SendReliablePacket(sp, _addr);
-
 	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
 	Archetype* arch = rec.archetype;
-
+	sp.createEntity.componentMask = arch->mask;
+	
+	SendReliablePacket(sp, _addr);
+	
 	for (auto& [cid, data] : arch->storage.columns)
 	{
+		if (ComponentRegistry::IsClientOnly(cid)) continue;
+		
 		uint64 stride = arch->storage.strides[cid];
 
 		Packet acP;

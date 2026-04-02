@@ -18,7 +18,7 @@ void ComponentRegistry::Init()
 {
     RegisterComponent<TransformComponent>();
     RegisterComponent<MeshRenderer>();
-    RegisterComponent<CameraComponent>();
+    RegisterComponent<CameraComponent>(true);
     RegisterComponent<LightComponent>();
     RegisterComponent<ColliderComponent>();
     RegisterComponent<PhysicComponent>();
@@ -53,6 +53,14 @@ bool ComponentRegistry::IsRegistered(ComponentId _id)
     for (auto& info : m_registeredComponents)
         if (info.id == _id)
             return true;
+    return false;
+}
+
+bool ComponentRegistry::IsClientOnly(ComponentId _id)
+{
+    for (auto& info : m_registeredComponents)
+        if (info.id == _id)
+            return info.isClientOnly;
     return false;
 }
 

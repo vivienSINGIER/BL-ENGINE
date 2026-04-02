@@ -10,7 +10,7 @@ class TestNetwork : public Test
 public:
     struct TestScript : public IScript
     {
-        void Start()
+        void Awake()
         {
             MeshRenderer& m = AddComponent<MeshRenderer>();
             m.geoId = RessourceManager::GetGeometryId("Cube");
@@ -28,8 +28,7 @@ public:
     
     struct TestScript2 : public IScript
     {
-        uint32 camId;
-        uint32 clientId;
+        uint32 clientId = 0;
         
         void Start()
         {
@@ -41,16 +40,22 @@ public:
             
             TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
-
+            
             OwnerComponent& o = AddComponent<OwnerComponent>();
             o.ownerId = clientId;
+        }
+        
+        void OnSync(uint32 _clientId) override
+        {
+            if (HasComponent<OwnerComponent>() == false) return;
             
-            if (clientId == EngineManager::GetClient()->GetId())
-            {
-                CameraComponent& cam = AddComponent<CameraComponent>(true);
-                cam.camId = camId;
-                cam.isMainCamera = true;   
-            }    
+            OwnerComponent& o = GetComponent<OwnerComponent>();
+            if (o.ownerId != _clientId)
+                return;
+            
+            CameraComponent& cam = AddComponent<CameraComponent>();
+            cam.camId = RessourceManager::GetCameraId("Default");
+            cam.isMainCamera = true;
         }
         
         void Update(float _dt) override
@@ -93,8 +98,7 @@ public:
         Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
         RessourceManager::AddMaterial("White", white);
         
-        RessourceManager::AddCamera("Default1");
-        RessourceManager::AddCamera("Default2");
+        RessourceManager::AddCamera("Default");
         
         if (isHost)
         {
@@ -105,12 +109,10 @@ public:
             EntityId e = scene->world->CreateEntity();
             TestScript2& s = scene->world->AddScript<TestScript2>(e);
             s.clientId = 1;
-            s.camId = RessourceManager::GetCameraId("Default1");
             
             EntityId e2 = scene->world->CreateEntity();
             TestScript2& s2 = scene->world->AddScript<TestScript2>(e2);
             s2.clientId = 2;
-            s2.camId = RessourceManager::GetCameraId("Default2");
         }
         else
             EngineManager::GetInstance().Connect("127.0.0.1", 1888);

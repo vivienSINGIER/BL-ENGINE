@@ -60,6 +60,12 @@ struct AddScenePacket
 	char name[MAX_SCENE_NAME];
 };
 
+struct CreateEntityPacket
+{
+	PacketHeader header;
+	ComponentMask componentMask;
+};
+
 struct ComponentEntry
 {
 	uint32	ComponentId;
@@ -131,6 +137,7 @@ struct Packet
 		PacketHeader			header;
 		ConnectPacket			connect;
 		AddScenePacket			addScene;
+		CreateEntityPacket		createEntity;
 		AddComponentPacket		addComponent;
 		AddScriptPacket			addScript;
 		RemoveComponentPacket	removeComponent;
@@ -146,7 +153,7 @@ struct Packet
 	{
 		switch (header.type)
 		{
-		case PacketType::Spawn:				return sizeof(PacketHeader);
+		case PacketType::Spawn:				return sizeof(CreateEntityPacket);
 		case PacketType::Delete:			return sizeof(PacketHeader);
 		case PacketType::Update:			return sizeof(PacketHeader) + sizeof(uint8) + update.componentCount * sizeof(ComponentEntry);
 		case PacketType::Connect:			return sizeof(ConnectPacket);
