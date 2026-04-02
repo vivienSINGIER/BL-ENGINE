@@ -157,6 +157,33 @@ void ReceiveSystem::HandleClientReceive()
                     HandleUpdatePacket(p);
                     break;
                 }
+            case PacketType::SetActiveState:
+            {
+                Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                if (scene == nullptr) break;
+
+                if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
+
+                m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+                
+                if (EngineManager::GetServer() != nullptr) break;
+                    
+                if (p.setActiveState.isEntity)
+                {
+                    if (p.setActiveState.isActive)
+                        scene->world->SetActive(p.header.entityId);
+                    else 
+                        scene->world->SetInactive(p.header.entityId);
+                }
+                else
+                {
+                    if (ComponentRegistry::IsScript(p.setActiveState.cid))
+                        scene->world->SetActiveScriptRaw(p.header.entityId, p.setActiveState.cid, p.setActiveState.isActive);
+                    else
+                        scene->world->SetActiveComponentRaw(p.header.entityId, p.setActiveState.cid, p.setActiveState.isActive); 
+                }
+                break;
+            }
             default:
                 break;
         }

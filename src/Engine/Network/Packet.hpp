@@ -22,6 +22,7 @@ enum class PacketType : uint8
 	
 	Spawn,
 	Delete,
+	SetActiveState,
 	
 	AddComponent,
 	AddScript,
@@ -32,6 +33,7 @@ enum class PacketType : uint8
 	KeyUpdate,
 	MouseButtonUpdate,
 	MousePosUpdate,
+	
 	Chat,
 };
 
@@ -93,6 +95,14 @@ struct RemoveComponentPacket
 	ComponentId cid;
 };
 
+struct SetActiveStatePacket
+{
+	PacketHeader header;
+	ComponentId cid;
+	bool isEntity;
+	bool isActive;
+};
+
 struct UpdatePacket
 {
 	PacketHeader    header;
@@ -138,6 +148,7 @@ struct Packet
 		ConnectPacket			connect;
 		AddScenePacket			addScene;
 		CreateEntityPacket		createEntity;
+		SetActiveStatePacket	setActiveState;
 		AddComponentPacket		addComponent;
 		AddScriptPacket			addScript;
 		RemoveComponentPacket	removeComponent;
@@ -158,6 +169,7 @@ struct Packet
 		case PacketType::Update:			return sizeof(PacketHeader) + sizeof(uint8) + update.componentCount * sizeof(ComponentEntry);
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
+		case PacketType::SetActiveState:	return sizeof(SetActiveStatePacket);
 		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
 		case PacketType::SetScene:			return sizeof(PacketHeader);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentId) + sizeof(uint32) + addComponent.size;

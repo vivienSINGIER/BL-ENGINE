@@ -52,12 +52,32 @@ void World::SetActive(EntityId _entity)
 {
     EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = true;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = true;
+    p.setActiveState.isEntity = true;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 void World::SetInactive(EntityId _entity)
 {
     EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = false;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = false;
+    p.setActiveState.isEntity = true;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 bool World::IsActive(EntityId _entity)
@@ -95,6 +115,19 @@ void* World::GetRawComponent(EntityId _e, ComponentId _cid)
 
     void* stored = src->storage.GetRaw(cid, rec.row);
     return stored;
+}
+
+void World::SetActiveComponentRaw(EntityId _e, ComponentId _cid, bool _value)
+{
+    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
+    
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(_cid) && "Component not present");
+
+    src->storage.SetActive(_cid, rec.row, _value);
 }
 
 void World::AddRawScript(EntityId _e, ComponentId _cid)
@@ -145,6 +178,19 @@ IScript* World::GetRawScript(EntityId _e, ComponentId _cid)
 
     IScript* stored = reinterpret_cast<IScript*>(src->storage.GetRaw(cid, rec.row));
     return stored;
+}
+
+void World::SetActiveScriptRaw(EntityId _e, ComponentId _cid, bool _value)
+{
+    assert(entityManager.IsAlive(_e) && "Can't set active script on dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
+    
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(_cid) && "Component not present");
+
+    src->storage.SetActive(_cid, rec.row, _value);
 }
 
 void World::Update(float _dt)

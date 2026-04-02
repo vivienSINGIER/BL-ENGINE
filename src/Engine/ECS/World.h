@@ -29,10 +29,12 @@ public:
     void AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data);
     void RemoveRawComponent(EntityId _e, ComponentId _cid);
     void* GetRawComponent(EntityId _e, ComponentId _cid);
+    void SetActiveComponentRaw(EntityId _e, ComponentId _cid, bool _value);
     
     void AddRawScript(EntityId _e, ComponentId _cid);
     void RemoveRawScript(EntityId _e, ComponentId _cid);
     IScript* GetRawScript(EntityId _e, ComponentId _cid);
+    void SetActiveScriptRaw(EntityId _e, ComponentId _cid, bool _value);
     
     template <typename T> T& AddComponent(EntityId _e, T const& _val = T{});
     template <typename T> void RemoveComponent(EntityId _e);

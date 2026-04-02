@@ -148,6 +148,19 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 	
 	SendReliablePacket(sp, _addr);
 	
+	if (rec.isActive == false)
+	{
+		Packet p;
+		p.header.type = PacketType::SetActiveState;
+		p.header.entityId = _e;
+		p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+		p.setActiveState.isActive = false;
+		p.setActiveState.isEntity = true;
+    
+		SendReliablePacket(p, _addr);
+	}
+	
 	for (auto& [cid, data] : arch->storage.columns)
 	{
 		if (ComponentRegistry::IsClientOnly(cid)) continue;
@@ -176,6 +189,20 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 		}
 		
 		SendReliablePacket(acP, _addr);
+		
+		if (arch->storage.GetActive(cid, rec.row) == false)
+		{
+			Packet p;
+			p.header.type = PacketType::SetActiveState;
+			p.header.entityId = _e;
+			p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+			p.setActiveState.isActive = false;
+			p.setActiveState.isEntity = false;
+			p.setActiveState.cid = cid;
+    
+			SendReliablePacket(p, _addr);
+		}
 	}
 }
 

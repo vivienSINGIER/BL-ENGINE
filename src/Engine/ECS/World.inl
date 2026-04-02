@@ -77,6 +77,19 @@ void World::SetActiveComponent(EntityId _e, bool _value)
     assert(src->mask.test(cid) && "Component not present");
 
     src->storage.SetActive(cid, rec.row, _value);
+    
+    if (EngineManager::IsServer() == false) return;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _e;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = _value;
+    p.setActiveState.isEntity = false;
+    p.setActiveState.cid = cid;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 template <typename T>
@@ -151,7 +164,18 @@ template <typename T>
 void World::SetActiveScript(EntityId _e, bool _value)
 {
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
-    return SetActiveComponent<T>(_e, _value);
+    SetActiveComponent<T>(_e, _value);
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _e;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = _value;
+    p.setActiveState.isEntity = false;
+    p.setActiveState.cid = ComponentType::Id<T>();
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 template <typename T>
