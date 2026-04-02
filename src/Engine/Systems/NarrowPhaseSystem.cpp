@@ -34,11 +34,11 @@ void NarrowPhaseSystem::Update(float _dt)
 
 bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
 {
-    if (!world->HasComponent<ShapeComponent>(_a) || !world->HasComponent<ShapeComponent>(_b))
+    if (!world->HasComponent<ColliderComponent>(_a) || !world->HasComponent<ColliderComponent>(_b))
         return false;
 
-    ShapeComponent&    shapeA = world->GetComponent<ShapeComponent>(_a);
-    ShapeComponent&    shapeB = world->GetComponent<ShapeComponent>(_b);
+    ColliderComponent&    shapeA = world->GetComponent<ColliderComponent>(_a);
+    ColliderComponent&    shapeB = world->GetComponent<ColliderComponent>(_b);
     TransformComponent& transA = world->GetComponent<TransformComponent>(_a);
     TransformComponent& transB = world->GetComponent<TransformComponent>(_b);
 
@@ -74,7 +74,7 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
 //  à cette question efficacement.
 // ─────────────────────────────────────────────────────────────────────────────
 
-XMFLOAT3 NarrowPhaseSystem::Support(ShapeComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _shape, TransformComponent& _transform,
                                      const XMFLOAT3& _dir) const
 {
     switch (_shape.type)
@@ -86,7 +86,7 @@ XMFLOAT3 NarrowPhaseSystem::Support(ShapeComponent& _shape, TransformComponent& 
     return { 0,0,0 };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportBox(ShapeComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _shape, TransformComponent& _transform,
                                         const XMFLOAT3& _dir) const
 {
     // Transformer la direction en espace local pour éviter de tourner les 8 coins.
@@ -125,7 +125,7 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ShapeComponent& _shape, TransformComponen
     return { result.x + pos.x, result.y + pos.y, result.z + pos.z };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportSphere(ShapeComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _shape, TransformComponent& _transform,
                                            const XMFLOAT3& _dir) const
 {
     // Support d'une sphère : centre + rayon * normalize(direction).
@@ -144,7 +144,7 @@ XMFLOAT3 NarrowPhaseSystem::SupportSphere(ShapeComponent& _shape, TransformCompo
     };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ShapeComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _shape, TransformComponent& _transform,
                                             const XMFLOAT3& _dir) const
 {
     // La capsule est un segment + sphère.
@@ -176,8 +176,8 @@ XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ShapeComponent& _shape, TransformComp
 }
 
 GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
-    ShapeComponent& _shapeA, TransformComponent& _transformA,
-    ShapeComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _shapeA, TransformComponent& _transformA,
+    ColliderComponent& _shapeB, TransformComponent& _transformB,
     const XMFLOAT3& _dir) const
 {
     GJKSupportPoint sp;
@@ -203,8 +203,8 @@ GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool NarrowPhaseSystem::GJK(
-    ShapeComponent& _shapeA, TransformComponent& _transformA,
-    ShapeComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _shapeA, TransformComponent& _transformA,
+    ColliderComponent& _shapeB, TransformComponent& _transformB,
     GJKSimplex& _outSimplex)
 {
     // Direction initiale : axe entre les centres.
@@ -375,8 +375,8 @@ bool NarrowPhaseSystem::UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direc
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool NarrowPhaseSystem::EPA(
-    ShapeComponent& _shapeA, TransformComponent& _transformA,
-    ShapeComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _shapeA, TransformComponent& _transformA,
+    ColliderComponent& _shapeB, TransformComponent& _transformB,
     GJKSimplex& _simplex,
     XMFLOAT3& _outNormal, float& _outPenetration,
     XMFLOAT3& _outContactA, XMFLOAT3& _outContactB)
@@ -561,8 +561,8 @@ int NarrowPhaseSystem::FindClosestFace(const Vector<EPAFace>& _faces) const
 // ─────────────────────────────────────────────────────────────────────────────
 
 void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
-    ShapeComponent& _shapeA, TransformComponent& _transformA,
-    ShapeComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _shapeA, TransformComponent& _transformA,
+    ColliderComponent& _shapeB, TransformComponent& _transformB,
     const XMFLOAT3& _normal, float _penetration,
     const XMFLOAT3& _contactA, const XMFLOAT3& _contactB)
 {

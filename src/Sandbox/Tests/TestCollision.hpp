@@ -46,7 +46,7 @@ public:
         mr.geoId = RessourceManager::GetGeometryId("Cube");
 
         // Shape
-        ShapeComponent& s = world->AddComponent<ShapeComponent>(e);
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
         s.SetBox(halfExtents);
 
         // RigidBody
@@ -75,7 +75,7 @@ public:
 		MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
 
-        ShapeComponent& s = world->AddComponent<ShapeComponent>(e);
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
         s.SetBox(halfExtents);
 
         RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
@@ -97,7 +97,7 @@ public:
         MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Sphere");
 
-        ShapeComponent& s = world->AddComponent<ShapeComponent>(e);
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
         s.SetSphere(radius * 0.5f);
 
         RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
@@ -120,7 +120,7 @@ public:
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
 
-        ShapeComponent& s = world->AddComponent<ShapeComponent>(e);
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
         s.SetBox(halfExtents);
         s.isTrigger = true;  // pas de réponse physique
 

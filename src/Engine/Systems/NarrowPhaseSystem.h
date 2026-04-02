@@ -2,7 +2,7 @@
 #define NARROW_PHASE_SYSTEM_H_DEFINED
 
 #include "../ECS/ISystem.h"
-#include "../Components/ShapeComponent.hpp"
+#include "../Components/ColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../ContactManifold.hpp"
 #include "BroadPhaseSystem.h"
@@ -67,11 +67,11 @@ struct EPAFace
 //
 //  Ordre d'exécution : après BroadPhaseSystem dans Phase::FixedUpdate.
 // ─────────────────────────────────────────────────────────────────────────────
-class NarrowPhaseSystem : public System<ShapeComponent, TransformComponent>
+class NarrowPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform) override {}
+    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _shape, TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
     void Update(float _dt) override;
@@ -86,25 +86,25 @@ private:
 
     // ─── Support functions ────────────────────────────────────────────────────
     // Retourne le point le plus loin de la forme dans la direction _dir (espace monde).
-    XMFLOAT3 Support(ShapeComponent& _shape, TransformComponent& _transform,
+    XMFLOAT3 Support(ColliderComponent& _shape, TransformComponent& _transform,
                      const XMFLOAT3& _dir) const;
 
-    XMFLOAT3 SupportBox    (ShapeComponent& _shape, TransformComponent& _transform,
+    XMFLOAT3 SupportBox    (ColliderComponent& _shape, TransformComponent& _transform,
                              const XMFLOAT3& _dir) const;
-    XMFLOAT3 SupportSphere (ShapeComponent& _shape, TransformComponent& _transform,
+    XMFLOAT3 SupportSphere (ColliderComponent& _shape, TransformComponent& _transform,
                              const XMFLOAT3& _dir) const;
-    XMFLOAT3 SupportCapsule(ShapeComponent& _shape, TransformComponent& _transform,
+    XMFLOAT3 SupportCapsule(ColliderComponent& _shape, TransformComponent& _transform,
                              const XMFLOAT3& _dir) const;
 
     // Support de la différence de Minkowski A ⊖ B.
     GJKSupportPoint MinkowskiSupport(
-        ShapeComponent& _shapeA, TransformComponent& _transformA,
-        ShapeComponent& _shapeB, TransformComponent& _transformB,
+        ColliderComponent& _shapeA, TransformComponent& _transformA,
+        ColliderComponent& _shapeB, TransformComponent& _transformB,
         const XMFLOAT3& _dir) const;
 
     // ─── GJK ──────────────────────────────────────────────────────────────────
-    bool GJK (ShapeComponent& _shapeA,  TransformComponent& _transformA, 
-        ShapeComponent& _shapeB, TransformComponent& _transformB, GJKSimplex& _outSimplex);
+    bool GJK (ColliderComponent& _shapeA,  TransformComponent& _transformA, 
+        ColliderComponent& _shapeB, TransformComponent& _transformB, GJKSimplex& _outSimplex);
 
     // Met à jour le simplexe et la direction de recherche.
     // Retourne true si l'origine est dans le simplexe (intersection).
@@ -114,8 +114,8 @@ private:
     bool UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direction);
 
     // ─── EPA ──────────────────────────────────────────────────────────────────
-    bool EPA(ShapeComponent& _shapeA, TransformComponent& _transformA,
-             ShapeComponent& _shapeB, TransformComponent& _transformB,
+    bool EPA(ColliderComponent& _shapeA, TransformComponent& _transformA,
+             ColliderComponent& _shapeB, TransformComponent& _transformB,
              GJKSimplex& _simplex,
              XMFLOAT3& _outNormal, float& _outPenetration,
              XMFLOAT3& _outContactA, XMFLOAT3& _outContactB);
@@ -128,8 +128,8 @@ private:
     // ─── Manifold reduction ───────────────────────────────────────────────────
     // Génère jusqu'à 4 points de contact depuis la normale EPA.
     void BuildManifold(ContactManifold& _manifold,
-                       ShapeComponent& _shapeA, TransformComponent& _transformA,
-                       ShapeComponent& _shapeB, TransformComponent& _transformB,
+                       ColliderComponent& _shapeA, TransformComponent& _transformA,
+                       ColliderComponent& _shapeB, TransformComponent& _transformB,
                        const XMFLOAT3& _normal, float _penetration,
                        const XMFLOAT3& _contactA, const XMFLOAT3& _contactB);
 

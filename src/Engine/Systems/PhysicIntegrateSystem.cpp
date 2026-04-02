@@ -6,7 +6,7 @@
 
 void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e,
     RigidBodyComponent& _rigid, MotionComponent& _motion,
-    ShapeComponent& _shape, TransformComponent& _transform)
+    ColliderComponent& _shape, TransformComponent& _transform)
 {
     if (_rigid.type != BodyType::Dynamic) return;
     if (_motion.isSleeping) return;
@@ -91,7 +91,7 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e,
 //   Iyy       = Iyy_cyl + 2 * Iyy_sph    (axe capsule Y)
 // ─────────────────────────────────────────────────────────────────────────────
 
-void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid, ShapeComponent& _shape)
+void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid, ColliderComponent& _shape)
 {
     if (!_rigid.allowRotation)
     {

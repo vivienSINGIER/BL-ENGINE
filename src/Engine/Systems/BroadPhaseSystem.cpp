@@ -35,7 +35,7 @@ void BroadPhaseSystem::OnStartUpdate(float _dt)
     // La grille n'est PAS vidée — elle est maintenue en continu.
 }
 
-void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform)
+void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _shape, TransformComponent& _transform)
 {
     EntityGridState& state = m_entityStates[_e];
 
@@ -92,7 +92,7 @@ bool BroadPhaseSystem::HasMoved(const EntityGridState& _state, TransformComponen
 //  4. Mettre à jour l'état mémorisé (position, rotation, scale).
 // ─────────────────────────────────────────────────────────────────────────────
 
-void BroadPhaseSystem::UpdateEntityInGrid(EntityId _e, ShapeComponent& _shape, TransformComponent& _transform, EntityGridState& _state)
+void BroadPhaseSystem::UpdateEntityInGrid(EntityId _e, ColliderComponent& _shape, TransformComponent& _transform, EntityGridState& _state)
 {
     // Retrait des anciennes cellules.
     RemoveEntityFromGrid(_e, _state);
@@ -118,7 +118,7 @@ void BroadPhaseSystem::RemoveEntityFromGrid(EntityId _e, EntityGridState& _state
     _state.occupiedKeys.clear();
 }
 
-void BroadPhaseSystem::InsertEntityIntoGrid(EntityId _e, ShapeComponent& _shape, EntityGridState& _state)
+void BroadPhaseSystem::InsertEntityIntoGrid(EntityId _e, ColliderComponent& _shape, EntityGridState& _state)
 {
     int cxMin = static_cast<int>(floorf(_shape.aabb.min.x / m_cellSize));
     int cyMin = static_cast<int>(floorf(_shape.aabb.min.y / m_cellSize));
@@ -204,11 +204,11 @@ void BroadPhaseSystem::BuildCandidatePairs()
         EntityId a = static_cast<EntityId>(key >> 32);
         EntityId b = static_cast<EntityId>(key & 0xFFFFFFFF);
 
-        if (!world->HasComponent<ShapeComponent>(a) ||
-            !world->HasComponent<ShapeComponent>(b)) continue;
+        if (!world->HasComponent<ColliderComponent>(a) ||
+            !world->HasComponent<ColliderComponent>(b)) continue;
 
-        ShapeComponent& shapeA = world->GetComponent<ShapeComponent>(a);
-        ShapeComponent& shapeB = world->GetComponent<ShapeComponent>(b);
+        ColliderComponent& shapeA = world->GetComponent<ColliderComponent>(a);
+        ColliderComponent& shapeB = world->GetComponent<ColliderComponent>(b);
 
         if (shapeA.aabb.Overlaps(shapeB.aabb))
             m_candidatePairs.push_back({ a, b });
@@ -219,7 +219,7 @@ void BroadPhaseSystem::BuildCandidatePairs()
 // ComputeWorldAABB
 // ─────────────────────────────────────────────────────────────────────────────
 
-void BroadPhaseSystem::ComputeWorldAABB(ShapeComponent& _shape, TransformComponent& _transform)
+void BroadPhaseSystem::ComputeWorldAABB(ColliderComponent& _shape, TransformComponent& _transform)
 {
     const XMFLOAT3& pos = _transform.world.GetPosition();
     const XMFLOAT3& scale = _transform.world.GetScale();

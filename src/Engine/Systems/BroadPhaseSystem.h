@@ -2,7 +2,7 @@
 #define BROAD_PHASE_SYSTEM_H_DEFINED
 
 #include "../ECS/ISystem.h"
-#include "../Components/ShapeComponent.hpp"
+#include "../Components/ColliderComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include <unordered_map>
@@ -88,11 +88,11 @@ struct EntityGridState
 //  Pas besoin d'API externe pour marquer les entités dirty —
 //  le changement de position est détecté automatiquement.
 // ─────────────────────────────────────────────────────────────────────────────
-class BroadPhaseSystem : public System<ShapeComponent, TransformComponent>
+class BroadPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform) override;
+    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _shape, TransformComponent& _transform) override;
     void OnEndUpdate(float _dt) override;
 
     void SetCellSize(float _cellSize) { m_cellSize = _cellSize; }
@@ -104,12 +104,12 @@ public:
 
 private:
     // ─── AABB ─────────────────────────────────────────────────────────────────
-    void ComputeWorldAABB(ShapeComponent& _shape, TransformComponent& _transform);
+    void ComputeWorldAABB(ColliderComponent& _shape, TransformComponent& _transform);
 
     // ─── Grille ───────────────────────────────────────────────────────────────
-    void UpdateEntityInGrid(EntityId _e, ShapeComponent& _shape, TransformComponent& _transform, EntityGridState& _state);
+    void UpdateEntityInGrid(EntityId _e, ColliderComponent& _shape, TransformComponent& _transform, EntityGridState& _state);
     void RemoveEntityFromGrid(EntityId _e, EntityGridState& _state);
-    void InsertEntityIntoGrid(EntityId _e, ShapeComponent& _shape, EntityGridState& _state);
+    void InsertEntityIntoGrid(EntityId _e, ColliderComponent& _shape, EntityGridState& _state);
 
     // ─── Paires ───────────────────────────────────────────────────────────────
     void BuildCandidatePairs();

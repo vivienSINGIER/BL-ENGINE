@@ -11,7 +11,7 @@
 #include "../Components/LightComponent.hpp"
 #include "../Components/MotionComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
-#include "../Components/ShapeComponent.hpp"
+#include "../Components/ColliderComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
 
 
@@ -23,7 +23,7 @@ void ComponentRegistry::Init()
     RegisterComponent<LightComponent>();
     RegisterComponent<MotionComponent>();
     RegisterComponent<RigidBodyComponent>();
-	RegisterComponent<ShapeComponent>();
+	RegisterComponent<ColliderComponent>();
     RegisterComponent<NetworkComponent>();
     RegisterComponent<ScriptRegistry>();
 }

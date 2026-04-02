@@ -7,6 +7,8 @@
 #include "Scene.h"
 #include "SceneManager.h"
 #include "Components/NetworkComponent.hpp"
+#include "Components/ColliderComponent.hpp"
+#include "Systems/BroadPhaseSystem.h"
 #include "Network/Packet.hpp"
 #include "Network/Server.h"
 
@@ -179,11 +181,14 @@ void ComponentCommandQueue::FlushDestroy(World* _pWorld)
     Archetype* src = rec.archetype;
 
     assert(_pWorld->entityManager.IsAlive(cmd.entity) && "Destroying dead entity");
-        
+
+    if (_pWorld->HasComponent<ColliderComponent>(cmd.entity))
+		SystemScheduler::Get().GetSystem<BroadPhaseSystem>()->OnEntityDestroyed(cmd.entity);
+
     _pWorld->NotifyScripts(cmd.entity, &IScript::Destroy);
-    
     _pWorld->RemoveFromArchetype(cmd.entity, rec);
     _pWorld->entityManager.Destroy(cmd.entity);
+
     m_toDestroy.pop_back();
     
     Server* server = EngineManager::GetServer();

@@ -19,7 +19,7 @@
 #include "Components/TransformComponent.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/MotionComponent.hpp"
-#include "Components/ShapeComponent.hpp"
+#include "Components/ColliderComponent.hpp"
 #include "Components/RigidBodyComponent.hpp"
 #include "Components/LightComponent.hpp"
 #include "Components/NetworkComponent.hpp"
