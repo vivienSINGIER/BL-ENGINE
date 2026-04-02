@@ -2,21 +2,50 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include "../ECS/World.h"
-#include "../Components/RigidBodyComponent.hpp"
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SpatialHashGrid — suppression ciblée
+// ─────────────────────────────────────────────────────────────────────────────
+
+void SpatialHashGrid::RemoveAll(uint32 _key, EntityId _e)
+{
+    auto it = cells.find(_key);
+    if (it == cells.end()) return;
+
+    auto& v = it->second.all;
+    v.erase(std::remove(v.begin(), v.end(), _e), v.end());
+}
+
+void SpatialHashGrid::RemoveDynamic(uint32 _key, EntityId _e)
+{
+    auto it = cells.find(_key);
+    if (it == cells.end()) return;
+
+    auto& v = it->second.dynamic;
+    v.erase(std::remove(v.begin(), v.end(), _e), v.end());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Update
+// ─────────────────────────────────────────────────────────────────────────────
 
 void BroadPhaseSystem::OnStartUpdate(float _dt)
 {
     m_candidatePairs.clear();
+    // La grille n'est PAS vidée — elle est maintenue en continu.
 }
 
 void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e, ShapeComponent& _shape, TransformComponent& _transform)
 {
-    if (_shape.toHash)
-    {
-        ComputeWorldAABB(_shape, _transform);
-        InsertIntoGrid(_e, _shape);
-        _shape.toHash = false;
-    }
+    EntityGridState& state = m_entityStates[_e];
+
+    // Si l'entité n'a pas bougé depuis la dernière frame, on ne touche pas à la grille.
+    if (!HasMoved(state, _transform))
+        return;
+
+    // L'entité a bougé (ou c'est la première frame) → mise à jour.
+    ComputeWorldAABB(_shape, _transform);
+    UpdateEntityInGrid(_e, _shape, _transform, state);
 }
 
 void BroadPhaseSystem::OnEndUpdate(float _dt)
@@ -24,150 +53,143 @@ void BroadPhaseSystem::OnEndUpdate(float _dt)
     BuildCandidatePairs();
 }
 
-void BroadPhaseSystem::ComputeWorldAABB(ShapeComponent& _shape, TransformComponent& _transform)
+bool BroadPhaseSystem::HasMoved(const EntityGridState& _state, TransformComponent& _transform) const
 {
-    const XMFLOAT3& pos   = _transform.world.GetPosition();
+    const XMFLOAT3& pos = _transform.world.GetPosition();
+    const XMFLOAT4& rot = _transform.world.GetRotation();
     const XMFLOAT3& scale = _transform.world.GetScale();
 
-    // Appliquer l'offset local (tourné par la rotation monde).
-    XMFLOAT3 center = pos;
-    if (_shape.localOffset.x != 0.0f || _shape.localOffset.y != 0.0f || _shape.localOffset.z != 0.0f)
-    {
-        XMVECTOR q      = XMLoadFloat4(&_transform.world.GetRotation());
-        XMMATRIX rot    = XMMatrixRotationQuaternion(q);
-        XMVECTOR offset = XMVector3Transform(
-            XMVectorSet(_shape.localOffset.x, _shape.localOffset.y, _shape.localOffset.z, 0.0f),
-            rot
-        );
-        XMFLOAT3 off;
-        XMStoreFloat3(&off, offset);
-        center = { pos.x + off.x, pos.y + off.y, pos.z + off.z };
-    }
+    float eps = kMovedEpsilon;
 
-    _shape.worldCenter = center;
+    // Position.
+    if (fabsf(pos.x - _state.lastPosition.x) > eps ||
+        fabsf(pos.y - _state.lastPosition.y) > eps ||
+        fabsf(pos.z - _state.lastPosition.z) > eps)
+        return true;
 
-    switch (_shape.type)
-    {
-        case ShapeType::Sphere:
-        {
-            // Rayon monde = rayon local * max(scale).
-            float maxScale    = Max(Max(scale.x, scale.y), scale.z);
-            float worldRadius = _shape.shape.sphere.radius * maxScale;
-            _shape.worldRadius = worldRadius;
+    // Rotation (quaternion — composante W suffit pour détecter une rotation).
+    if (fabsf(rot.x - _state.lastRotation.x) > eps ||
+        fabsf(rot.y - _state.lastRotation.y) > eps ||
+        fabsf(rot.z - _state.lastRotation.z) > eps ||
+        fabsf(rot.w - _state.lastRotation.w) > eps)
+        return true;
 
-            _shape.aabb.min = { center.x - worldRadius, center.y - worldRadius, center.z - worldRadius };
-            _shape.aabb.max = { center.x + worldRadius, center.y + worldRadius, center.z + worldRadius };
-            break;
-        }
+    // Scale.
+    if (fabsf(scale.x - _state.lastScale.x) > eps ||
+        fabsf(scale.y - _state.lastScale.y) > eps ||
+        fabsf(scale.z - _state.lastScale.z) > eps)
+        return true;
 
-        case ShapeType::Box:
-        {
-            // AABB d'un OBB : on projette les axes orientés sur chaque axe monde.
-            XMVECTOR q   = XMLoadFloat4(&_transform.world.GetRotation());
-            XMMATRIX rot = XMMatrixRotationQuaternion(q);
-
-            XMFLOAT3 axisX, axisY, axisZ;
-            XMStoreFloat3(&axisX, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1,0,0,0), rot)));
-            XMStoreFloat3(&axisY, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,1,0,0), rot)));
-            XMStoreFloat3(&axisZ, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,0,1,0), rot)));
-
-            const XMFLOAT3& h = _shape.shape.box.halfExtents;
-            float hx = h.x * scale.x;
-            float hy = h.y * scale.y;
-            float hz = h.z * scale.z;
-
-            float wx = fabsf(axisX.x)*hx + fabsf(axisY.x)*hy + fabsf(axisZ.x)*hz;
-            float wy = fabsf(axisX.y)*hx + fabsf(axisY.y)*hy + fabsf(axisZ.y)*hz;
-            float wz = fabsf(axisX.z)*hx + fabsf(axisY.z)*hy + fabsf(axisZ.z)*hz;
-
-            _shape.worldRadius = sqrtf(wx*wx + wy*wy + wz*wz);
-            _shape.aabb.min = { center.x - wx, center.y - wy, center.z - wz };
-            _shape.aabb.max = { center.x + wx, center.y + wy, center.z + wz };
-            break;
-        }
-
-        case ShapeType::Capsule:
-        {
-            // La capsule est orientée selon l'axe Y local. On tourne cet axe.
-            XMVECTOR q   = XMLoadFloat4(&_transform.world.GetRotation());
-            XMMATRIX rot = XMMatrixRotationQuaternion(q);
-
-            XMFLOAT3 worldUp;
-            XMStoreFloat3(&worldUp, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,1,0,0), rot)));
-
-            float r  = _shape.shape.capsule.radius * Max(scale.x, scale.z);
-            float hh = _shape.shape.capsule.halfHeight * scale.y;
-
-            // Centres des deux hémisphères en espace monde.
-            XMFLOAT3 topCenter =
-            {
-                center.x + worldUp.x * hh,
-                center.y + worldUp.y * hh,
-                center.z + worldUp.z * hh
-            };
-            XMFLOAT3 botCenter =
-            {
-                center.x - worldUp.x * hh,
-                center.y - worldUp.y * hh,
-                center.z - worldUp.z * hh
-            };
-
-            _shape.worldRadius = hh + r;
-
-            _shape.aabb.min =
-            {
-                Min(topCenter.x, botCenter.x) - r,
-                Min(topCenter.y, botCenter.y) - r,
-                Min(topCenter.z, botCenter.z) - r
-            };
-            _shape.aabb.max =
-            {
-                Max(topCenter.x, botCenter.x) + r,
-                Max(topCenter.y, botCenter.y) + r,
-                Max(topCenter.z, botCenter.z) + r
-            };
-            break;
-        }
-    }
+    return false;
 }
 
-void BroadPhaseSystem::InsertIntoGrid(EntityId _e, ShapeComponent& _shape)
+// ─────────────────────────────────────────────────────────────────────────────
+// Mise à jour d'une entité dans la grille
+//
+//  1. Retirer l'entité de ses anciennes cellules (stockées dans state.occupiedKeys).
+//  2. Recalculer les nouvelles cellules depuis l'AABB courante.
+//  3. Insérer dans les nouvelles cellules et mémoriser les clés.
+//  4. Mettre à jour l'état mémorisé (position, rotation, scale).
+// ─────────────────────────────────────────────────────────────────────────────
+
+void BroadPhaseSystem::UpdateEntityInGrid(EntityId _e, ShapeComponent& _shape, TransformComponent& _transform, EntityGridState& _state)
 {
-    int cellSize = m_grid.cellSize;
+    // Retrait des anciennes cellules.
+    RemoveEntityFromGrid(_e, _state);
 
-    int cxMin = static_cast<int>(floorf(_shape.aabb.min.x / cellSize));
-    int cyMin = static_cast<int>(floorf(_shape.aabb.min.y / cellSize));
-    int czMin = static_cast<int>(floorf(_shape.aabb.min.z / cellSize));
-    int cxMax = static_cast<int>(floorf(_shape.aabb.max.x / cellSize));
-    int cyMax = static_cast<int>(floorf(_shape.aabb.max.y / cellSize));
-    int czMax = static_cast<int>(floorf(_shape.aabb.max.z / cellSize));
+    // Insertion dans les nouvelles cellules.
+    _state.isDynamicSrc = IsDynamicSource(_e);
+    InsertEntityIntoGrid(_e, _shape, _state);
 
-    for (int x = cxMin; x <= cxMax; x++)
-        for (int y = cyMin; y <= cyMax; y++)
-            for (int z = czMin; z <= czMax; z++)
-                m_grid.Insert(HashCell(x, y, z), _e);
+    // Mémoriser l'état courant.
+    _state.lastPosition = _transform.world.GetPosition();
+    _state.lastRotation = _transform.world.GetRotation();
+    _state.lastScale = _transform.world.GetScale();
 }
+
+void BroadPhaseSystem::RemoveEntityFromGrid(EntityId _e, EntityGridState& _state)
+{
+    for (uint32 key : _state.occupiedKeys)
+    {
+        m_grid.RemoveAll(key, _e);
+        if (_state.isDynamicSrc)
+            m_grid.RemoveDynamic(key, _e);
+    }
+    _state.occupiedKeys.clear();
+}
+
+void BroadPhaseSystem::InsertEntityIntoGrid(EntityId _e, ShapeComponent& _shape, EntityGridState& _state)
+{
+    int cxMin = static_cast<int>(floorf(_shape.aabb.min.x / m_cellSize));
+    int cyMin = static_cast<int>(floorf(_shape.aabb.min.y / m_cellSize));
+    int czMin = static_cast<int>(floorf(_shape.aabb.min.z / m_cellSize));
+    int cxMax = static_cast<int>(floorf(_shape.aabb.max.x / m_cellSize));
+    int cyMax = static_cast<int>(floorf(_shape.aabb.max.y / m_cellSize));
+    int czMax = static_cast<int>(floorf(_shape.aabb.max.z / m_cellSize));
+
+    for (int x = cxMin; x <= cxMax; ++x)
+    {
+        for (int y = cyMin; y <= cyMax; ++y)
+        {
+            for (int z = czMin; z <= czMax; ++z)
+            {
+                uint32 key = HashCell(x, y, z);
+
+                m_grid.InsertAll(key, _e);
+                if (_state.isDynamicSrc)
+                    m_grid.InsertDynamic(key, _e);
+
+                _state.occupiedKeys.push_back(key);
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nettoyage à la destruction d'une entité
+// ─────────────────────────────────────────────────────────────────────────────
+
+void BroadPhaseSystem::OnEntityDestroyed(EntityId _e)
+{
+    auto it = m_entityStates.find(_e);
+    if (it == m_entityStates.end()) return;
+
+    RemoveEntityFromGrid(_e, it->second);
+    m_entityStates.erase(it);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IsDynamicSource
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool BroadPhaseSystem::IsDynamicSource(EntityId _e) const
+{
+    if (!world->HasComponent<RigidBodyComponent>(_e))
+        return true; // trigger sans RigidBody
+
+    const RigidBodyComponent& r = world->GetComponent<RigidBodyComponent>(_e);
+    return r.type == BodyType::Dynamic;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Construction des paires candidates — identique à la version précédente
+// ─────────────────────────────────────────────────────────────────────────────
 
 void BroadPhaseSystem::BuildCandidatePairs()
 {
     m_pairKeys.clear();
-    m_grid.ForEachCell([&](const Vector<EntityId>& bucket)
+
+    m_grid.ForEachCell([&](uint32 /*key*/, const CellBucket& bucket)
         {
-            for (size_t i = 0; i < bucket.size(); i++)
+            if (bucket.dynamic.empty())
+                return;
+
+            for (EntityId src : bucket.dynamic)
             {
-                EntityId e1 = bucket[i];
-                BodyType e1Type = BodyType::Static;
-
-                if (world->HasComponent<RigidBodyComponent>(e1))
-                    e1Type = world->GetComponent<RigidBodyComponent>(e1).type;
-
-                if (e1Type != BodyType::Dynamic)
-                    continue;
-                
-                for (size_t j = i + 1; j < bucket.size(); j++)
+                for (EntityId tgt : bucket.all)
                 {
-                    EntityId e2 = bucket[j];
-                    m_pairKeys.push_back(MakePairKey(e1, e2));
+                    if (src == tgt) continue;
+                    m_pairKeys.push_back(MakePairKey(src, tgt));
                 }
             }
         });
@@ -182,6 +204,9 @@ void BroadPhaseSystem::BuildCandidatePairs()
         EntityId a = static_cast<EntityId>(key >> 32);
         EntityId b = static_cast<EntityId>(key & 0xFFFFFFFF);
 
+        if (!world->HasComponent<ShapeComponent>(a) ||
+            !world->HasComponent<ShapeComponent>(b)) continue;
+
         ShapeComponent& shapeA = world->GetComponent<ShapeComponent>(a);
         ShapeComponent& shapeB = world->GetComponent<ShapeComponent>(b);
 
@@ -190,16 +215,71 @@ void BroadPhaseSystem::BuildCandidatePairs()
     }
 }
 
-uint32 BroadPhaseSystem::HashCell(int _x, int _y, int _z) const
-{
-    return static_cast<uint32>(
-        (_x * 73856093) ^
-        (_y * 19349663) ^
-        (_z * 83492791) );
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// ComputeWorldAABB
+// ─────────────────────────────────────────────────────────────────────────────
 
-uint64 BroadPhaseSystem::MakePairKey(EntityId _a, EntityId _b) const
+void BroadPhaseSystem::ComputeWorldAABB(ShapeComponent& _shape, TransformComponent& _transform)
 {
-    if (_a > _b) std::swap(_a, _b);
-    return (static_cast<uint64>(static_cast<uint32>(_a)) << 32) | static_cast<uint32>(_b);
+    const XMFLOAT3& pos = _transform.world.GetPosition();
+    const XMFLOAT3& scale = _transform.world.GetScale();
+
+    XMFLOAT3 center = pos;
+    if (_shape.localOffset.x != 0.0f || _shape.localOffset.y != 0.0f || _shape.localOffset.z != 0.0f)
+    {
+        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
+        XMMATRIX rot = XMMatrixRotationQuaternion(q);
+        XMVECTOR off = XMVector3Transform(XMVectorSet(_shape.localOffset.x, _shape.localOffset.y, _shape.localOffset.z, 0.0f), rot);
+        XMFLOAT3 o;
+        XMStoreFloat3(&o, off);
+        center = { pos.x + o.x, pos.y + o.y, pos.z + o.z };
+    }
+
+    _shape.worldCenter = center;
+
+    switch (_shape.type)
+    {
+    case ShapeType::Sphere:
+    {
+        float r = _shape.shape.sphere.radius * Max(Max(scale.x, scale.y), scale.z);
+        _shape.worldRadius = r;
+        _shape.aabb.min = { center.x - r, center.y - r, center.z - r };
+        _shape.aabb.max = { center.x + r, center.y + r, center.z + r };
+        break;
+    }
+    case ShapeType::Box:
+    {
+        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
+        XMMATRIX rot = XMMatrixRotationQuaternion(q);
+        XMFLOAT3 ax, ay, az;
+        XMStoreFloat3(&ax, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rot)));
+        XMStoreFloat3(&ay, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
+        XMStoreFloat3(&az, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rot)));
+
+        const XMFLOAT3& h = _shape.shape.box.halfExtents;
+        float hx = h.x * scale.x, hy = h.y * scale.y, hz = h.z * scale.z;
+        float wx = fabsf(ax.x) * hx + fabsf(ay.x) * hy + fabsf(az.x) * hz;
+        float wy = fabsf(ax.y) * hx + fabsf(ay.y) * hy + fabsf(az.y) * hz;
+        float wz = fabsf(ax.z) * hx + fabsf(ay.z) * hy + fabsf(az.z) * hz;
+        _shape.worldRadius = sqrtf(wx * wx + wy * wy + wz * wz);
+        _shape.aabb.min = { center.x - wx, center.y - wy, center.z - wz };
+        _shape.aabb.max = { center.x + wx, center.y + wy, center.z + wz };
+        break;
+    }
+    case ShapeType::Capsule:
+    {
+        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
+        XMMATRIX rot = XMMatrixRotationQuaternion(q);
+        XMFLOAT3 up;
+        XMStoreFloat3(&up, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
+        float r = _shape.shape.capsule.radius * Max(scale.x, scale.z);
+        float hh = _shape.shape.capsule.halfHeight * scale.y;
+        XMFLOAT3 top = { center.x + up.x * hh, center.y + up.y * hh, center.z + up.z * hh };
+        XMFLOAT3 bot = { center.x - up.x * hh, center.y - up.y * hh, center.z - up.z * hh };
+        _shape.worldRadius = hh + r;
+        _shape.aabb.min = { Min(top.x,bot.x) - r, Min(top.y,bot.y) - r, Min(top.z,bot.z) - r };
+        _shape.aabb.max = { Max(top.x,bot.x) + r, Max(top.y,bot.y) + r, Max(top.z,bot.z) + r };
+        break;
+    }
+    }
 }
