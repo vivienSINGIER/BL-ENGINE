@@ -1,6 +1,13 @@
 #include "LabyrintheManager.h"
 #include "LabyrintheHelper.h"
 
+int      LabyrintheManager::m_cellSize = 0;
+Scene* LabyrintheManager::m_scene = nullptr;
+Vector<EntityId> LabyrintheManager::m_Entities;
+int      LabyrintheManager::m_levelNb = 0;
+EntityId LabyrintheManager::m_doors[4] = {};
+int      LabyrintheManager::m_nbPlayer = 0;
+
 void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 {
 
@@ -224,4 +231,18 @@ void LabyrintheManager::ReloadDoor()
 {
     for (int i = 0; i < 4; i++)
         m_doors[i] = 0;
+}
+
+void LabyrintheManager::CloseDoor(int doorIndex)
+{
+    if (doorIndex < 0 || doorIndex >= 4) return;
+    if (m_doors[doorIndex] != 0)
+		m_scene->world->SetActive(m_doors[doorIndex]);
+}
+
+void LabyrintheManager::OpenDoor(int doorIndex)
+{
+    if (doorIndex < 0 || doorIndex >= 4) return;
+    if (m_doors[doorIndex] != 0)
+        m_scene->world->SetInactive(m_doors[doorIndex]);
 }

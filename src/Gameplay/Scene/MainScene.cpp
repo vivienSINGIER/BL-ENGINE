@@ -5,13 +5,10 @@
 
 void MainScene::OnInit()
 {
-	m_loadLaby = false;
 	m_dayDuration = 20.0f;
 	m_nightDuration = 5.0f;
 	m_opened = false;
 	m_started = false;
-	m_levelNb = 1;
-	m_nbPlayer = 4;
 	m_isDay = true;
 	m_isNight = false;
 
@@ -39,12 +36,12 @@ void MainScene::OnInit()
 	l.type = LightType::Point;
 	l.SetStrength(1.0f);
 	l.SetPoint(1.0f, 200.0f);
+	l.SetColor(XMFLOAT4(1.0f,0.8f,0.35f, 1.0f));
 	
 }
 
 void MainScene::OnUpdate(float _dt)
 {
-    if (m_loadLaby == true) return;
 
     TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
 	LightComponent& l = world->GetComponent<LightComponent>(m_light);
@@ -55,13 +52,15 @@ void MainScene::OnUpdate(float _dt)
 	}
 	if(InputManager::IsKeyDown(J))
 	{
-		LevelManager::LoadLevel(m_levelNb, m_nbPlayer);
+		LevelManager::LoadLevel();
 	}
 
     if (m_started == true)
     {
         if (m_isDay == true)
         {
+			m_lightPosXStart = LevelManager::GetLightPosXStart();
+			m_lightTravelDistance = LevelManager::GetLightTravelDistance();
             l.SetStrength(1.0f);
             m_timer += _dt;
 			float t = m_timer / m_dayDuration;
@@ -83,11 +82,9 @@ void MainScene::OnUpdate(float _dt)
             ));
 
             for (int i = 0; i < 4; i++)
-                if (m_doors[i] != 0)
-                    world->SetInactive(m_doors[i]);
+				LevelManager::OpenDoor(i);
             
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
-			std::cout << "Light position: " << m_lightPos.x << ", " << m_lightPos.y << ", " << 0.0f << std::endl;
 
             if(m_timer >= m_dayDuration)
             {
@@ -95,22 +92,20 @@ void MainScene::OnUpdate(float _dt)
                 m_isDay = false;
                 m_isNight = true;
                 for (int i = 0; i < 4; i++)
-                    if (m_doors[i] != 0)
-                        world->SetActive(m_doors[i]);
+                    LevelManager::CloseDoor(i);
 			}
         }
         else if (m_isNight == true)
         {
             m_timer += _dt;
 			l.SetStrength(0.0f);
-			world->SetInactive(m_doors[m_doorOpenedNight]);
 
             if (m_timer >= m_nightDuration)
             {
                 m_timer = 0.0f;
                 m_isDay = true;
                 m_isNight = false;
-                LevelManager::LoadLevel(m_levelNb, m_nbPlayer);
+                LevelManager::LoadLevel();
 
             }
         }
@@ -119,7 +114,7 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-	LevelManager::Init(m_nbPlayer);
+	LevelManager::Init(4);
 }
 
 void MainScene::OnEnd()

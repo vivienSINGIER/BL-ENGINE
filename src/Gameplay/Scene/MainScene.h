@@ -22,7 +22,6 @@ private:
 	float m_lightTravelDistance;
 	float m_lightPosXStart;
 
-	bool m_loadLaby;
 	bool m_opened;
 
 	bool m_isDay;
@@ -32,22 +31,12 @@ private:
 	float m_nightDuration;
 	XMFLOAT3 m_dayColorStart;
 	
-	float cellSize;
-
 	bool m_started;
-
-
-	//LABYRINTHE//
 	
 	void SetStarted(bool _started) { m_started = _started; }
 
-	int m_doorOpenedNight;
 	int m_levelSize;
 
-	//LEVEL MANAGER//
-
-	int m_levelNb;
-	int m_nbPlayer;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED

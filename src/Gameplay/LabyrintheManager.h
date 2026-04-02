@@ -14,6 +14,9 @@ public:
 
 	static void SetLevelNb(int _levelNb) { m_levelNb = _levelNb; }
 	static void ReloadDoor();
+	
+	static void CloseDoor(int doorIndex);
+	static void OpenDoor(int doorIndex);
 
 private:
 	static int m_cellSize;
