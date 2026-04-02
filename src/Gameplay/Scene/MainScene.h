@@ -15,11 +15,21 @@ private:
 	EntityId m_camera;
 	EntityId m_test;
 	EntityId m_laby;
+	EntityId m_light;
+
+	XMFLOAT3 m_lightPos;
+	float m_lightTravelDistance;
+	float m_lightPosXStart;
 
 	bool m_loadLaby;
 	bool m_opened;
+
+	bool m_isDay;
+	bool m_isNight;
 	float m_timer;
-	float m_openDuration;
+	float m_dayDuration;
+	float m_nightDuration;
+	
 	float cellSize;
 
 	bool m_started;
@@ -46,6 +56,7 @@ private:
 	Vector<EntityId> m_Entities;
 	EntityId m_groundEntity;
 	EntityId m_doors[4];
+	int m_levelSize;
 
 	//LEVEL MANAGER//
 	void LoadLevel(int levelNb, int nbPlayer);

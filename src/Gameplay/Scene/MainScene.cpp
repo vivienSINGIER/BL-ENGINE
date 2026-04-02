@@ -5,11 +5,14 @@
 void MainScene::OnInit()
 {
 	m_loadLaby = false;
-	m_openDuration = 5.0f;
+	m_dayDuration = 20.0f;
+	m_nightDuration = 5.0f;
 	m_opened = false;
 	m_started = false;
 	m_levelNb = 1;
 	m_nbPlayer = 4;
+	m_isDay = true;
+	m_isNight = false;
 
     RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
     uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
@@ -61,10 +64,10 @@ void MainScene::OnInit()
 	phys.SetMass(1.0f);
 	phys.ToggleGravity();
 
-	EntityId light = world->CreateEntity();
-	TransformComponent& lt = world->AddComponent<TransformComponent>(light);
-	lt.local.SetPosition(XMFLOAT3(0.0f, 50.0f,0.0f));
-	LightComponent& l = world->AddComponent<LightComponent>(light);
+	m_light = world->CreateEntity();
+	TransformComponent& lt = world->AddComponent<TransformComponent>(m_light);
+	lt.local.SetPosition(XMFLOAT3(0.0f, 0.0f,0.0f));
+	LightComponent& l = world->AddComponent<LightComponent>(m_light);
 	l.type = LightType::Point;
 	l.SetStrength(1.0f);
 	l.SetPoint(1.0f, 100.0f);
@@ -86,30 +89,43 @@ void MainScene::OnUpdate(float _dt)
 
     if (m_started == true)
     {
-        m_timer += _dt;
-        if (m_timer >= m_openDuration)
+        if (m_isDay == true)
         {
-            m_timer = 0.0f;
-            m_opened = !m_opened;
-            if (m_opened)
+            m_timer += _dt;
+			float t = m_timer / m_dayDuration;
+
+            m_lightPos.x = m_lightPosXStart + t * m_lightTravelDistance;
+			m_lightPos.y = 18.0f * sinf(t * XM_PI) + 18.0f;
+
+            for (int i = 0; i < 4; i++)
+                if (m_doors[i] != 0)
+                    world->SetInactive(m_doors[i]);
+
+			TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
+			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
+			std::cout << "Light position: " << m_lightPos.x << ", " << m_lightPos.y << ", " << 0.0f << std::endl;
+
+            if(m_timer >= m_dayDuration)
             {
+                m_timer = 0.0f;
+                m_isDay = false;
+                m_isNight = true;
                 for (int i = 0; i < 4; i++)
-                {
                     if (m_doors[i] != 0)
-                    {
-                        world->SetInactive(m_doors[i]);
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < 4; i++)
-                {
-                    if (m_doors[i] != 0)
-                    {
                         world->SetActive(m_doors[i]);
-                    }
-                }
+			}
+        }
+        else if (m_isNight == true)
+        {
+            m_timer += _dt;
+
+			world->SetInactive(m_doors[0]);
+
+            if (m_timer >= m_nightDuration)
+            {
+                m_timer = 0.0f;
+                m_isDay = true;
+                m_isNight = false;
             }
         }
     }
@@ -364,9 +380,17 @@ void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, in
 
 void MainScene::LoadLevel(int levelNb, int nbPlayer)
 {
-	int levelSize = 21 + ((levelNb - 1) * 2 * nbPlayer);
-	ReloadLabyrinthe(levelSize, levelSize);
-	std::cout << "Level " << levelNb << " loaded with " << nbPlayer << " player(s) " << "LevelSize " << levelSize << std::endl;
+    cellSize = 3.0f;
+	m_levelSize = 21 + ((levelNb - 1) * 2 * nbPlayer);
+
+	if (m_levelSize > 51) m_levelSize = 51;
+
+	m_lightPosXStart = -m_levelSize * cellSize * 0.5f - 5.0f;
+
+	m_lightTravelDistance = m_levelSize * cellSize + 10.0f;
+
+	ReloadLabyrinthe(m_levelSize, m_levelSize);
+	std::cout << "Level " << levelNb << " loaded with " << nbPlayer << " player(s) " << "LevelSize " << m_levelSize << std::endl;
     std::cout << "Labyrinthe generated with " << m_Entities.size() << " entities.\n";
 }
 
@@ -380,8 +404,6 @@ void MainScene::Laby3d(Vector<Vector<char>>& _grid)
     float offsetY = gridH * 0.5f - 0.5f;
 
     float wallHeight = 15.0f;
-
-    cellSize = 3.0f;
 
     int doorCount = 0;
 

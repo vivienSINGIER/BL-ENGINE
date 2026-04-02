@@ -26,7 +26,18 @@ int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 #else
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
-	
+    srand(time(NULL));
+    Console::InitConsol();
+
+    EngineManager engineManager;
+    engineManager.Initialize(1920, 1080, L"LabyBL");
+
+    SceneManager::CreateSceneType<MainScene>("MainScene");
+    SceneManager::SetCurrentScene("MainScene");
+
+    engineManager.Run();
+
+    //Console::DeleteConsol();
     return 0;
 }
 
