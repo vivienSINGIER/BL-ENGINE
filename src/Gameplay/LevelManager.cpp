@@ -55,3 +55,8 @@ void LevelManager::OpenDoor(int doorIndex)
 	LabyrintheManager::OpenDoor(doorIndex);
 }
 
+void LevelManager::OpenRandomDoor()
+{
+	LabyrintheManager::OpenRandomDoor();
+}
+

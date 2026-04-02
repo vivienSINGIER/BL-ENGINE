@@ -5,9 +5,10 @@
 float LabyrintheManager::m_cellSize = 0;
 Scene* LabyrintheManager::m_scene = nullptr;
 Vector<EntityId> LabyrintheManager::m_Entities;
-int      LabyrintheManager::m_levelNb = 0;
+int LabyrintheManager::m_levelNb = 0;
 EntityId LabyrintheManager::m_doors[4] = {};
-int      LabyrintheManager::m_nbPlayer = 0;
+int LabyrintheManager::m_nbPlayer = 0;
+int LabyrintheManager::m_doorOpenedNight = 0;
 
 void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 {
@@ -119,6 +120,8 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
     std::vector<std::vector<char>> grid(_width, std::vector<char>(_height, ' '));
 
     LabyrintheHelper::Enclose(grid);
+
+	m_doorOpenedNight = LabyrintheHelper::RandomInt(0, 3);
 
     int cx = _width / 2;
     int cy = _height / 2;
@@ -247,4 +250,9 @@ void LabyrintheManager::OpenDoor(int doorIndex)
     if (doorIndex < 0 || doorIndex >= 4) return;
     if (m_doors[doorIndex] != 0)
         m_scene->world->SetInactive(m_doors[doorIndex]);
+}
+
+void LabyrintheManager::OpenRandomDoor()
+{
+    m_scene->world->SetInactive(m_doors[m_doorOpenedNight]);
 }

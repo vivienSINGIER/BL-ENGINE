@@ -17,6 +17,7 @@ public:
 	
 	static void CloseDoor(int doorIndex);
 	static void OpenDoor(int doorIndex);
+	static void OpenRandomDoor();
 
 private:
 	static float m_cellSize;
@@ -25,5 +26,7 @@ private:
 	static int m_levelNb;
 	static EntityId m_doors[4];
 	static int m_nbPlayer;
+
+	static int m_doorOpenedNight;
 };
 #endif // !LABYRINTHE_MANAGER_H_DEFINED

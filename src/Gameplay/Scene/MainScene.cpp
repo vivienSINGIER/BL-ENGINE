@@ -5,7 +5,7 @@
 
 void MainScene::OnInit()
 {
-	m_dayDuration = 20.0f;
+	m_dayDuration = 5.0f;
 	m_nightDuration = 5.0f;
 	m_opened = false;
 	m_started = false;
@@ -86,11 +86,13 @@ void MainScene::OnUpdate(float _dt)
             
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
 
+
             if(m_timer >= m_dayDuration)
             {
                 m_timer = 0.0f;
                 m_isDay = false;
                 m_isNight = true;
+				m_opened = false;
                 for (int i = 0; i < 4; i++)
                     LevelManager::CloseDoor(i);
 			}
@@ -100,11 +102,17 @@ void MainScene::OnUpdate(float _dt)
             m_timer += _dt;
 			l.SetStrength(0.0f);
 
+            if (m_opened == false)
+            {
+                LevelManager::OpenRandomDoor();
+            }
+
             if (m_timer >= m_nightDuration)
             {
                 m_timer = 0.0f;
                 m_isDay = true;
                 m_isNight = false;
+				m_opened = true;
                 LevelManager::LoadLevel();
 
             }

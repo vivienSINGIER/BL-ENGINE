@@ -12,6 +12,7 @@ public:
 	static void SetCellSize(float _cellSize) { m_cellSize = _cellSize; }
 	static void CloseDoor(int doorIndex);
 	static void OpenDoor(int doorIndex);
+	static void OpenRandomDoor();
 	static float GetLightPosXStart() { return m_lightPosXStart; }
 	static float GetLightTravelDistance() { return m_lightTravelDistance; }
 
