@@ -41,11 +41,6 @@ private:
 	
 	void SetStarted(bool _started) { m_started = _started; }
 
-	
-
-	Vector<EntityId> m_Entities;
-	EntityId m_groundEntity;
-	EntityId m_doors[4];
 	int m_doorOpenedNight;
 	int m_levelSize;
 

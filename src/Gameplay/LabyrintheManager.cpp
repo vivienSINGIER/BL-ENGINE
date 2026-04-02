@@ -47,55 +47,62 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
                     for (int dy = 0; dy < lenY; dy++)
                         visited[x + dx][y + dy] = true;
 
-                float cx = x * cellSize + (lenX - 1) * cellSize / 2 - offsetX * cellSize;
-                float cy = y * cellSize + (lenY - 1) * cellSize / 2 - offsetY * cellSize;
+                float cx = x * m_cellSize + (lenX - 1) * m_cellSize / 2 - offsetX * m_cellSize;
+                float cy = y * m_cellSize + (lenY - 1) * m_cellSize / 2 - offsetY * m_cellSize;
 
-                EntityId e = world->CreateEntity();
+                EntityId e = m_scene->world->CreateEntity();
                 m_Entities.push_back(e);
-                TransformComponent& tWall = world->AddComponent<TransformComponent>(e);
-                MeshRenderer& m = world->AddComponent<MeshRenderer>(e);
+                TransformComponent& tWall = m_scene->world->AddComponent<TransformComponent>(e);
+                MeshRenderer& m = m_scene->world->AddComponent<MeshRenderer>(e);
                 m.geoId = RessourceManager::GetGeometryId("Cube");
                 m.materialId = RessourceManager::GetMaterialId("WallMaterial");
                 tWall.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
-                tWall.local.SetScale(XMFLOAT3((float)lenX * cellSize, wallHeight, (float)lenY * cellSize));
+                tWall.local.SetScale(XMFLOAT3((float)lenX * m_cellSize, wallHeight, (float)lenY * m_cellSize));
                 /*ColliderComponent& col = world->AddComponent<ColliderComponent>(e);
                 PhysicComponent& phys = world->AddComponent<PhysicComponent>(e);
                 phys.SetStatic();*/
             }
             if (_grid[x][y] == 'D')
             {
-                EntityId doorEntity = world->CreateEntity();
+                EntityId doorEntity = m_scene->world->CreateEntity();
                 m_Entities.push_back(doorEntity);
                 m_doors[doorCount] = doorEntity;
-                TransformComponent& tDoor = world->AddComponent<TransformComponent>(doorEntity);
-                MeshRenderer& m = world->AddComponent<MeshRenderer>(doorEntity);
+                TransformComponent& tDoor = m_scene->world->AddComponent<TransformComponent>(doorEntity);
+                MeshRenderer& m = m_scene->world->AddComponent<MeshRenderer>(doorEntity);
                 m.geoId = RessourceManager::GetGeometryId("Cube");
                 m.materialId = RessourceManager::GetMaterialId("DoorMaterial");
-                tDoor.local.SetScale(XMFLOAT3(cellSize, wallHeight, cellSize));
-                float cx = x * cellSize - offsetX * cellSize;
-                float cy = y * cellSize - offsetY * cellSize;
+                tDoor.local.SetScale(XMFLOAT3(m_cellSize, wallHeight, m_cellSize));
+                float cx = x * m_cellSize - offsetX * m_cellSize;
+                float cy = y * m_cellSize - offsetY * m_cellSize;
                 tDoor.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
-                ColliderComponent& col = world->AddComponent<ColliderComponent>(doorEntity);
-                PhysicComponent& phys = world->AddComponent<PhysicComponent>(doorEntity);
+                ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(doorEntity);
+                PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(doorEntity);
                 phys.SetStatic();
                 doorCount++;
             }
         }
     }
 
-    EntityId ground = world->CreateEntity();
-    m_groundEntity = ground;
+    EntityId ground = m_scene->world->CreateEntity();
     m_Entities.push_back(ground);
-    TransformComponent& tGround = world->AddComponent<TransformComponent>(ground);
-    MeshRenderer& m = world->AddComponent<MeshRenderer>(ground);
+    TransformComponent& tGround = m_scene->world->AddComponent<TransformComponent>(ground);
+    MeshRenderer& m = m_scene->world->AddComponent<MeshRenderer>(ground);
     m.geoId = RessourceManager::GetGeometryId("Cube");
     m.materialId = RessourceManager::GetMaterialId("GroundMaterial");
     tGround.local.SetPosition(XMFLOAT3(0.0f, -0.5f, 0.0f));
-    tGround.local.SetScale(XMFLOAT3(gridW * cellSize, 1.0f, gridH * cellSize));
-    ColliderComponent& col = world->AddComponent<ColliderComponent>(ground);
-    PhysicComponent& phys = world->AddComponent<PhysicComponent>(ground);
+    tGround.local.SetScale(XMFLOAT3(gridW * m_cellSize, 1.0f, gridH * m_cellSize));
+    ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(ground);
+    PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(ground);
     phys.SetStatic();
 
+}
+
+void LabyrintheManager::Init(int _cellSize, Scene* _scene, int _nbPlayer)
+{
+    m_cellSize = _cellSize;
+	m_scene = _scene;
+	m_levelNb = 1;
+	m_nbPlayer = _nbPlayer;
 }
 
 void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
@@ -177,7 +184,7 @@ void LabyrintheManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int 
     }
 
     for (int i = emptyCells.size() - 1; i > 0; i--)
-        std::swap(emptyCells[i], emptyCells[RandomInt(0, i)]);
+        std::swap(emptyCells[i], emptyCells[LabyrintheHelper::RandomInt(0, i)]);
 
     int placed = 0;
 
@@ -186,22 +193,35 @@ void LabyrintheManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int 
         if (placed >= _count) break;
         int x = cell.first;
         int y = cell.second;
-        EntityId itemEntity = world->CreateEntity();
+        EntityId itemEntity = m_scene->world->CreateEntity();
         m_Entities.push_back(itemEntity);
-        TransformComponent& tItem = world->AddComponent<TransformComponent>(itemEntity);
-        MeshRenderer& m = world->AddComponent<MeshRenderer>(itemEntity);
+        TransformComponent& tItem = m_scene->world->AddComponent<TransformComponent>(itemEntity);
+        MeshRenderer& m = m_scene->world->AddComponent<MeshRenderer>(itemEntity);
         m.geoId = RessourceManager::GetGeometryId("WaterBottle");
         m.materialId = RessourceManager::GetMaterialId("WaterBottleMaterial");
 
-        ColliderComponent& col = world->AddComponent<ColliderComponent>(itemEntity);
-        PhysicComponent& phys = world->AddComponent<PhysicComponent>(itemEntity);
+        ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(itemEntity);
+        PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(itemEntity);
         phys.SetStatic();
 
-        cellSize = 3.0f;
-        float offsetX = _grid.size() * 0.5f * cellSize - cellSize / 2;
-        float offsetY = _grid[0].size() * 0.5f * cellSize - cellSize / 2;
-        tItem.local.SetPosition(XMFLOAT3(x * cellSize - offsetX, 1.0f, y * cellSize - offsetY));
+        float offsetX = _grid.size() * 0.5f * m_cellSize - m_cellSize / 2;
+        float offsetY = _grid[0].size() * 0.5f * m_cellSize - m_cellSize / 2;
+        tItem.local.SetPosition(XMFLOAT3(x * m_cellSize - offsetX, 1.0f, y * m_cellSize - offsetY));
         _grid[x][y] = 'I';
         placed++;
     }
+}
+
+void LabyrintheManager::DestroyLabyrinthe()
+{
+    for (EntityId e : m_Entities)
+        m_scene->world->DestroyEntity(e);
+
+    m_Entities.clear();
+}
+
+void LabyrintheManager::ReloadDoor()
+{
+    for (int i = 0; i < 4; i++)
+        m_doors[i] = 0;
 }

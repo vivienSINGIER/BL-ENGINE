@@ -1,6 +1,7 @@
 #include "MainScene.h"
 #include <iostream>
 #include "../Gameplay/Script/ScriptMovement.h"
+#include "../Gameplay/LevelManager.h"
 
 void MainScene::OnInit()
 {
@@ -54,7 +55,7 @@ void MainScene::OnUpdate(float _dt)
 	}
 	if(InputManager::IsKeyDown(J))
 	{
-		LoadLevel(m_levelNb, m_nbPlayer);
+		LevelManager::LoadLevel(m_levelNb, m_nbPlayer);
 	}
 
     if (m_started == true)
@@ -109,7 +110,7 @@ void MainScene::OnUpdate(float _dt)
                 m_timer = 0.0f;
                 m_isDay = true;
                 m_isNight = false;
-				LoadLevel(m_levelNb, m_nbPlayer);
+                LevelManager::LoadLevel(m_levelNb, m_nbPlayer);
 
             }
         }
@@ -118,7 +119,7 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-    LoadLevel(m_levelNb, m_nbPlayer);
+	LevelManager::Init(m_nbPlayer);
 }
 
 void MainScene::OnEnd()
