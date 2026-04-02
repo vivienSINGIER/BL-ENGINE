@@ -22,6 +22,7 @@ protected:
 	virtual void OnUpdate(float _dt) {}
 	virtual void OnStart() {}
 	virtual void OnEnd() {}
+	virtual void LoadRessources() {}
 
 private:
 	String m_name;

@@ -1,0 +1,192 @@
+#include "LabyrintheHelper.h"
+#include <iostream>
+
+int LabyrintheHelper::RandomInt(int _min, int _max)
+{
+    return _min + rand() % (_max - _min + 1);
+}
+
+void LabyrintheHelper::Enclose(Vector<Vector<char>>& _grid)
+{
+    int h = _grid.size();
+    int w = _grid[0].size();
+
+    for (int x = 0; x < h; x++)
+    {
+        _grid[x][0] = 'X';
+        _grid[x][w - 1] = 'X';
+    }
+    for (int y = 0; y < w; y++)
+    {
+        _grid[0][y] = 'X';
+        _grid[h - 1][y] = 'X';
+    }
+}
+
+void LabyrintheHelper::Recursive_division(Vector<Vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
+{
+    if (_yMax - _yMin > _xMax - _xMin)
+    {
+        if (_yMax - _yMin <= 2) return;
+
+        int y = RandomInt(_yMin + 1, _yMax - 1);
+        if (y % 2 == 1) y++;
+        if (y >= _yMax) y -= 2;
+        if (y <= _yMin) return;
+
+        int x = RandomInt(_xMin, _xMax - 1);
+        if (x % 2 == 0) x++;
+        if (x >= _xMax) x -= 2;
+        if (x <= _xMin) return;
+
+        for (int i = _xMin + 1; i < _xMax; i++)
+            if (i != x)
+                _grid[i][y] = 'X';
+
+        if (y - _yMin > 2)
+            Recursive_division(_grid, _xMin, _xMax, _yMin, y);
+        if (_yMax - y > 2)
+            Recursive_division(_grid, _xMin, _xMax, y, _yMax);
+    }
+    else
+    {
+        if (_xMax - _xMin <= 2) return;
+
+        int x = RandomInt(_xMin + 1, _xMax - 1);
+        if (x % 2 == 1) x++;
+        if (x >= _xMax) x -= 2;
+        if (x <= _xMin) return;
+
+        int y = RandomInt(_yMin, _yMax - 1);
+        if (y % 2 == 0) y++;
+        if (y >= _yMax) y -= 2;
+        if (y <= _yMin) return;
+
+        for (int i = _yMin + 1; i < _yMax; i++)
+            if (i != y)
+                _grid[x][i] = 'X';
+
+        if (x - _xMin > 2)
+            Recursive_division(_grid, _xMin, x, _yMin, _yMax);
+        if (_xMax - x > 2)
+            Recursive_division(_grid, x, _xMax, _yMin, _yMax);
+    }
+}
+
+void LabyrintheHelper::Lobby(Vector<Vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
+{
+    for (int i = _xMin; i <= _xMax; i++)
+        for (int j = _yMin; j <= _yMax; j++)
+            _grid[i][j] = ' ';
+
+    for (int i = _xMin; i <= _xMax; i++) { _grid[i][_yMin] = 'X'; _grid[i][_yMax] = 'X'; }
+    for (int j = _yMin; j <= _yMax; j++) { _grid[_xMin][j] = 'X'; _grid[_xMax][j] = 'X'; }
+
+    _grid[_xMin][(_yMin + _yMax) / 2] = 'D'; // haut
+    _grid[_xMax][(_yMin + _yMax) / 2] = 'D'; // bas
+    _grid[(_xMin + _xMax) / 2][_yMin] = 'D'; // gauche
+    _grid[(_xMin + _xMax) / 2][_yMax] = 'D'; // droite
+}
+
+void LabyrintheHelper::BetweenDivisionH(Vector<Vector<char>>& _grid, int _x, int _y, int _width)
+{
+    _grid[_x][_y] = ' ';
+    if (_x > 0 && _grid[_x - 1][_y] == 'X') _grid[_x - 1][_y] = ' ';
+    if (_x < _width - 1 && _grid[_x + 1][_y] == 'X') _grid[_x + 1][_y] = ' ';
+}
+
+void LabyrintheHelper::BetweenDivisionV(Vector<Vector<char>>& _grid, int _x, int _y, int _height)
+{
+    _grid[_x][_y] = ' ';
+    if (_y > 0 && _grid[_x][_y - 1] == 'X') _grid[_x][_y - 1] = ' ';
+    if (_y < _height - 1 && _grid[_x][_y + 1] == 'X') _grid[_x][_y + 1] = ' ';
+}
+
+void LabyrintheHelper::PierceWallH(Vector<Vector<char>>& _grid, int _y, int _xStart, int _xEnd, int _heightGrid)
+{
+    std::vector<int> positions;
+    for (int i = _xStart + 1; i < _xEnd; i += 2)
+        positions.push_back(i);
+
+    for (int k = positions.size() - 1; k > 0; k--)
+        std::swap(positions[k], positions[RandomInt(0, k)]);
+
+    for (int i : positions)
+    {
+        if (_grid[i][_y - 1] != 'X' && _grid[i][_y + 1] != 'X')
+        {
+            BetweenDivisionV(_grid, i, _y, _heightGrid);
+            return;
+        }
+    }
+    BetweenDivisionV(_grid, positions[0], _y, _heightGrid);
+}
+
+void LabyrintheHelper::PierceWallV(Vector<Vector<char>>& _grid, int _x, int _yStart, int _yEnd, int _widthGrid)
+{
+    std::vector<int> positions;
+    for (int j = _yStart + 1; j < _yEnd; j += 2)
+        positions.push_back(j);
+
+    for (int k = positions.size() - 1; k > 0; k--)
+        std::swap(positions[k], positions[RandomInt(0, k)]);
+
+    for (int j : positions)
+    {
+        if (_grid[_x - 1][j] != 'X' && _grid[_x + 1][j] != 'X')
+        {
+            BetweenDivisionH(_grid, _x, j, _widthGrid);
+            return;
+        }
+    }
+    BetweenDivisionH(_grid, _x, positions[0], _widthGrid);
+}
+
+void LabyrintheHelper::printGrid(Vector<Vector<char>>& _grid)
+{
+    for (const auto& row : _grid) {
+        for (char c : row) {
+            if (c == 'X') std::cout << "WW";
+            else if (c == '?') std::cout << "??"; // visible !
+            else if (c == 'D') std::cout << "DD";
+            else if (c == 'I') std::cout << "II";
+            else               std::cout << "  ";
+        }
+        std::cout << '\n';
+    }
+}
+
+void LabyrintheHelper::bfs_check(Vector<Vector<char>>& grid)
+{
+    int h = grid.size(), w = grid[0].size();
+    std::vector<std::vector<bool>> visited(h, std::vector<bool>(w, false));
+    std::queue<std::pair<int, int>> q;
+
+    q.push({ 1, 1 });
+    visited[1][1] = true;
+
+    int dx[] = { 0, 0, 1, -1 };
+    int dy[] = { 1, -1, 0, 0 };
+
+    while (!q.empty()) {
+        auto [y, x] = q.front(); q.pop();
+        for (int d = 0; d < 4; d++) {
+            int nx = x + dx[d], ny = y + dy[d];
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h
+                && !visited[ny][nx] && grid[ny][nx] != 'X') {
+                visited[ny][nx] = true;
+                q.push({ ny, nx });
+            }
+        }
+    }
+
+    int unreachable = 0;
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (grid[y][x] == ' ' && !visited[y][x]) {
+                grid[y][x] = '?'; // zone inaccessible
+                unreachable++;
+            }
+
+    std::cerr << "Cellules inaccessibles : " << unreachable << "\n";
+}

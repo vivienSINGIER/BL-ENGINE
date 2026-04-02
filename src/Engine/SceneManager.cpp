@@ -56,6 +56,7 @@ Scene* SceneManager::CreateScene(String const& _name, int32 _id)
 	s_pSceneManager->m_scenes.push_back(pNewScene);
 
 	pNewScene->Init(_name, id);
+	pNewScene->LoadRessources();
 
 	if (EngineManager::GetServer() != nullptr)
 	{

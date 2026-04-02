@@ -14,40 +14,7 @@ void MainScene::OnInit()
 	m_isDay = true;
 	m_isNight = false;
 
-    RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
-    uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
-    Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
-    RessourceManager::AddMaterial("White", white);
-	RessourceManager::AddCamera("Default");
-
-	RessourceManager::AddGeometry("WaterBottle", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/WaterBottle.obj"));
-	Camera* camObj = RessourceManager::GetCamera("Default");
-	camObj->nearPlane = 0.01f;
-
-	Texture* wallTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Bricks/bricks.dds");
-	RessourceManager::AddTexture("Wall", wallTexture);
-	uint32 shaderTextId = RessourceManager::AddShader("Textured", ShaderFactory::CreateLitTextured(EngineManager::GetDevice()));
-	Material* wallMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
-	wallMat->SetTexture("Albedo", RessourceManager::GetTexture("Wall"));
-	RessourceManager::AddMaterial("WallMaterial", wallMat);
-
-	Texture* groundTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Rock/Albedo.dds");
-	RessourceManager::AddTexture("Ground", groundTexture);
-	Material* groundMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
-	groundMat->SetTexture("Albedo", RessourceManager::GetTexture("Ground"));
-	RessourceManager::AddMaterial("GroundMaterial", groundMat);
-
-	Texture* doorTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Albedo.dds");
-	RessourceManager::AddTexture("Door", doorTexture);
-	Material* doorMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
-	doorMat->SetTexture("Albedo", RessourceManager::GetTexture("Door"));
-	RessourceManager::AddMaterial("DoorMaterial", doorMat);
-
-	Texture* waterBottleTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Water.dds");
-	RessourceManager::AddTexture("WaterBottle", waterBottleTexture);
-	Material* waterBottleMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
-	waterBottleMat->SetTexture("Albedo", RessourceManager::GetTexture("WaterBottle"));
-	RessourceManager::AddMaterial("WaterBottleMaterial", waterBottleMat);
+	m_dayColorStart = XMFLOAT3(1.0f, 0.7f, 0.5f);
 
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
 
@@ -66,17 +33,20 @@ void MainScene::OnInit()
 
 	m_light = world->CreateEntity();
 	TransformComponent& lt = world->AddComponent<TransformComponent>(m_light);
-	lt.local.SetPosition(XMFLOAT3(0.0f, 0.0f,0.0f));
+	lt.local.SetPosition(XMFLOAT3(0.0f, 30.0f,0.0f));
 	LightComponent& l = world->AddComponent<LightComponent>(m_light);
 	l.type = LightType::Point;
 	l.SetStrength(1.0f);
-	l.SetPoint(1.0f, 100.0f);
+	l.SetPoint(1.0f, 200.0f);
 	
 }
 
 void MainScene::OnUpdate(float _dt)
 {
     if (m_loadLaby == true) return;
+
+    TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
+	LightComponent& l = world->GetComponent<LightComponent>(m_light);
 
 	if(InputManager::IsKeyDown(H))
 	{
@@ -91,17 +61,30 @@ void MainScene::OnUpdate(float _dt)
     {
         if (m_isDay == true)
         {
+            l.SetStrength(1.0f);
             m_timer += _dt;
 			float t = m_timer / m_dayDuration;
 
             m_lightPos.x = m_lightPosXStart + t * m_lightTravelDistance;
 			m_lightPos.y = 18.0f * sinf(t * XM_PI) + 18.0f;
 
+            float yNormalized = m_lightPos.y / 36.0f;
+
+            // Couleurs
+            XMFLOAT3 sunsetColor = XMFLOAT3(1.0f, 0.5f, 0.2f);   // orange
+            XMFLOAT3 noonColor = XMFLOAT3(1.0f, 0.95f, 0.8f);  // jaune/blanc chaud
+
+            l.SetColor(XMFLOAT4(
+                sunsetColor.x * (1.0f - yNormalized) + noonColor.x * yNormalized,
+                sunsetColor.y * (1.0f - yNormalized) + noonColor.y * yNormalized,
+                sunsetColor.z * (1.0f - yNormalized) + noonColor.z * yNormalized,
+                1.0f
+            ));
+
             for (int i = 0; i < 4; i++)
                 if (m_doors[i] != 0)
                     world->SetInactive(m_doors[i]);
-
-			TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
+            
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
 			std::cout << "Light position: " << m_lightPos.x << ", " << m_lightPos.y << ", " << 0.0f << std::endl;
 
@@ -118,14 +101,16 @@ void MainScene::OnUpdate(float _dt)
         else if (m_isNight == true)
         {
             m_timer += _dt;
-
-			world->SetInactive(m_doors[0]);
+			l.SetStrength(0.0f);
+			world->SetInactive(m_doors[m_doorOpenedNight]);
 
             if (m_timer >= m_nightDuration)
             {
                 m_timer = 0.0f;
                 m_isDay = true;
                 m_isNight = false;
+				LoadLevel(m_levelNb, m_nbPlayer);
+
             }
         }
     }
@@ -140,195 +125,45 @@ void MainScene::OnEnd()
 {
 }
 
-int MainScene::RandomInt(int _min, int _max)
+void MainScene::LoadRessources()
 {
-    return _min + rand() % (_max - _min + 1);
+    RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
+    uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
+    Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
+    RessourceManager::AddMaterial("White", white);
+    RessourceManager::AddCamera("Default");
+
+    RessourceManager::AddGeometry("WaterBottle", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/WaterBottle.obj"));
+    Camera* camObj = RessourceManager::GetCamera("Default");
+    camObj->nearPlane = 0.01f;
+
+    Texture* wallTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Bricks/bricks.dds");
+    RessourceManager::AddTexture("Wall", wallTexture);
+    uint32 shaderTextId = RessourceManager::AddShader("Textured", ShaderFactory::CreateLitTextured(EngineManager::GetDevice()));
+    Material* wallMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+    wallMat->SetTexture("Albedo", RessourceManager::GetTexture("Wall"));
+    RessourceManager::AddMaterial("WallMaterial", wallMat);
+
+    Texture* groundTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Rock/Albedo.dds");
+    RessourceManager::AddTexture("Ground", groundTexture);
+    Material* groundMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+    groundMat->SetTexture("Albedo", RessourceManager::GetTexture("Ground"));
+    RessourceManager::AddMaterial("GroundMaterial", groundMat);
+
+    Texture* doorTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Albedo.dds");
+    RessourceManager::AddTexture("Door", doorTexture);
+    Material* doorMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+    doorMat->SetTexture("Albedo", RessourceManager::GetTexture("Door"));
+    RessourceManager::AddMaterial("DoorMaterial", doorMat);
+
+    Texture* waterBottleTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Water.dds");
+    RessourceManager::AddTexture("WaterBottle", waterBottleTexture);
+    Material* waterBottleMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+    waterBottleMat->SetTexture("Albedo", RessourceManager::GetTexture("WaterBottle"));
+    RessourceManager::AddMaterial("WaterBottleMaterial", waterBottleMat);
 }
 
-void MainScene::Enclose(Vector<Vector<char>>& _grid)
-{
-    int h = _grid.size();
-    int w = _grid[0].size();
 
-    for (int x = 0; x < h; x++)
-    {
-        _grid[x][0] = 'X';
-        _grid[x][w - 1] = 'X';
-    }
-    for (int y = 0; y < w; y++)
-    {
-        _grid[0][y] = 'X';
-        _grid[h - 1][y] = 'X';
-    }
-}
-
-void MainScene::Recursive_division(Vector<Vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
-{
-    if (_yMax - _yMin > _xMax - _xMin)
-    {
-        if (_yMax - _yMin <= 2) return;
-
-        int y = RandomInt(_yMin + 1, _yMax - 1);
-        if (y % 2 == 1) y++;
-        if (y >= _yMax) y -= 2;
-        if (y <= _yMin) return;
-
-        int x = RandomInt(_xMin, _xMax - 1);
-        if (x % 2 == 0) x++;
-        if (x >= _xMax) x -= 2;
-        if (x <= _xMin) return;
-
-        for (int i = _xMin + 1; i < _xMax; i++)
-            if (i != x)
-                _grid[i][y] = 'X';
-
-        if (y - _yMin > 2)
-            Recursive_division(_grid, _xMin, _xMax, _yMin, y);
-        if (_yMax - y > 2)
-            Recursive_division(_grid, _xMin, _xMax, y, _yMax);
-    }
-    else
-    {
-        if (_xMax - _xMin <= 2) return;
-
-        int x = RandomInt(_xMin + 1, _xMax - 1);
-        if (x % 2 == 1) x++;
-        if (x >= _xMax) x -= 2;
-        if (x <= _xMin) return;
-
-        int y = RandomInt(_yMin, _yMax - 1);
-        if (y % 2 == 0) y++;
-        if (y >= _yMax) y -= 2;
-        if (y <= _yMin) return;
-
-        for (int i = _yMin + 1; i < _yMax; i++)
-            if (i != y)
-                _grid[x][i] = 'X';
-
-        if (x - _xMin > 2)
-            Recursive_division(_grid, _xMin, x, _yMin, _yMax);
-        if (_xMax - x > 2)
-            Recursive_division(_grid, x, _xMax, _yMin, _yMax);
-    }
-}
-
-void MainScene::Lobby(Vector<Vector<char>>& _grid, int _xMin, int _xMax, int _yMin, int _yMax)
-{
-    for (int i = _xMin; i <= _xMax; i++)
-        for (int j = _yMin; j <= _yMax; j++)
-            _grid[i][j] = ' ';
-
-    for (int i = _xMin; i <= _xMax; i++) { _grid[i][_yMin] = 'X'; _grid[i][_yMax] = 'X'; }
-    for (int j = _yMin; j <= _yMax; j++) { _grid[_xMin][j] = 'X'; _grid[_xMax][j] = 'X'; }
-
-    _grid[_xMin][(_yMin + _yMax) / 2] = 'D'; // haut
-    _grid[_xMax][(_yMin + _yMax) / 2] = 'D'; // bas
-    _grid[(_xMin + _xMax) / 2][_yMin] = 'D'; // gauche
-    _grid[(_xMin + _xMax) / 2][_yMax] = 'D'; // droite
-}
-
-void MainScene::BetweenDivisionH(Vector<Vector<char>>& _grid, int _x, int _y, int _width)
-{
-    _grid[_x][_y] = ' ';
-    if (_x > 0 && _grid[_x - 1][_y] == 'X') _grid[_x - 1][_y] = ' ';
-    if (_x < _width - 1 && _grid[_x + 1][_y] == 'X') _grid[_x + 1][_y] = ' ';
-}
-
-void MainScene::BetweenDivisionV(Vector<Vector<char>>& _grid, int _x, int _y, int _height)
-{
-    _grid[_x][_y] = ' ';
-    if (_y > 0 && _grid[_x][_y - 1] == 'X') _grid[_x][_y - 1] = ' ';
-    if (_y < _height - 1 && _grid[_x][_y + 1] == 'X') _grid[_x][_y + 1] = ' ';
-}
-
-void MainScene::PierceWallH(Vector<Vector<char>>& _grid, int _y, int _xStart, int _xEnd, int _heightGrid)
-{
-    std::vector<int> positions;
-    for (int i = _xStart + 1; i < _xEnd; i += 2)
-        positions.push_back(i);
-
-    for (int k = positions.size() - 1; k > 0; k--)
-        std::swap(positions[k], positions[RandomInt(0, k)]);
-
-    for (int i : positions)
-    {
-        if (_grid[i][_y - 1] != 'X' && _grid[i][_y + 1] != 'X')
-        {
-            BetweenDivisionV(_grid, i, _y, _heightGrid);
-            return;
-        }
-    }
-    BetweenDivisionV(_grid, positions[0], _y, _heightGrid);
-}
-
-void MainScene::PierceWallV(Vector<Vector<char>>& _grid, int _x, int _yStart, int _yEnd, int _widthGrid)
-{
-    std::vector<int> positions;
-    for (int j = _yStart + 1; j < _yEnd; j += 2)
-        positions.push_back(j);
-
-    for (int k = positions.size() - 1; k > 0; k--)
-        std::swap(positions[k], positions[RandomInt(0, k)]);
-
-    for (int j : positions)
-    {
-        if (_grid[_x - 1][j] != 'X' && _grid[_x + 1][j] != 'X')
-        {
-            BetweenDivisionH(_grid, _x, j, _widthGrid);
-            return;
-        }
-    }
-    BetweenDivisionH(_grid, _x, positions[0], _widthGrid);
-}
-
-void MainScene::printGrid(Vector<Vector<char>>& _grid)
-{
-    for (const auto& row : _grid) {
-        for (char c : row) {
-            if (c == 'X') std::cout << "WW";
-            else if (c == '?') std::cout << "??"; // visible !
-            else if (c == 'D') std::cout << "DD";
-			else if (c == 'I') std::cout << "II";
-            else               std::cout << "  ";
-        }
-        std::cout << '\n';
-    }
-}
-
-void MainScene::bfs_check(Vector<Vector<char>>& grid)
-{
-    int h = grid.size(), w = grid[0].size();
-    std::vector<std::vector<bool>> visited(h, std::vector<bool>(w, false));
-    std::queue<std::pair<int, int>> q;
-
-    q.push({ 1, 1 });
-    visited[1][1] = true;
-
-    int dx[] = { 0, 0, 1, -1 };
-    int dy[] = { 1, -1, 0, 0 };
-
-    while (!q.empty()) {
-        auto [y, x] = q.front(); q.pop();
-        for (int d = 0; d < 4; d++) {
-            int nx = x + dx[d], ny = y + dy[d];
-            if (nx >= 0 && nx < w && ny >= 0 && ny < h
-                && !visited[ny][nx] && grid[ny][nx] != 'X') {
-                visited[ny][nx] = true;
-                q.push({ ny, nx });
-            }
-        }
-    }
-
-    int unreachable = 0;
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++)
-            if (grid[y][x] == ' ' && !visited[y][x]) {
-                grid[y][x] = '?'; // zone inaccessible
-                unreachable++;
-            }
-
-    std::cerr << "Cellules inaccessibles : " << unreachable << "\n";
-}
 
 void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, int _xMax, int _yMin, int _yMax)
 {
@@ -381,6 +216,7 @@ void MainScene::SpawnItems(Vector<Vector<char>>& _grid, int _count,int _xMin, in
 void MainScene::LoadLevel(int levelNb, int nbPlayer)
 {
     cellSize = 3.0f;
+	m_doorOpenedNight = RandomInt(0, 3);
 	m_levelSize = 21 + ((levelNb - 1) * 2 * nbPlayer);
 
 	if (m_levelSize > 51) m_levelSize = 51;
