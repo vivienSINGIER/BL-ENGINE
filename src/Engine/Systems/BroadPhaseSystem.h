@@ -13,9 +13,6 @@ struct CandidatePair
     EntityId b;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CellBucket
-// ─────────────────────────────────────────────────────────────────────────────
 struct CellBucket
 {
     Vector<EntityId> dynamic; // sources : Dynamic + triggers
@@ -45,19 +42,11 @@ struct SpatialHashGrid
     void ForEachCell(Fn&& _fn) const
     {
         for (const auto& [key, bucket] : cells)
-            if (!bucket.IsEmpty())
+            if (bucket.IsEmpty() == false)
                 _fn(key, bucket);
     }
 };
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EntityGridState
-//
-//  État mémorisé par entité dans le broad phase.
-//  Permet de détecter si une entité a bougé et de nettoyer ses anciennes
-//  cellules sans parcourir toute la grille.
-// ─────────────────────────────────────────────────────────────────────────────
 struct EntityGridState
 {
     XMFLOAT3      lastPosition = { 1e38f, 1e38f, 1e38f }; // sentinelle → force update à l'init
@@ -68,31 +57,11 @@ struct EntityGridState
 };
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BroadPhaseSystem
-//
-//  Grille unifiée avec tracking par entité.
-//
-//  Principe :
-//   Chaque entité mémorise sa dernière position/rotation/scale connue.
-//   Dans OnUpdate, on compare l'état actuel avec l'état mémorisé.
-//   Si identique → l'entité n'a pas bougé → on ne touche pas à la grille.
-//   Si différent → on retire l'entité de ses anciennes cellules, on recalcule
-//                  l'AABB, on insère dans les nouvelles cellules.
-//
-//  Coût par frame :
-//   - Entité statique  : 3 comparaisons float3 → 0 travail après init.
-//   - Entité kinematic : idem, sauf si elle a bougé ce frame.
-//   - Entité dynamic   : toujours mis à jour (sa position change chaque frame).
-//
-//  Pas besoin d'API externe pour marquer les entités dirty —
-//  le changement de position est détecté automatiquement.
-// ─────────────────────────────────────────────────────────────────────────────
 class BroadPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _shape, TransformComponent& _transform) override;
+    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override;
     void OnEndUpdate(float _dt) override;
 
     void SetCellSize(float _cellSize) { m_cellSize = _cellSize; }
@@ -107,9 +76,9 @@ private:
     void ComputeWorldAABB(ColliderComponent& _shape, TransformComponent& _transform);
 
     // ─── Grille ───────────────────────────────────────────────────────────────
-    void UpdateEntityInGrid(EntityId _e, ColliderComponent& _shape, TransformComponent& _transform, EntityGridState& _state);
+    void UpdateEntityInGrid(EntityId _e, ColliderComponent& _collider, TransformComponent& _transform, EntityGridState& _state);
     void RemoveEntityFromGrid(EntityId _e, EntityGridState& _state);
-    void InsertEntityIntoGrid(EntityId _e, ColliderComponent& _shape, EntityGridState& _state);
+    void InsertEntityIntoGrid(EntityId _e, ColliderComponent& _collider, EntityGridState& _state);
 
     // ─── Paires ───────────────────────────────────────────────────────────────
     void BuildCandidatePairs();

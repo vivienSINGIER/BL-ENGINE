@@ -7,11 +7,6 @@
 #include "../ContactManifold.hpp"
 #include "BroadPhaseSystem.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Structures internes GJK / EPA
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Point du simplexe — stocke les points sur chaque forme et leur différence.
 struct GJKSupportPoint
 {
     XMFLOAT3 pointA;    // point le plus loin sur A dans la direction d
@@ -43,35 +38,11 @@ struct EPAFace
     float    distance;  // distance de l'origine à la face
 };
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NarrowPhaseSystem
-//
-//  Lit les paires candidates de BroadPhaseSystem, exécute GJK + EPA pour
-//  chaque paire, et remplit le ContactManifoldCache.
-//
-//  GJK (Gilbert-Johnson-Keerthi) :
-//   Détermine si deux formes convexes s'intersectent en cherchant si l'origine
-//   est contenue dans la différence de Minkowski A ⊖ B. Fonctionne sur toute
-//   forme convexe via une unique fonction Support(direction).
-//
-//  EPA (Expanding Polytope Algorithm) :
-//   Prend le simplexe GJK et l'expanse pour trouver la normale de contact et
-//   la profondeur de pénétration. Retourne aussi les points de contact sur
-//   chaque forme (nécessaires pour le manifold).
-//
-//  Manifold reduction :
-//   EPA retourne un seul point de contact. Pour une collision box-box,
-//   on a besoin de jusqu'à 4 points (face-face). On génère les points
-//   supplémentaires par clipping de la face de référence.
-//
-//  Ordre d'exécution : après BroadPhaseSystem dans Phase::FixedUpdate.
-// ─────────────────────────────────────────────────────────────────────────────
 class NarrowPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _shape, TransformComponent& _transform) override {}
+    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
     void Update(float _dt) override;
@@ -81,30 +52,22 @@ public:
     ContactManifoldCache& GetManifoldCache() { return m_cache; }
 
 private:
-    // ─── Pipeline principal ───────────────────────────────────────────────────
+
     bool ProcessPair(EntityId _a, EntityId _b);
 
-    // ─── Support functions ────────────────────────────────────────────────────
-    // Retourne le point le plus loin de la forme dans la direction _dir (espace monde).
-    XMFLOAT3 Support(ColliderComponent& _shape, TransformComponent& _transform,
-                     const XMFLOAT3& _dir) const;
+    XMFLOAT3 Support(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const;
 
-    XMFLOAT3 SupportBox    (ColliderComponent& _shape, TransformComponent& _transform,
-                             const XMFLOAT3& _dir) const;
-    XMFLOAT3 SupportSphere (ColliderComponent& _shape, TransformComponent& _transform,
-                             const XMFLOAT3& _dir) const;
-    XMFLOAT3 SupportCapsule(ColliderComponent& _shape, TransformComponent& _transform,
-                             const XMFLOAT3& _dir) const;
+    XMFLOAT3 SupportBox    (ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const;
+    XMFLOAT3 SupportSphere (ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const;
+    XMFLOAT3 SupportCapsule(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const;
 
     // Support de la différence de Minkowski A ⊖ B.
     GJKSupportPoint MinkowskiSupport(
-        ColliderComponent& _shapeA, TransformComponent& _transformA,
-        ColliderComponent& _shapeB, TransformComponent& _transformB,
+        ColliderComponent& _colliderA, TransformComponent& _transformA,
+        ColliderComponent& _colliderB, TransformComponent& _transformB,
         const XMFLOAT3& _dir) const;
 
-    // ─── GJK ──────────────────────────────────────────────────────────────────
-    bool GJK (ColliderComponent& _shapeA,  TransformComponent& _transformA, 
-        ColliderComponent& _shapeB, TransformComponent& _transformB, GJKSimplex& _outSimplex);
+    bool GJK (ColliderComponent& _colliderA,  TransformComponent& _transformA, ColliderComponent& _colliderB, TransformComponent& _transformB, GJKSimplex& _outSimplex);
 
     // Met à jour le simplexe et la direction de recherche.
     // Retourne true si l'origine est dans le simplexe (intersection).
@@ -113,9 +76,8 @@ private:
     bool UpdateTriangle (GJKSimplex& _simplex, XMFLOAT3& _direction);
     bool UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direction);
 
-    // ─── EPA ──────────────────────────────────────────────────────────────────
-    bool EPA(ColliderComponent& _shapeA, TransformComponent& _transformA,
-             ColliderComponent& _shapeB, TransformComponent& _transformB,
+    bool EPA(ColliderComponent& _colliderA, TransformComponent& _transformA,
+             ColliderComponent& _colliderB, TransformComponent& _transformB,
              GJKSimplex& _simplex,
              XMFLOAT3& _outNormal, float& _outPenetration,
              XMFLOAT3& _outContactA, XMFLOAT3& _outContactB);
@@ -125,11 +87,10 @@ private:
 
     int FindClosestFace(const Vector<EPAFace>& _faces) const;
 
-    // ─── Manifold reduction ───────────────────────────────────────────────────
     // Génère jusqu'à 4 points de contact depuis la normale EPA.
     void BuildManifold(ContactManifold& _manifold,
-                       ColliderComponent& _shapeA, TransformComponent& _transformA,
-                       ColliderComponent& _shapeB, TransformComponent& _transformB,
+                       ColliderComponent& _colliderA, TransformComponent& _transformA,
+                       ColliderComponent& _colliderB, TransformComponent& _transformB,
                        const XMFLOAT3& _normal, float _penetration,
                        const XMFLOAT3& _contactA, const XMFLOAT3& _contactB);
 
@@ -137,7 +98,6 @@ private:
     int ClipPolygonAgainstPlane(const XMFLOAT3* _in, int _inCount, XMFLOAT3* _out,
                                 const XMFLOAT3& _planePoint, const XMFLOAT3& _planeNormal) const;
 
-    // ─── Helpers math ─────────────────────────────────────────────────────────
     inline XMFLOAT3 Cross(const XMFLOAT3& _a, const XMFLOAT3& _b) const
     {
         return { _a.y*_b.z - _a.z*_b.y,

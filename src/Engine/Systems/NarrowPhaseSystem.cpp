@@ -74,19 +74,19 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
 //  à cette question efficacement.
 // ─────────────────────────────────────────────────────────────────────────────
 
-XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformComponent& _transform,
                                      const XMFLOAT3& _dir) const
 {
-    switch (_shape.type)
+    switch (_collider.type)
     {
-        case ShapeType::Box:     return SupportBox    (_shape, _transform, _dir);
-        case ShapeType::Sphere:  return SupportSphere (_shape, _transform, _dir);
-        case ShapeType::Capsule: return SupportCapsule(_shape, _transform, _dir);
+        case ShapeType::Box:     return SupportBox    (_collider, _transform, _dir);
+        case ShapeType::Sphere:  return SupportSphere (_collider, _transform, _dir);
+        case ShapeType::Capsule: return SupportCapsule(_collider, _transform, _dir);
     }
     return { 0,0,0 };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformComponent& _transform,
                                         const XMFLOAT3& _dir) const
 {
     // Transformer la direction en espace local pour éviter de tourner les 8 coins.
@@ -100,7 +100,7 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _shape, TransformCompo
     XMFLOAT3 localDir;
     XMStoreFloat3(&localDir, dirL);
 
-    const XMFLOAT3& h     = _shape.shape.box.halfExtents;
+    const XMFLOAT3& h     = _collider.shape.box.halfExtents;
     const XMFLOAT3& scale = _transform.world.GetScale();
 
     XMFLOAT3 localSupport =
@@ -111,9 +111,9 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _shape, TransformCompo
     };
 
     // Appliquer l'offset local.
-    localSupport.x += _shape.localOffset.x;
-    localSupport.y += _shape.localOffset.y;
-    localSupport.z += _shape.localOffset.z;
+    localSupport.x += _collider.localOffset.x;
+    localSupport.y += _collider.localOffset.y;
+    localSupport.z += _collider.localOffset.z;
 
     // Retransformer en espace monde.
     XMMATRIX rot = XMMatrixRotationQuaternion(q);
@@ -125,26 +125,26 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _shape, TransformCompo
     return { result.x + pos.x, result.y + pos.y, result.z + pos.z };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, TransformComponent& _transform,
                                            const XMFLOAT3& _dir) const
 {
     // Support d'une sphère : centre + rayon * normalize(direction).
     const XMFLOAT3& scale = _transform.world.GetScale();
     float maxScale        = Max(Max(scale.x, scale.y), scale.z);
-    float worldRadius     = _shape.shape.sphere.radius * maxScale;
+    float worldRadius     = _collider.shape.sphere.radius * maxScale;
 
     XMFLOAT3 normDir = Normalize(_dir);
     const XMFLOAT3& pos = _transform.world.GetPosition();
 
     return
     {
-        pos.x + _shape.localOffset.x + normDir.x * worldRadius,
-        pos.y + _shape.localOffset.y + normDir.y * worldRadius,
-        pos.z + _shape.localOffset.z + normDir.z * worldRadius
+        pos.x + _collider.localOffset.x + normDir.x * worldRadius,
+        pos.y + _collider.localOffset.y + normDir.y * worldRadius,
+        pos.z + _collider.localOffset.z + normDir.z * worldRadius
     };
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _shape, TransformComponent& _transform,
+XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _collider, TransformComponent& _transform,
                                             const XMFLOAT3& _dir) const
 {
     // La capsule est un segment + sphère.
@@ -154,8 +154,8 @@ XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _shape, TransformC
     XMMATRIX rot = XMMatrixRotationQuaternion(q);
 
     const XMFLOAT3& scale = _transform.world.GetScale();
-    float r  = _shape.shape.capsule.radius     * Max(scale.x, scale.z);
-    float hh = _shape.shape.capsule.halfHeight * scale.y;
+    float r  = _collider.shape.capsule.radius     * Max(scale.x, scale.z);
+    float hh = _collider.shape.capsule.halfHeight * scale.y;
 
     // Axe Y local tourné en espace monde.
     XMFLOAT3 worldUp;
@@ -176,35 +176,21 @@ XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _shape, TransformC
 }
 
 GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
-    ColliderComponent& _shapeA, TransformComponent& _transformA,
-    ColliderComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _colliderA, TransformComponent& _transformA,
+    ColliderComponent& _colliderB, TransformComponent& _transformB,
     const XMFLOAT3& _dir) const
 {
     GJKSupportPoint sp;
-    sp.pointA    = Support(_shapeA, _transformA, _dir);
+    sp.pointA    = Support(_colliderA, _transformA, _dir);
     XMFLOAT3 negDir = { -_dir.x, -_dir.y, -_dir.z };
-    sp.pointB    = Support(_shapeB, _transformB, negDir);
+    sp.pointB    = Support(_colliderB, _transformB, negDir);
     sp.minkowski = Subtract(sp.pointA, sp.pointB);
     return sp;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GJK
-//
-//  Principe :
-//   On cherche le point du simplexe A⊖B le plus proche de l'origine.
-//   Si l'origine est dans A⊖B, les formes s'intersectent.
-//
-//   À chaque itération :
-//    1. On calcule le support dans la direction vers l'origine.
-//    2. Si le nouveau point n'est pas plus proche de l'origine que la direction
-//       actuelle, on a convergé — pas d'intersection.
-//    3. On met à jour le simplexe et la direction de recherche.
-// ─────────────────────────────────────────────────────────────────────────────
-
 bool NarrowPhaseSystem::GJK(
-    ColliderComponent& _shapeA, TransformComponent& _transformA,
-    ColliderComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _colliderA, TransformComponent& _transformA,
+    ColliderComponent& _colliderB, TransformComponent& _transformB,
     GJKSimplex& _outSimplex)
 {
     // Direction initiale : axe entre les centres.
@@ -215,7 +201,7 @@ bool NarrowPhaseSystem::GJK(
     if (LengthSq(direction) < 1e-8f)
         direction = { 1, 0, 0 };
 
-    GJKSupportPoint support = MinkowskiSupport(_shapeA, _transformA, _shapeB, _transformB, direction);
+    GJKSupportPoint support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
     _outSimplex.Push(support);
 
     // Nouvelle direction : vers l'origine depuis le premier point.
@@ -226,7 +212,7 @@ bool NarrowPhaseSystem::GJK(
         if (LengthSq(direction) < 1e-10f)
             return true;
 
-        support = MinkowskiSupport(_shapeA, _transformA, _shapeB, _transformB, direction);
+        support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
 
         // Si le nouveau point ne dépasse pas l'origine dans cette direction,
         // l'origine est hors de A⊖B : pas d'intersection.
@@ -362,21 +348,9 @@ bool NarrowPhaseSystem::UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direc
     return true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EPA
-//
-//  Principe :
-//   On part du simplexe GJK (tétraèdre) qui contient l'origine.
-//   On cherche la face la plus proche de l'origine (distance minimale).
-//   On ajoute le point support dans la direction de cette face.
-//   Si ce point n'est pas plus loin que la face (à la tolérance près),
-//   on a convergé : la normale est la normale de la face, la pénétration
-//   est la distance de la face à l'origine.
-// ─────────────────────────────────────────────────────────────────────────────
-
 bool NarrowPhaseSystem::EPA(
-    ColliderComponent& _shapeA, TransformComponent& _transformA,
-    ColliderComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _colliderA, TransformComponent& _transformA,
+    ColliderComponent& _colliderB, TransformComponent& _transformB,
     GJKSimplex& _simplex,
     XMFLOAT3& _outNormal, float& _outPenetration,
     XMFLOAT3& _outContactA, XMFLOAT3& _outContactB)
@@ -403,7 +377,7 @@ bool NarrowPhaseSystem::EPA(
 
         // Chercher un point support dans la direction de la face la plus proche.
         GJKSupportPoint support = MinkowskiSupport(
-            _shapeA, _transformA, _shapeB, _transformB, closest.normal);
+            _colliderA, _transformA, _colliderB, _transformB, closest.normal);
 
         float newDist = Dot(support.minkowski, closest.normal);
 
@@ -464,8 +438,6 @@ bool NarrowPhaseSystem::EPA(
             return true;
         }
 
-        // Expand : supprimer les faces visibles depuis le nouveau point,
-        // reconstruire le polytope avec les nouvelles faces.
         Vector<std::pair<GJKSupportPoint, GJKSupportPoint>> edges;
 
         for (int i = (int)faces.size() - 1; i >= 0; --i)
@@ -551,18 +523,9 @@ int NarrowPhaseSystem::FindClosestFace(const Vector<EPAFace>& _faces) const
     return bestIdx;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Manifold reduction
-//
-//  EPA donne un seul point de contact. Pour des collisions face-face (box-box),
-//  on génère jusqu'à 4 points par clipping de la face incidente sur la face
-//  de référence.
-//  Pour sphere-* et capsule-*, un seul point suffit.
-// ─────────────────────────────────────────────────────────────────────────────
-
 void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
-    ColliderComponent& _shapeA, TransformComponent& _transformA,
-    ColliderComponent& _shapeB, TransformComponent& _transformB,
+    ColliderComponent& _colliderA, TransformComponent& _transformA,
+    ColliderComponent& _colliderB, TransformComponent& _transformB,
     const XMFLOAT3& _normal, float _penetration,
     const XMFLOAT3& _contactA, const XMFLOAT3& _contactB)
 {
@@ -586,7 +549,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
     _manifold.pointCount = 1;
 
     // Pour box-box, tenter de générer un manifold complet par clipping.
-    if (_shapeA.type == ShapeType::Box && _shapeB.type == ShapeType::Box)
+    if (_colliderA.type == ShapeType::Box && _colliderB.type == ShapeType::Box)
     {
         // Trouver la face de référence (la plus alignée avec la normale de contact)
         // et la face incidente sur l'autre box.
@@ -596,7 +559,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         XMVECTOR qA  = XMLoadFloat4(&_transformA.world.GetRotation());
         XMMATRIX rotA = XMMatrixRotationQuaternion(qA);
         const XMFLOAT3& scaleA = _transformA.world.GetScale();
-        const XMFLOAT3& hA     = _shapeA.shape.box.halfExtents;
+        const XMFLOAT3& hA     = _colliderA.shape.box.halfExtents;
 
         XMFLOAT3 axesA[3];
         XMStoreFloat3(&axesA[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1,0,0,0), rotA)));
@@ -642,7 +605,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         XMVECTOR qB  = XMLoadFloat4(&_transformB.world.GetRotation());
         XMMATRIX rotB = XMMatrixRotationQuaternion(qB);
         const XMFLOAT3& scaleB = _transformB.world.GetScale();
-        const XMFLOAT3& hB     = _shapeB.shape.box.halfExtents;
+        const XMFLOAT3& hB     = _colliderB.shape.box.halfExtents;
 
         XMFLOAT3 axesB[3];
         XMStoreFloat3(&axesB[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1,0,0,0), rotB)));

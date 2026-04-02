@@ -153,9 +153,6 @@ public:
 
 		CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }); // sol
         //CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); // cube dynamique
-
-        for (int i = 0; i < 1000; i++)
-            CreateStaticBox(world, { 0.0f, 1.0f + i * 2.f, 0.0f }, { 0.5f, 0.5f, 0.5f });
 		CreateDynamicBox(world, { -1.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, 2.0f); // cube dynamique
 		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 
