@@ -1,5 +1,6 @@
 #include "LabyrintheManager.h"
 #include "LabyrintheHelper.h"
+#include "ItemManager.h"
 #include <iostream>
 
 float LabyrintheManager::m_cellSize = 0;
@@ -12,8 +13,6 @@ int LabyrintheManager::m_doorOpenedNight = 0;
 
 void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 {
-	std::cout << m_cellSize << std::endl;
-
     float gridW = (float)_grid.size();
     float gridH = (float)_grid[0].size();
 
@@ -113,6 +112,7 @@ void LabyrintheManager::Init(int _cellSize, Scene* _scene, int _nbPlayer)
 	m_scene = _scene;
 	m_levelNb = 1;
 	m_nbPlayer = _nbPlayer;
+	ItemManager::Init(_scene);
 }
 
 void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
@@ -170,62 +170,15 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
 
     LabyrintheHelper::Lobby(grid, rxMin, rxMax, ryMin, ryMax);
     Laby3d(grid);
-    SpawnItems(grid, 3, rxMin, rxMax, ryMin, ryMax);
+	ItemManager::SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
 
     LabyrintheHelper::bfs_check(grid);
     LabyrintheHelper::printGrid(grid);
-
-}
-
-void LabyrintheManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin, int _xMax, int _yMin, int _yMax)
-{
-    int width = _grid.size();
-    int height = _grid[0].size();
-
-    std::vector<std::pair<int, int>> emptyCells;
-
-    _count += (m_levelNb - 1) * m_nbPlayer;
-
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            if (_grid[x][y] == ' ' && !(x >= _xMin && x <= _xMax && y >= _yMin && y <= _yMax))
-                emptyCells.push_back({ x, y });
-        }
-    }
-
-    for (int i = emptyCells.size() - 1; i > 0; i--)
-        std::swap(emptyCells[i], emptyCells[LabyrintheHelper::RandomInt(0, i)]);
-
-    int placed = 0;
-
-    for (const auto& cell : emptyCells)
-    {
-        if (placed >= _count) break;
-        int x = cell.first;
-        int y = cell.second;
-        EntityId itemEntity = m_scene->world->CreateEntity();
-        m_Entities.push_back(itemEntity);
-        TransformComponent& tItem = m_scene->world->AddComponent<TransformComponent>(itemEntity);
-        MeshRenderer& m = m_scene->world->AddComponent<MeshRenderer>(itemEntity);
-        m.geoId = RessourceManager::GetGeometryId("WaterBottle");
-        m.materialId = RessourceManager::GetMaterialId("WaterBottleMaterial");
-
-        ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(itemEntity);
-        PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(itemEntity);
-        phys.SetStatic();
-
-        float offsetX = _grid.size() * 0.5f * m_cellSize - m_cellSize / 2;
-        float offsetY = _grid[0].size() * 0.5f * m_cellSize - m_cellSize / 2;
-        tItem.local.SetPosition(XMFLOAT3(x * m_cellSize - offsetX, 1.0f, y * m_cellSize - offsetY));
-        _grid[x][y] = 'I';
-        placed++;
-    }
 }
 
 void LabyrintheManager::DestroyLabyrinthe()
 {
+	ItemManager::DestroyItems();
     for (EntityId e : m_Entities)
         m_scene->world->DestroyEntity(e);
 

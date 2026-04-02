@@ -9,7 +9,6 @@ public:
 	static void Init(int _cellSize, Scene* _scene, int _nbPlayer);
 	static void CreateLabyrinthe(int _width, int _height);
 	static void Laby3d(Vector<Vector<char>>& _grid);
-	static void SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin, int _xMax, int _yMin, int _yMax);
 	static void DestroyLabyrinthe();
 
 	static void SetLevelNb(int _levelNb) { m_levelNb = _levelNb; }

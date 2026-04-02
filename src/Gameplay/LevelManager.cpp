@@ -13,7 +13,7 @@ float LevelManager::m_lightTravelDistance = 0.0f;
 void LevelManager::Init(int _nbPlayer)
 {
 	m_cellSize = 3.0f;
-	m_levelNb = 1;
+	m_levelNb = 0;
 	m_nbPlayer = _nbPlayer;
 
 	m_scene = SceneManager::GetSceneWithName("MainScene");
@@ -23,6 +23,7 @@ void LevelManager::Init(int _nbPlayer)
 
 void LevelManager::LoadLevel()
 {
+	m_levelNb++;
 	m_levelSize = 21 + ((m_levelNb - 1) * 2 * m_nbPlayer);
 
 	if (m_levelSize > 51) m_levelSize = 51;
@@ -41,8 +42,6 @@ void LevelManager::ReloadLabyrinthe(int _width, int _height)
 	LabyrintheManager::ReloadDoor();
 	LabyrintheManager::DestroyLabyrinthe();
 	LabyrintheManager::CreateLabyrinthe(_width, _height);
-
-	m_levelNb++;
 }
 
 void LevelManager::CloseDoor(int doorIndex)

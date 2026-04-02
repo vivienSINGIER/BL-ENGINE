@@ -138,6 +138,8 @@ void MainScene::LoadRessources()
     RessourceManager::AddCamera("Default");
 
     RessourceManager::AddGeometry("WaterBottle", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/WaterBottle.obj"));
+	RessourceManager::AddGeometry("Medic", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/Medic.obj"));
+
     Camera* camObj = RessourceManager::GetCamera("Default");
     camObj->nearPlane = 0.01f;
 
@@ -160,9 +162,16 @@ void MainScene::LoadRessources()
     doorMat->SetTexture("Albedo", RessourceManager::GetTexture("Door"));
     RessourceManager::AddMaterial("DoorMaterial", doorMat);
 
-    Texture* waterBottleTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Wood/Water.dds");
+    Texture* waterBottleTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/Water.dds");
     RessourceManager::AddTexture("WaterBottle", waterBottleTexture);
     Material* waterBottleMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
     waterBottleMat->SetTexture("Albedo", RessourceManager::GetTexture("WaterBottle"));
     RessourceManager::AddMaterial("WaterBottleMaterial", waterBottleMat);
+
+	Texture* medicTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/Medic.dds");
+    RessourceManager::AddTexture("Medic", medicTexture);
+    Material* medicMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+    medicMat->SetTexture("Albedo", RessourceManager::GetTexture("Medic"));
+	RessourceManager::AddMaterial("MedicMaterial", medicMat);
+
 }
