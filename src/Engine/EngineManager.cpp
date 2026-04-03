@@ -143,4 +143,14 @@ void EngineManager::Connect(String const& _ip, int _port)
     m_pClient->SendReliablePacket(packet, target);
 }
 
+void EngineManager::Disconnect()
+{
+    if (m_pClient->m_isConnected == false) return;
+
+    Packet p;
+    p.header.type = PacketType::Disconnect;
+
+    m_pClient->SendReliablePacket(p, m_pClient->m_serverAddress);
+}
+
 #endif

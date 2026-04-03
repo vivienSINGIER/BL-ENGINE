@@ -15,6 +15,8 @@ enum class PacketType : uint8
 {
 	Connect,
 	ConnectAck,
+	Disconnect,
+	DisconnectAck,
 	Ack,
 
 	AddScene,
@@ -158,7 +160,11 @@ struct Packet
 		ChatPacket				chat;
 	};
 
-	Packet() { memset(this, 0, sizeof(Packet)); }
+	Packet()
+	{
+		memset(this, 0, sizeof(Packet));
+		header.magicWord = MAGIC_WORD;
+	}
 	
 	uint32 Size() const
 	{
@@ -169,6 +175,8 @@ struct Packet
 		case PacketType::Update:			return sizeof(PacketHeader) + sizeof(uint8) + update.componentCount * sizeof(ComponentEntry);
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
+		case PacketType::Disconnect:		return sizeof(PacketHeader);
+		case PacketType::DisconnectAck:		return sizeof(PacketHeader);
 		case PacketType::SetActiveState:	return sizeof(SetActiveStatePacket);
 		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
 		case PacketType::SetScene:			return sizeof(PacketHeader);

@@ -30,6 +30,7 @@ public:
 
 	void HostServer(int _port = 1888);
 	void Connect(String const& ip, int _port);
+	void Disconnect();
 	
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }

@@ -18,6 +18,8 @@ void Server::SendPackets()
 {
 	for(int i = 0; i < m_clients.size(); i++)
 	{
+		if (m_clients[i].isConnected == false) continue;
+		
 		for (int j = 0; j < m_packets.size(); j++)
 		{
 			m_packets[i].header.clientId = 0;
@@ -56,6 +58,8 @@ void Server::SendGeneralReliablePacket(Packet _packet)
 {
 	for(int i = 0; i < m_clients.size(); i++)
 	{
+		if (m_clients[i].isConnected == false) continue;
+		
 		PendingPacket pending;
 		pending.packet     = _packet;
 		pending.target     = m_clients.at(i).udpAddr;

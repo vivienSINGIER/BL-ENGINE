@@ -15,6 +15,7 @@ public:
     void SendPackets() override;
 
     void Connect(sockaddr_in _addr);
+    void Disconnect();
     sockaddr_in& GetServerAddress() { return m_serverAddress; }
     
     void SetId(uint32 _id) { m_id = _id; }
@@ -28,6 +29,9 @@ private:
     
     bool m_isConnected;
     bool m_isRunning;
+
+    friend class EngineManager;
+    friend struct ReceiveSystem;
 };
 
 #endif // !CLIENT_H_DEFINED

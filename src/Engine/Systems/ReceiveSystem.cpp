@@ -52,6 +52,11 @@ void ReceiveSystem::HandleClientReceive()
                     m_client->SetId(p.connect.cliendId);
                     break;
                 }
+            case PacketType::DisconnectAck:
+                {
+                    m_client->OnAckReceived(p.header.ackId);
+                    m_client->Disconnect();
+                };
             case PacketType::AddScene:
                 {
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
@@ -216,7 +221,7 @@ void ReceiveSystem::HandleServerReceive()
                     
                     ClientInfo* c = m_server->FindClient(addr);
 
-                    if (c->isConnected == true) return;
+                    if (c->isConnected == true) break;
                     c->isConnected = true;
                     
                     Packet np;
@@ -228,6 +233,20 @@ void ReceiveSystem::HandleServerReceive()
                     m_server->RegisterTargetedPacket(np, addr);
 
                     m_server->QueueSyncPackets(addr);
+                    
+                    break;
+                }
+            case PacketType::Disconnect:
+                {
+                    ClientInfo* c = m_server->FindClient(addr);
+
+                    c->isConnected = false;
+
+                    Packet np;
+                    np.header.type = PacketType::DisconnectAck;
+                    np.header.ackId = p.header.ackId;
+                        
+                    m_server->RegisterTargetedPacket(np, addr);
                     
                     break;
                 }

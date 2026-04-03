@@ -54,6 +54,11 @@ void Client::Connect(sockaddr_in _addr)
     m_isConnected = true;
 }
 
+void Client::Disconnect()
+{
+    m_isConnected = false;
+}
+
 DWORD Client::ReceiveThread(LPVOID _lpParam)
 {
     Client* client = static_cast<Client*>(_lpParam);
