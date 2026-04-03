@@ -12,6 +12,7 @@ void MainScene::OnInit()
 	m_started = false;
 	m_isDay = true;
 	m_isNight = false;
+	m_gasStarted = false;
 
 	m_dayColorStart = XMFLOAT3(1.0f, 0.7f, 0.5f);
 
@@ -103,7 +104,13 @@ void MainScene::OnUpdate(float _dt)
         {
             m_timer += _dt;
 			l.SetStrength(0.0f);
+            if(m_gasStarted == false)
+            {
+                LevelManager::StartGas(m_nightDuration);
+                m_gasStarted = true;
+			}
 
+			LevelManager::NightGas(_dt, m_nightDuration);
             if (m_opened == false)
             {
                 LevelManager::OpenRandomDoor();
@@ -115,6 +122,8 @@ void MainScene::OnUpdate(float _dt)
                 m_isDay = true;
                 m_isNight = false;
 				m_opened = true;
+				m_gasStarted = false;
+				LevelManager::ResetGas();
                 LevelManager::LoadLevel();
 				world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
             }

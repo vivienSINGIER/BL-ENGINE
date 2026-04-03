@@ -59,8 +59,16 @@ void LevelManager::OpenRandomDoor()
 	LabyrintheManager::OpenRandomDoor();
 }
 
-void LevelManager::NightGas(float _dt)
+void LevelManager::StartGas(float _nightDuration)
 {
-	LabyrintheManager::NightGas(_dt);
+	LabyrintheManager::StartGas(_nightDuration);
+}
+void LevelManager::NightGas(float _dt, float _nightDuration)
+{
+	LabyrintheManager::NightGas(_dt, _nightDuration);
 }
 
+void LevelManager::ResetGas()
+{
+	LabyrintheManager::ResetGas();
+}

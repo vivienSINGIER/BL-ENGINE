@@ -18,7 +18,9 @@ public:
 	static void OpenDoor(int doorIndex);
 	static void OpenRandomDoor();
 
-	static void NightGas(float _dt);
+	static void NightGas(float _dt, float _nightDuration);
+	static void StartGas(float _nightDuration);
+	static void ResetGas();
 
 private:
 	static float m_cellSize;
@@ -29,7 +31,10 @@ private:
 	static int m_nbPlayer;
 
 	static int m_doorOpenedNight;
+	static float m_gasWallTargetX[4];
+	static float m_gasWallStartX[4];  
+	static float m_gasTimer;
+	static float m_gasDuration;
 	static EntityId m_wallsGas[4];
-
 };
 #endif // !LABYRINTHE_MANAGER_H_DEFINED

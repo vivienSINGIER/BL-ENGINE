@@ -82,10 +82,10 @@ void Movement::ScriptMovement::Update(float dt)
 void Movement::ScriptMovement::Reload()
 {
 	TransformComponent& t = GetComponent<TransformComponent>();
-	m_yaw = 0.0f;
+	/*m_yaw = 0.0f;
 	m_pitch = 0.0f;
 	t.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
-	t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
+	t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));*/
 
 	for (int i = 0; i < 3; i++)
 	{

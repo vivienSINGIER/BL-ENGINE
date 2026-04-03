@@ -26,6 +26,7 @@ private:
 
 	bool m_isDay;
 	bool m_isNight;
+	bool m_gasStarted;
 	float m_timer;
 	float m_dayDuration;
 	float m_nightDuration;
