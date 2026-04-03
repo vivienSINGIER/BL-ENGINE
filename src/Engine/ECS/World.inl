@@ -5,6 +5,7 @@
 
 #include "ISystem.h"
 #include "Script.h"
+#include "Network/Client.h"
 
 template <typename T>
 T& World::AddComponent(EntityId _e, T const& _val)
@@ -35,9 +36,18 @@ T& World::GetComponent(EntityId _e)
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
-    assert(src->mask.test(cid) && "Component not present");
-
-    T& stored = src->storage.Get<T>(cid, rec.row);
+    bool isInArch = src->mask.test(cid);
+    
+    if (isInArch)
+    {
+        T& stored = src->storage.Get<T>(cid, rec.row);
+        return stored;   
+    }
+    
+    void* ptr = m_commandQueue.GetComponent(_e, cid);
+    assert(ptr && "Component not present");
+    
+    T& stored = *reinterpret_cast<T*>(ptr);
     return stored;
 }
 
@@ -51,7 +61,7 @@ bool World::HasComponent(EntityId _e)
     EntityRecord& rec = entityManager.GetRecord(_e);
     Archetype* src = rec.archetype;
 
-    return src->mask.test(cid);
+    return src->mask.test(cid) || m_commandQueue.HasComponent(_e, cid);
 }
 
 template <typename T>
@@ -67,6 +77,19 @@ void World::SetActiveComponent(EntityId _e, bool _value)
     assert(src->mask.test(cid) && "Component not present");
 
     src->storage.SetActive(cid, rec.row, _value);
+    
+    if (EngineManager::IsServer() == false) return;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _e;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = _value;
+    p.setActiveState.isEntity = false;
+    p.setActiveState.cid = cid;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 template <typename T>
@@ -98,8 +121,9 @@ T& World::AddScript(EntityId _e)
 
     T& script = m_commandQueue.EmplaceAdd<T>(_e);
     
-    script.world = this;
+    script.sceneId = m_sceneId;
     script.entity = _e;
+    script.m_isSynced = false;
 
     ComponentId cid = ComponentType::Id<T>();
     reg->push_back(cid);
@@ -140,7 +164,18 @@ template <typename T>
 void World::SetActiveScript(EntityId _e, bool _value)
 {
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Script is not registered");
-    return SetActiveComponent<T>(_e, _value);
+    SetActiveComponent<T>(_e, _value);
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _e;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = _value;
+    p.setActiveState.isEntity = false;
+    p.setActiveState.cid = ComponentType::Id<T>();
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 template <typename T>

@@ -2,7 +2,6 @@
 #define CONSOL_H_DEFINED
 
 #include "define.h"
-#include <iostream>
 
 class Console
 {

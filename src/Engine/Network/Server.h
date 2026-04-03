@@ -10,6 +10,7 @@ struct ClientInfo
 	String ip;
 	int port;
 	uint32 id;
+	bool isConnected = false;
 };
 
 class Server : public INetworkBase
@@ -39,6 +40,8 @@ private:
 	Vector<Pair<Packet, sockaddr_in>> m_targetedPackets;
 	
 	bool m_isRunning = false;
+
+	friend class EngineManager;
 };
 
 #endif // !SERVER_H_DEFINED

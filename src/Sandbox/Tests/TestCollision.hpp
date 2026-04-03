@@ -11,7 +11,8 @@ public:
     {
         void Update(float dt) override
         {
-            TransformComponent& t = GetComponent<TransformComponent>();
+            Transform& transform = GetComponent<TransformComponent>().local;
+            InputManager::HandleInput();
 
             if (InputManager::IsKey(Z))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 2.0f * dt));

@@ -133,7 +133,10 @@ void InputManager::HandleInput(uint32 _clientId)
     Array<InputState, AMOUNT_KEY>& kb = s_keyboardStates[_clientId];
     Array<InputState, AMOUNT_MOUSE>& mouse = s_mouseStates[_clientId];
     MouseData& mData = s_mouseDatas[_clientId];
-
+    
+    if (GetForegroundWindow() != s_pHWND)
+        return;
+    
     for (const Pair<unsigned char, int> input : s_keyboardMap)
     {
         unsigned char inputKey = input.first;

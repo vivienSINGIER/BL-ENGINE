@@ -8,22 +8,22 @@
 #include "ISystem.h"
 
 template <typename T>
-void ComponentRegistry::RegisterComponent()
+void ComponentRegistry::RegisterComponent(bool _isClientOnly)
 {
     ComponentId cid = ComponentType::Id<T>();
     if (IsRegistered(cid)) return;
     
-    m_registeredComponents.push_back({ cid, sizeof(T), false, 0 });
+    m_registeredComponents.push_back({ cid, sizeof(T), false, _isClientOnly, 0 });
 }
 
 template <typename T>
-void ComponentRegistry::RegisterScript(uint8 _nFlag)
+void ComponentRegistry::RegisterScript(uint8 _nFlag, bool _isClientOnly)
 {
     ComponentId cid = ComponentType::Id<T>();
     if (IsRegistered(cid)) return;
 
     m_registeredComponents.push_back({ 
-        cid, sizeof(T), true, _nFlag,
+        cid, sizeof(T), true, _isClientOnly, _nFlag,
         [](EntityId _e, World& _w) -> IScript* { return &_w.GetComponent<T>(_e); },
         [](void* ptr) -> IScript* { return new (ptr) T(); }
     });

@@ -102,7 +102,7 @@ public:
         printf("\nDestroyed e2. Creating e3 (should reuse slot)...\n");
 
         EntityId e3 = world.CreateEntity();
-        world.AddComponent<Position>(e3, {99.f, 99.f});
+        world.AddComponent<Position>(e3,{99.f, 99.f});
 
         printf("e3 id=0x%llx\n", (unsigned long long)e3);
         // The lower 32 bits should match e2's index (slot reuse)

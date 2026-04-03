@@ -17,10 +17,9 @@ SceneManager::SceneManager()
 
 Scene* SceneManager::GetSceneWithName(String const& _name)
 {
-	for (auto [name, id] : s_pSceneManager->m_sceneIds)
+	if (s_pSceneManager->m_sceneIds.contains(_name))
 	{
-		if (name == _name)
-			return s_pSceneManager->m_scenes[id];
+		return s_pSceneManager->m_scenes[s_pSceneManager->m_sceneIds[_name]];
 	}
 
 	return nullptr;
@@ -28,13 +27,7 @@ Scene* SceneManager::GetSceneWithName(String const& _name)
 
 Scene* SceneManager::GetSceneWithId(uint32 _id)
 {
-	for (auto [name, id] : s_pSceneManager->m_sceneIds)
-	{
-		if (id == _id)
-			return s_pSceneManager->m_scenes[id];
-	}
-
-	return nullptr;
+	return s_pSceneManager->m_scenes[_id];
 }
 
 Scene* SceneManager::CreateScene(String const& _name, int32 _id)

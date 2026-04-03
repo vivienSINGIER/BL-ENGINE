@@ -15,6 +15,8 @@ enum class PacketType : uint8
 {
 	Connect,
 	ConnectAck,
+	Disconnect,
+	DisconnectAck,
 	Ack,
 
 	AddScene,
@@ -22,6 +24,7 @@ enum class PacketType : uint8
 	
 	Spawn,
 	Delete,
+	SetActiveState,
 	
 	AddComponent,
 	AddScript,
@@ -32,6 +35,7 @@ enum class PacketType : uint8
 	KeyUpdate,
 	MouseButtonUpdate,
 	MousePosUpdate,
+	
 	Chat,
 };
 
@@ -43,6 +47,7 @@ struct PacketHeader
 	PacketType  type;
 	EntityId    entityId;
 	uint32      sceneId;
+	uint32		clientId;
 };
 
 struct ConnectPacket
@@ -57,6 +62,12 @@ struct AddScenePacket
 	PacketHeader header;
 	uint8 nameSize;
 	char name[MAX_SCENE_NAME];
+};
+
+struct CreateEntityPacket
+{
+	PacketHeader header;
+	ComponentMask componentMask;
 };
 
 struct ComponentEntry
@@ -84,6 +95,14 @@ struct RemoveComponentPacket
 {
 	PacketHeader header;
 	ComponentId cid;
+};
+
+struct SetActiveStatePacket
+{
+	PacketHeader header;
+	ComponentId cid;
+	bool isEntity;
+	bool isActive;
 };
 
 struct UpdatePacket
@@ -130,6 +149,8 @@ struct Packet
 		PacketHeader			header;
 		ConnectPacket			connect;
 		AddScenePacket			addScene;
+		CreateEntityPacket		createEntity;
+		SetActiveStatePacket	setActiveState;
 		AddComponentPacket		addComponent;
 		AddScriptPacket			addScript;
 		RemoveComponentPacket	removeComponent;
@@ -139,17 +160,24 @@ struct Packet
 		ChatPacket				chat;
 	};
 
-	Packet() { memset(this, 0, sizeof(Packet)); }
+	Packet()
+	{
+		memset(this, 0, sizeof(Packet));
+		header.magicWord = MAGIC_WORD;
+	}
 	
 	uint32 Size() const
 	{
 		switch (header.type)
 		{
-		case PacketType::Spawn:				return sizeof(PacketHeader);
+		case PacketType::Spawn:				return sizeof(CreateEntityPacket);
 		case PacketType::Delete:			return sizeof(PacketHeader);
 		case PacketType::Update:			return sizeof(PacketHeader) + sizeof(uint8) + update.componentCount * sizeof(ComponentEntry);
 		case PacketType::Connect:			return sizeof(ConnectPacket);
 		case PacketType::ConnectAck:		return sizeof(ConnectPacket);
+		case PacketType::Disconnect:		return sizeof(PacketHeader);
+		case PacketType::DisconnectAck:		return sizeof(PacketHeader);
+		case PacketType::SetActiveState:	return sizeof(SetActiveStatePacket);
 		case PacketType::AddScene:			return sizeof(PacketHeader) + sizeof(uint8) + sizeof(char) * addScene.nameSize;
 		case PacketType::SetScene:			return sizeof(PacketHeader);
 		case PacketType::AddComponent:		return sizeof(PacketHeader) + sizeof(ComponentId) + sizeof(uint32) + addComponent.size;

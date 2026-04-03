@@ -3,6 +3,7 @@
 
 #include "Test.h"
 #include "../Engine/Engine.h"
+#include "Network/Client.h"
 
 class TestNetwork : public Test
 {
@@ -11,11 +12,11 @@ public:
     {
         void Awake()
         {
-            MeshRenderer& m = world->AddComponent<MeshRenderer>(entity);
+            MeshRenderer& m = AddComponent<MeshRenderer>();
             m.geoId = RessourceManager::GetGeometryId("Cube");
             m.materialId = RessourceManager::GetMaterialId("White");
             
-            TransformComponent& t = world->AddComponent<TransformComponent>(entity);
+            TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
         }
         
@@ -27,31 +28,57 @@ public:
     
     struct TestScript2 : public IScript
     {
-        void Awake()
+        uint32 clientId = 0;
+        
+        void Start()
         {
-            CameraComponent& cam = world->AddComponent<CameraComponent>(entity);
-            cam.isMainCamera = true;
-            cam.camId = RessourceManager::GetCameraId("Default");
+            if (EngineManager::IsServer() == false) return;
+
+            MeshRenderer& m = AddComponent<MeshRenderer>();
+            m.geoId = RessourceManager::GetGeometryId("Cube");
+            m.materialId = RessourceManager::GetMaterialId("White");
             
-            TransformComponent& t = world->AddComponent<TransformComponent>(entity);
+            TransformComponent& t = AddComponent<TransformComponent>();
             t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
+            
+            OwnerComponent& o = AddComponent<OwnerComponent>();
+            o.ownerId = clientId;
+        }
+        
+        void OnSync(uint32 _clientId) override
+        {
+            if (HasComponent<OwnerComponent>() == false) return;
+            
+            OwnerComponent& o = GetComponent<OwnerComponent>();
+            if (o.ownerId != _clientId)
+                return;
+            
+            CameraComponent& cam = AddComponent<CameraComponent>();
+            cam.camId = RessourceManager::GetCameraId("Default");
+            cam.isMainCamera = true;
         }
         
         void Update(float _dt) override
         {
+            if (HasComponent<TransformComponent>() == false)
+                return;
+            if (HasComponent<OwnerComponent>() == false)
+                return;
+            
             TransformComponent& t = GetComponent<TransformComponent>();
-
-            if (InputManager::IsKey(Z))
+            OwnerComponent& o = GetComponent<OwnerComponent>();
+            
+            if (InputManager::IsKey(Z, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * _dt));
-            if (InputManager::IsKey(S))
+            if (InputManager::IsKey(S, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * _dt));
-            if (InputManager::IsKey(Q))
+            if (InputManager::IsKey(Q, o.ownerId))
                 t.local.Move(XMFLOAT3(-1.0f * _dt, 0.0f, 0.0f));
-            if (InputManager::IsKey(D))
+            if (InputManager::IsKey(D, o.ownerId))
                 t.local.Move(XMFLOAT3(1.0f * _dt, 0.0f, 0.0f));
-            if (InputManager::IsKey(SPACE))
+            if (InputManager::IsKey(SPACE, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, 1.0f * _dt, 0.0f));
-            if (InputManager::IsKey(LCONTROL))
+            if (InputManager::IsKey(LCONTROL, o.ownerId))
                 t.local.Move(XMFLOAT3(0.0f, -1.0f * _dt, 0.0f));
         }
     };
@@ -80,10 +107,12 @@ public:
             Scene* scene = SceneManager::SetCurrentScene("Default");
         
             EntityId e = scene->world->CreateEntity();
-            scene->world->AddScript<TestScript>(e);
+            TestScript2& s = scene->world->AddScript<TestScript2>(e);
+            s.clientId = 1;
             
             EntityId e2 = scene->world->CreateEntity();
-            scene->world->AddScript<TestScript2>(e2);
+            TestScript2& s2 = scene->world->AddScript<TestScript2>(e2);
+            s2.clientId = 2;
         }
         else
             EngineManager::GetInstance().Connect("127.0.0.1", 1888);

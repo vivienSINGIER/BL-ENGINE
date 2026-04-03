@@ -9,7 +9,7 @@ class World;
 
 enum Phase
 {
-    NetworkReceive, PreUpdate, Update, FixedUpdate, PostUpdate, PreRender, Render, PostRender, NetworkSend, Count
+    PreUpdate, Update, FixedUpdate, PostUpdate, PreRender, Render, PostRender, NetworkReceive, NetworkSend, Count
 };
 
 class SystemScheduler

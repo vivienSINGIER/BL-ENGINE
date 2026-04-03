@@ -21,6 +21,7 @@
 #include "Components/ColliderComponent.hpp"
 #include "Components/LightComponent.hpp"
 #include "Components/NetworkComponent.hpp"
+#include "Components/OwnerComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"

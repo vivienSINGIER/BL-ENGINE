@@ -5,7 +5,8 @@
 #include "Generic/Base/Window.h"
 #include "World.h"
 
-void SystemScheduler::BindWorld(World* world)
+void SystemScheduler::
+BindWorld(World* world)
 {
     for (auto& phase : m_phases)
     {

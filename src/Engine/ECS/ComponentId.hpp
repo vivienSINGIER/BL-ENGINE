@@ -12,6 +12,7 @@ struct ComponentType
         return id;
     }
 
+    static ComponentId Count() { return counter; }
 private:
     static inline ComponentId counter = 0;
 };
