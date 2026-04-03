@@ -11,8 +11,8 @@ void Movement::ScriptMovement::Awake()
 
 	for(int i = 0; i < 3; i++)
 	{
-		m_glowStick[i] = SceneManager::GetSceneWithName("MainScene")->world->CreateEntity();
-		SceneManager::GetSceneWithName("MainScene")->world->AddScript<GlowStick>(m_glowStick[i]);
+		m_glowStick[i] = SceneManager::GetSceneWithId(sceneId)->world->CreateEntity();
+		SceneManager::GetSceneWithId(sceneId)->world->AddScript<GlowStick>(m_glowStick[i]);
 	}
 }
 
@@ -69,9 +69,9 @@ void Movement::ScriptMovement::Update(float dt)
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			if (SceneManager::GetSceneWithName("MainScene")->world->IsActive(m_glowStick[i]) == false)
+			if (SceneManager::GetSceneWithId(sceneId)->world->IsActive(m_glowStick[i]) == false)
 			{
-				GlowStick glowStickScript = SceneManager::GetSceneWithName("MainScene")->world->GetScript<GlowStick>(m_glowStick[i]);
+				GlowStick glowStickScript = SceneManager::GetSceneWithId(sceneId)->world->GetScript<GlowStick>(m_glowStick[i]);
 				glowStickScript.DropGlowStick(t.local.GetPosition().x, t.local.GetPosition().y, t.local.GetPosition().z);
 				break;
 			}
@@ -89,6 +89,6 @@ void Movement::ScriptMovement::Reload()
 
 	for (int i = 0; i < 3; i++)
 	{
-		SceneManager::GetSceneWithName("MainScene")->world->SetInactive(m_glowStick[i]);
+		SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_glowStick[i]);
 	}
 }

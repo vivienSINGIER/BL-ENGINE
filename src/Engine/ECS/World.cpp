@@ -61,6 +61,7 @@ void World::SetActive(EntityId _entity)
     p.setActiveState.isActive = true;
     p.setActiveState.isEntity = true;
     
+    if (EngineManager::IsServer() == false) return;
     EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
@@ -77,6 +78,7 @@ void World::SetInactive(EntityId _entity)
     p.setActiveState.isActive = false;
     p.setActiveState.isEntity = true;
     
+    if (EngineManager::IsServer() == false) return;
     EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
