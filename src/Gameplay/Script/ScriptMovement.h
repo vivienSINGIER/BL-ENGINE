@@ -10,10 +10,12 @@ public:
 	{
 		void Awake() override;
 		void Update(float dt) override;
+		void Reload();
 	private:
 		float m_yaw;
 		float m_pitch;
 		bool m_cursorLocked;
+		EntityId m_glowStick[3];
 	};
 };
 

@@ -2,6 +2,7 @@
 #include <iostream>
 #include "../Gameplay/Script/ScriptMovement.h"
 #include "../Gameplay/LevelManager.h"
+#include "../Gameplay/GlowStick.h"
 
 void MainScene::OnInit()
 {
@@ -15,6 +16,7 @@ void MainScene::OnInit()
 	m_dayColorStart = XMFLOAT3(1.0f, 0.7f, 0.5f);
 
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
+	ComponentRegistry::RegisterScript<GlowStick>();
 
 	m_camera = world->CreateEntity();
 	TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
@@ -35,7 +37,7 @@ void MainScene::OnInit()
 	LightComponent& l = world->AddComponent<LightComponent>(m_light);
 	l.type = LightType::Point;
 	l.SetStrength(1.0f);
-	l.SetPoint(1.0f, 200.0f);
+	l.SetPoint(1.0f, 500.0f);
 	l.SetColor(XMFLOAT4(1.0f,0.8f,0.35f, 1.0f));
 	
 }
@@ -114,7 +116,7 @@ void MainScene::OnUpdate(float _dt)
                 m_isNight = false;
 				m_opened = true;
                 LevelManager::LoadLevel();
-
+				world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
             }
         }
     }
@@ -139,6 +141,7 @@ void MainScene::LoadRessources()
 
     RessourceManager::AddGeometry("WaterBottle", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/WaterBottle.obj"));
 	RessourceManager::AddGeometry("Medic", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/Medic.obj"));
+	RessourceManager::AddGeometry("GlowStick", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/GlowStick.obj"));
 
     Camera* camObj = RessourceManager::GetCamera("Default");
     camObj->nearPlane = 0.01f;
