@@ -36,6 +36,8 @@ void PhysicSystem::ResolveVelocities(float _dt)
         if (motionA.isSleeping && motionB.isSleeping)
 			continue;
 
+		UpdateSleepState(motionA, motionB, rigidA, rigidB);
+
         // Résolution séquentielle : chaque point est traité l'un après l'autre.
         for (int i = 0; i < manifold.pointCount; ++i)
         {
@@ -101,12 +103,76 @@ void PhysicSystem::ResolveVelocities(float _dt)
             motionB.linearVelocity = Add(motionB.linearVelocity, Mul(J, rigidB->massInverse));
             motionB.angularVelocity = Add(motionB.angularVelocity,
                 ApplyInertiaInverse(Cross(rB, J), rigidB->inertiaTensorWorldInverse));
+
+			ApplyFriction(motionA, motionB, rigidA, rigidB, rA, rB, manifold.normal, j);
         }
 
 		motionA.linearVelocity = Snap(motionA.linearVelocity, kLinearSnapThreshold);
 		motionA.angularVelocity = Snap(motionA.angularVelocity, kAngularSnapThreshold);
 		motionB.linearVelocity = Snap(motionB.linearVelocity, kLinearSnapThreshold);
 		motionB.angularVelocity = Snap(motionB.angularVelocity, kAngularSnapThreshold);
+    }
+}
+
+void PhysicSystem::UpdateSleepState(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB)
+{
+    if (_rigidA->type == BodyType::Dynamic && _motionA.isSleeping && _rigidB->type == BodyType::Dynamic && !_motionB.isSleeping)
+        _motionA.WakeUp();
+
+    if (_rigidB->type == BodyType::Dynamic && _motionB.isSleeping && _rigidA->type == BodyType::Dynamic && !_motionA.isSleeping)
+        _motionB.WakeUp();
+}
+
+void PhysicSystem::ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB,
+    XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal, float _j)
+{
+    // Friction de Coulomb — appliquée dans la direction tangentielle.
+    // |jt| <= mu * |j|
+
+    // Recalculer vRel avec les vitesses mises à jour.
+    XMFLOAT3 vA = VelocityAtPoint(_motionA, _rA);
+    XMFLOAT3 vB = VelocityAtPoint(_motionB, _rB);
+    XMFLOAT3 vRel = Subtract(vB, vA);
+
+    // Tangente : vt = vRel - (vRel.n)*n
+    XMFLOAT3 vTangent = Subtract(vRel, Mul(_normal, Dot(vRel, _normal)));
+    float vTangentLen = sqrtf(NormSquared(vTangent));
+
+    // Si glissement suffisant.
+    if (vTangentLen > 0.01f)
+    {
+        // t : direction du glissement (opposée à la direction de friction).
+        XMFLOAT3 t = Mul(vTangent, 1.0f / vTangentLen);
+
+        // Masse effective dans la direction tangentielle.
+        float Meff_t = _rigidA->massInverse + _rigidB->massInverse
+            + AngularMassTerm(_rA, t, _rigidA->inertiaTensorWorldInverse)
+            + AngularMassTerm(_rB, t, _rigidB->inertiaTensorWorldInverse);
+
+        if (Meff_t > 0.0f)
+        {
+            // Scalaire d'impulsion tangentielle nécessaire pour annuler le glissement.
+            float jt = -vTangentLen / Meff_t;
+
+            // Coefficients de friction combinés (moyenne géométrique).
+            float muS = sqrtf(_rigidA->staticFriction * _rigidB->staticFriction);
+            float muD = sqrtf(_rigidA->dynamicFriction * _rigidB->dynamicFriction);
+
+            // Loi de Coulomb : borne par l'impulsion normale.
+            XMFLOAT3 Jt;
+            if (fabsf(jt) <= muS * _j)
+                Jt = Mul(t, jt); // Statique : on annule complètement le glissement.
+            else          
+                Jt = Mul(t, -muD * _j); // Dynamique : on plafonne à mu_d * j.
+
+            _motionA.linearVelocity = Subtract(_motionA.linearVelocity, Mul(Jt, _rigidA->massInverse));
+            _motionA.angularVelocity = Subtract(_motionA.angularVelocity,
+                ApplyInertiaInverse(Cross(_rA, Jt), _rigidA->inertiaTensorWorldInverse));
+
+            _motionB.linearVelocity = Add(_motionB.linearVelocity, Mul(Jt, _rigidB->massInverse));
+            _motionB.angularVelocity = Add(_motionB.angularVelocity,
+                ApplyInertiaInverse(Cross(_rB, Jt), _rigidB->inertiaTensorWorldInverse));
+        }
     }
 }
 
@@ -185,6 +251,7 @@ MotionComponent& PhysicSystem::GetMotion(EntityId _e)
         return world->GetComponent<MotionComponent>(_e);
 
     m_nullMotion = MotionComponent{};
+	m_nullMotion.isSleeping = true;
     return m_nullMotion;
 }
 

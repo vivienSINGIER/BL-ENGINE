@@ -81,8 +81,6 @@ public:
         RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
         r.SetStatic();  // massInverse = 0, tenseurs = 0
 
-        world->AddComponent<MotionComponent>(e);
-
         return e;
     }
 
@@ -110,7 +108,7 @@ public:
         return e;
     }
 
-    // ─── Trigger (zone de détection) ────────────────────────────────────────────
+    // Trigger (zone de détection)
     static EntityId CreateTrigger(World* world,
         const XMFLOAT3& position,
         const XMFLOAT3& halfExtents)
@@ -153,8 +151,8 @@ public:
 
         CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
 
-		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
-		CreateDynamicBox(world, { -2.0f, 0.0f, 0.5f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 2.0f); 
+		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 3.0f, 0.0f, 0.0f }, 2.0f); 
+		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 2.0f); 
 
 		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 

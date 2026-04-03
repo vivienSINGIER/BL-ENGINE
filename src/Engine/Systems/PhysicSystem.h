@@ -18,6 +18,11 @@ private:
     void ResolvePenetrations();
     void ResolveVelocities(float _dt);
 
+	void UpdateSleepState(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB);
+    void ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB,
+        RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB,
+        XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal, float _j);
+
     XMFLOAT3 VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3& _r) const;
     XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const;
     float AngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _t[9]) const;

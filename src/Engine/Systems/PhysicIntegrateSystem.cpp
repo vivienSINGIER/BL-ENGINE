@@ -6,7 +6,13 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
     if (_rigid.type != BodyType::Dynamic) return;
     if (_motion.isSleeping) return;
 
-    ComputeBodyInertiaTensor(_rigid, _shape);
+    // Recalcul uniquement si nécessaire.
+    if (_rigid.inertiaDirty)
+    {
+        ComputeBodyInertiaTensor(_rigid, _shape);
+        _rigid.inertiaDirty = false;
+    }
+
     if (_rigid.allowRotation)
         UpdateWorldInertiaTensor(_rigid, _transform);
 
@@ -145,7 +151,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     accel.y += _motion.force.y * _rigid.massInverse;
     accel.z += _motion.force.z * _rigid.massInverse;
 
-    // Gravité : accélération directe (indépendante de la masse — comportement physique correct).
+    // Gravité : accélération directe
     if (_rigid.useGravity)
     {
         accel.x += m_gravity.x * _rigid.gravityScale;
@@ -153,7 +159,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
         accel.z += m_gravity.z * _rigid.gravityScale;
     }
 
-    // Intégration vitesse (symplectique : vitesse d'abord).
+    // Intégration vitesse
     _motion.linearVelocity.x += accel.x * _dt;
     _motion.linearVelocity.y += accel.y * _dt;
     _motion.linearVelocity.z += accel.z * _dt;
@@ -163,6 +169,24 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     _motion.linearVelocity.x *= damp;
     _motion.linearVelocity.y *= damp;
     _motion.linearVelocity.z *= damp;
+
+    // Résistance de l'air
+    // F_drag = -dragCoefficient * |v| * v
+    if (_rigid.dragCoefficient > 0.0f)
+    {
+		float speed = NormSquared(_motion.linearVelocity);
+
+        if (speed > 0.1f)
+        {
+            // F_drag * (1/m) = -drag * |v| * v * massInverse
+            float dragAccel = _rigid.dragCoefficient * speed * _rigid.massInverse;
+
+            float dragDamp = 1.0f / (1.0f + dragAccel * _dt);
+            _motion.linearVelocity.x *= dragDamp;
+            _motion.linearVelocity.y *= dragDamp;
+            _motion.linearVelocity.z *= dragDamp;
+        }
+    }
 
     // Remise à zéro des forces — les scripts réappliquent chaque frame.
     _motion.force = { 0.0f, 0.0f, 0.0f };
