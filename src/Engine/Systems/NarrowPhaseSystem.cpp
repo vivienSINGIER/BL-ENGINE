@@ -4,10 +4,6 @@
 #include <Utils.hpp>
 #include <iostream>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Update principal
-// ─────────────────────────────────────────────────────────────────────────────
-
 void NarrowPhaseSystem::OnStartUpdate(float _dt)
 {
     m_cache.BeginFrame();
@@ -519,24 +515,17 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         (_contactA.z + _contactB.z) * 0.5f
     };
 
-    // Points locaux pour la persistance entre frames.
-    // On les exprime dans l'espace monde car on n'a pas l'espace corps ici.
-    // Le ContactManifoldCache les utilise pour l'appariement — la distance
-    // monde suffit pour une tolérance de 2cm.
     ContactPoint cp;
-    cp.position    = contactWorld;
+    cp.position = contactWorld;
     cp.localPointA = _contactA;
     cp.localPointB = _contactB;
+    cp.penetration = _penetration;
     _manifold.points[0] = cp;
     _manifold.pointCount = 1;
 
     // Pour box-box, tenter de générer un manifold complet par clipping.
     if (_colliderA.type == ShapeType::Box && _colliderB.type == ShapeType::Box)
     {
-        // Trouver la face de référence (la plus alignée avec la normale de contact)
-        // et la face incidente sur l'autre box.
-        // Cette partie génère jusqu'à 4 points supplémentaires par Sutherland-Hodgman.
-
         // Face de référence : la face de A la plus antiparallèle à la normale.
         XMVECTOR qA  = XMLoadFloat4(&_transformA.world.GetRotation());
         XMMATRIX rotA = XMMatrixRotationQuaternion(qA);
@@ -680,6 +669,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
                 newCp.position = projected;
                 newCp.localPointA = projected;
                 newCp.localPointB = projected;
+                newCp.penetration = Max(0.0f, -sep);
                 _manifold.points[_manifold.pointCount++] = newCp;
             }
         }

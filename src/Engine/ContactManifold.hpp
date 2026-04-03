@@ -8,6 +8,7 @@ struct ContactPoint
     XMFLOAT3 position       = { 0,0,0 };  // position monde du point de contact
     XMFLOAT3 localPointA    = { 0,0,0 };  // position locale sur le corps A (pour persistance)
     XMFLOAT3 localPointB    = { 0,0,0 };  // position locale sur le corps B
+    float penetration = 0.0f;
 };
 
 struct ContactManifold

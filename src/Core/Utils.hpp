@@ -43,6 +43,31 @@ inline XMFLOAT3 Div(const XMFLOAT3& a, const XMFLOAT3& b)
     return { a.x / b.x, a.y / b.y, a.z / b.z };
 }
 
+inline XMFLOAT3 Abs(const XMFLOAT3& v)
+{
+    return { fabsf(v.x), fabsf(v.y), fabsf(v.z) };
+}
+
+inline bool Less(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+	return (a.x < b.x) && (a.y < b.y) && (a.z < b.z);
+}
+
+inline bool LessEqual(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x <= b.x) && (a.y <= b.y) && (a.z <= b.z);
+}
+
+inline bool Greater(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x > b.x) && (a.y > b.y) && (a.z > b.z);
+}
+
+inline bool GreaterEqual(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x >= b.x) && (a.y >= b.y) && (a.z >= b.z);
+}
+
 inline XMFLOAT3 Normalize(const XMFLOAT3& v)
 {
     XMVECTOR vec = XMLoadFloat3(&v);

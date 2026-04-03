@@ -42,7 +42,6 @@ class NarrowPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
     void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, ColliderComponent& _collider, TransformComponent& _transform) override {}
     void OnEndUpdate(float _dt) override;
 
     void Update(float _dt) override;

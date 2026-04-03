@@ -32,10 +32,10 @@ private:
 
     XMFLOAT3 m_gravity = { 0.0f, -9.81f, 0.0f };
 
-    static constexpr float kSleepLinearThreshold  = 0.05f;
-    static constexpr float kSleepAngularThreshold = 0.05f;
+    static constexpr float kSleepLinearThreshold  = 0.1f;
+    static constexpr float kSleepAngularThreshold = 0.1f;
     static constexpr float kSleepTimeThreshold    = 0.5f;
-    static constexpr float kMinAngularVelocitySq  = 1e-6f;
+    static constexpr float kMinAngularVelocitySq  = 0.05f;
 };
 
 #endif // !PHYSIC_INTEGRATE_SYSTEM_H_DEFINED

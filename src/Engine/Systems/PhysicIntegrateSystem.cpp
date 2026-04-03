@@ -1,4 +1,5 @@
 #include "PhysicIntegrateSystem.h"
+#include "../Core/Utils.hpp"
 
 void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent& _rigid, MotionComponent& _motion, ColliderComponent& _shape, TransformComponent& _transform)
 {
@@ -25,19 +26,22 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
     }
 
     // Sleep
-    float linearSq = _motion.linearVelocity.x * _motion.linearVelocity.x
-        + _motion.linearVelocity.y * _motion.linearVelocity.y
-        + _motion.linearVelocity.z * _motion.linearVelocity.z;
-    float angularSq = _motion.angularVelocity.x * _motion.angularVelocity.x
-        + _motion.angularVelocity.y * _motion.angularVelocity.y
-        + _motion.angularVelocity.z * _motion.angularVelocity.z;
+	float linearSq = NormSquared(_motion.linearVelocity);
+	float angularSq = NormSquared(_motion.angularVelocity);
 
-    bool lowMotion =
-        linearSq < (kSleepLinearThreshold * kSleepLinearThreshold) &&
-        angularSq < (kSleepAngularThreshold * kSleepAngularThreshold);
+    bool lowMotion = linearSq < (kSleepLinearThreshold) && angularSq < (kSleepAngularThreshold);
 
-    if (lowMotion) { _motion.sleepTimer += _dt; if (_motion.sleepTimer >= kSleepTimeThreshold) _motion.Sleep(); }
-    else { _motion.sleepTimer = 0.0f; }
+    if (lowMotion) 
+    { 
+        _motion.sleepTimer += _dt;
+
+        if (_motion.sleepTimer >= kSleepTimeThreshold)
+            _motion.Sleep();
+    }
+    else 
+    {
+        _motion.sleepTimer = 0.0f; 
+    }
 }
 
 void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid, ColliderComponent& _shape)
@@ -193,9 +197,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
     _motion.angularVelocity.z *= damp;
 
     // Seuil numérique — évite la dérive flottante sur les corps quasi-immobiles.
-    float aSq = _motion.angularVelocity.x * _motion.angularVelocity.x
-              + _motion.angularVelocity.y * _motion.angularVelocity.y
-              + _motion.angularVelocity.z * _motion.angularVelocity.z;
+	float aSq = NormSquared(_motion.angularVelocity);
     if (aSq < kMinAngularVelocitySq)
         _motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
 
@@ -211,7 +213,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
 
 void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
-    XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
+    XMVECTOR qCurrent = XMLoadFloat4(&_transform.world.GetRotation());
     XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
     XMVECTOR qNew     = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
