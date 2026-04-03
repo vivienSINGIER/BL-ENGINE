@@ -213,7 +213,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
 
 void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
-    XMVECTOR qCurrent = XMLoadFloat4(&_transform.world.GetRotation());
+    XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
     XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
     XMVECTOR qNew     = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
