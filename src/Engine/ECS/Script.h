@@ -31,12 +31,14 @@ struct ScriptRegistry
 struct IScript
 {
     EntityId entity = 0;
-    World* world = nullptr;
+    uint32 sceneId = 0;
     
     virtual void Awake() {}
     virtual void Start() {}
     virtual void Update(float _dt) {}
     virtual void Destroy() {}
+    
+    virtual void OnSync(uint32 _clientId) {}
     
     // TODO Add OnCollide & OnTrigger methods
 
@@ -50,9 +52,13 @@ struct IScript
 
 private:
     bool m_isStarted = false;
+    bool m_isSynced  = false;
 
     template <typename T>
     friend struct ScriptSystem;
+    
+    friend class World;
+    friend struct ReceiveSystem;
 };
 
 #include "Script.inl"

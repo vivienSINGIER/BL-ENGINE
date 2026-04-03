@@ -38,7 +38,7 @@ EntityId EntityManager::Create(EntityId id, bool isSetId)
     }
 
     uint32 index = (uint32)m_vRecords.size();
-    m_vRecords.push_back({nullptr, true, 0, 0}); // Row is set to 0 until components are stored in the archetype
+    m_vRecords.push_back({nullptr, true, 0, 1}); // Row is set to 0 until components are stored in the archetype
     return MakeEntity(index, m_vRecords.back().gen);
 }
 

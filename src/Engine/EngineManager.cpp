@@ -113,6 +113,8 @@ void EngineManager::HostServer(int _port)
     m_pServer = new Server();
     m_networkFlag |= NetworkFlag::SERVER;
 
+    m_pClient->SetId(1);
+
     // TODO Check & Force server and connexion success
     
     m_pServer->Initialize("127.0.0.1", _port);
@@ -139,6 +141,16 @@ void EngineManager::Connect(String const& _ip, int _port)
     packet.connect.addr = target;
     
     m_pClient->SendReliablePacket(packet, target);
+}
+
+void EngineManager::Disconnect()
+{
+    if (m_pClient->m_isConnected == false) return;
+
+    Packet p;
+    p.header.type = PacketType::Disconnect;
+
+    m_pClient->SendReliablePacket(p, m_pClient->m_serverAddress);
 }
 
 #endif

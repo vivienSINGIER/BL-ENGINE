@@ -30,14 +30,16 @@ public:
 
 	void HostServer(int _port = 1888);
 	void Connect(String const& ip, int _port);
+	void Disconnect();
 	
     static float GetDeltaTime() { return GetInstance().m_deltaTime; }
     static Window* GetWindow() { return GetInstance().m_pWindow; }
     static Device* GetDevice() { return GetInstance().m_pDevice; }
 	static uint8 GetNetworkFlag() { return GetInstance().m_networkFlag; }
 
-	static Client* GetClient() { return GetInstance().m_pClient; }
-	static Server* GetServer() { return GetInstance().m_pServer; }
+	static bool		IsServer()	{ return GetInstance().m_pServer != nullptr; }
+	static Client*	GetClient() { return GetInstance().m_pClient; }
+	static Server*	GetServer() { return GetInstance().m_pServer; }
 
 private:
     static EngineManager* s_pInstance;

@@ -18,8 +18,11 @@ void Server::SendPackets()
 {
 	for(int i = 0; i < m_clients.size(); i++)
 	{
+		if (m_clients[i].isConnected == false) continue;
+		
 		for (int j = 0; j < m_packets.size(); j++)
 		{
+			m_packets[i].header.clientId = 0;
 			m_socket->Send(m_packets[j].Data(), m_packets[j].Size(), m_clients[i].udpAddr);
 		}
 	}
@@ -27,6 +30,7 @@ void Server::SendPackets()
 
 	for (int i = 0; i < m_targetedPackets.size(); i++)
 	{
+		m_targetedPackets[i].first.header.clientId = 0;
 		m_socket->Send(m_targetedPackets[i].first.Data(), m_targetedPackets[i].first.Size(), m_targetedPackets[i].second);
 	}
 	m_targetedPackets.clear();
@@ -36,10 +40,11 @@ void Server::SendPackets()
 		PendingPacket& pending = m_pendingPackets[i];
 		if (pending.canResend)
 		{
+			pending.packet.header.clientId = 0;
 			m_socket->Send(pending.packet.Data(), pending.packet.Size(), pending.target);
 			pending.timer = 0.0f;
-			pending.retryCount++;
 			pending.canResend = false;
+			std::cout << "Resend pending message :" << pending.ackId << " | Try nb : " << (int)pending.retryCount << std::endl;
 		}
 	}
 }
@@ -53,6 +58,8 @@ void Server::SendGeneralReliablePacket(Packet _packet)
 {
 	for(int i = 0; i < m_clients.size(); i++)
 	{
+		if (m_clients[i].isConnected == false) continue;
+		
 		PendingPacket pending;
 		pending.packet     = _packet;
 		pending.target     = m_clients.at(i).udpAddr;
@@ -133,18 +140,35 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 {
 	Scene* s = SceneManager::GetSceneWithId(_sceneId);
 	
-	// Packet sp;
-	// sp.header.type = PacketType::Spawn;
-	// sp.header.sceneId = _sceneId;
-	// sp.header.entityId = _e;
-	//
-	// SendReliablePacket(sp, _addr);
-
+	Packet sp;
+	sp.header.type = PacketType::Spawn;
+	sp.header.sceneId = _sceneId;
+	sp.header.entityId = _e;
+	
 	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
 	Archetype* arch = rec.archetype;
-
+	sp.createEntity.componentMask = arch->mask;
+	ComponentRegistry::ClearClientSideBits(sp.createEntity.componentMask);
+	
+	SendReliablePacket(sp, _addr);
+	
+	if (rec.isActive == false)
+	{
+		Packet p;
+		p.header.type = PacketType::SetActiveState;
+		p.header.entityId = _e;
+		p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+		p.setActiveState.isActive = false;
+		p.setActiveState.isEntity = true;
+    
+		SendReliablePacket(p, _addr);
+	}
+	
 	for (auto& [cid, data] : arch->storage.columns)
 	{
+		if (ComponentRegistry::IsClientOnly(cid)) continue;
+		
 		uint64 stride = arch->storage.strides[cid];
 
 		Packet acP;
@@ -169,6 +193,20 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 		}
 		
 		SendReliablePacket(acP, _addr);
+		
+		if (arch->storage.GetActive(cid, rec.row) == false)
+		{
+			Packet p;
+			p.header.type = PacketType::SetActiveState;
+			p.header.entityId = _e;
+			p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+			p.setActiveState.isActive = false;
+			p.setActiveState.isEntity = false;
+			p.setActiveState.cid = cid;
+    
+			SendReliablePacket(p, _addr);
+		}
 	}
 }
 
