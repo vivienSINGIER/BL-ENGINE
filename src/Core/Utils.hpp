@@ -33,6 +33,16 @@ inline XMFLOAT3 Mul(const XMFLOAT3& a, const XMFLOAT3& b)
     return { a.x * b.x, a.y * b.y, a.z * b.z };
 }
 
+inline XMFLOAT3 Div(const XMFLOAT3& v, float s)
+{
+    return { v.x / s, v.y / s, v.z / s };
+}
+
+inline XMFLOAT3 Div(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return { a.x / b.x, a.y / b.y, a.z / b.z };
+}
+
 inline XMFLOAT3 Normalize(const XMFLOAT3& v)
 {
     XMVECTOR vec = XMLoadFloat3(&v);

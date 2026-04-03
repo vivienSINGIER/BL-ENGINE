@@ -21,28 +21,31 @@ void PhysicSystem::ResolveVelocities()
         if (manifold.isTrigger)
             continue;
 
-        RigidBodyComponent* rA = GetRigid(manifold.a);
-        RigidBodyComponent* rB = GetRigid(manifold.b);
-        if (!rA || !rB)
-            continue;
+        RigidBodyComponent* rigidA = GetRigid(manifold.a);
+        RigidBodyComponent* rigidB = GetRigid(manifold.b);
 
-        if (rA->massInverse + rB->massInverse <= 0.0f)
+        if (rigidA->massInverse + rigidB->massInverse <= 0.0f)
             continue;
 
         MotionComponent& mA = GetMotion(manifold.a);
         MotionComponent& mB = GetMotion(manifold.b);
+
+        XMFLOAT3 angularVelA = { 0.0f, 0.0f, 0.0f };
+        XMFLOAT3 angularVelB = { 0.0f, 0.0f, 0.0f };
+        XMFLOAT3 linearVelA = { 0.0f, 0.0f, 0.0f };
+        XMFLOAT3 linearVelB = { 0.0f, 0.0f, 0.0f };
 
         for (int i = 0; i < manifold.pointCount; ++i)
         {
             const XMFLOAT3& point = manifold.points[i].position;
 
             // Vecteurs du centre de masse au point de contact.
-            XMFLOAT3 vecA = Subtract(point, GetCenter(manifold.a));
-            XMFLOAT3 vecB = Subtract(point, GetCenter(manifold.b));
+            XMFLOAT3 rA = Subtract(point, GetCenter(manifold.a));
+            XMFLOAT3 rB = Subtract(point, GetCenter(manifold.b));
 
             // Vitesse au point de contact pour chaque corps.
-            XMFLOAT3 vA = VelocityAtPoint(mA, vecA);
-            XMFLOAT3 vB = VelocityAtPoint(mB, vecB);
+            XMFLOAT3 vA = VelocityAtPoint(mA, rA);
+            XMFLOAT3 vB = VelocityAtPoint(mB, rB);
 
             // Vitesse relative au point (B - A).
             XMFLOAT3 relVel = Subtract(vB, vA);
@@ -55,27 +58,43 @@ void PhysicSystem::ResolveVelocities()
                 continue;
 
             // Restitution — annulée pour les contacts quasi-statiques
-            // (évite le micro-rebond à l'arrêt).
-            float restitution = Min(rA->restitution, rB->restitution);
+            float restitution = Min(rigidA->restitution, rigidB->restitution);
             if (fabsf(vn) < kRestitutionThreshold)
                 restitution = 0.0f;
 
             // Masse effective au point de contact.
-            float effectiveMass = rA->massInverse + rB->massInverse +
-                AngularMassTerm(vecA, manifold.normal, rA->inertiaTensorWorldInverse) +
-                AngularMassTerm(vecB, manifold.normal, rB->inertiaTensorWorldInverse);
+            float effectiveMass = rigidA->massInverse + rigidB->massInverse +
+                AngularMassTerm(rA, manifold.normal, rigidA->inertiaTensorWorldInverse) +
+                AngularMassTerm(rB, manifold.normal, rigidB->inertiaTensorWorldInverse);
 
             if (effectiveMass <= 0.0f)
                 continue;
 
-            // Calcul de l'impulsion scalaire, répartie sur tous les points.
-            float lambda = -(1.0f + restitution) * vn / (effectiveMass * manifold.pointCount);
+            // rA * (vA - lVel) / Norm2 rA
+            angularVelA = Add(angularVelA, Div(Cross(rA, Subtract(vA, mA.linearVelocity)), NormSquared(rA)));
+            angularVelB = Add(angularVelB, Div(Cross(rB, Subtract(vB, mB.linearVelocity)), NormSquared(rB)));
 
-            // Application de l'impulsion.
-            XMFLOAT3 impulse = Mul(manifold.normal, lambda);
-            ApplyImpulse(mA, *rA, impulse, vecA, -1.0f);
-            ApplyImpulse(mB, *rB, impulse, vecB, +1.0f);
+            linearVelA = Add(linearVelA, Subtract(vA, Mul(angularVelA, rA)));
+            linearVelB = Add(linearVelB, Subtract(vB, Mul(angularVelB, rB)));
         }
+
+        if (NormSquared(angularVelA) < 0.01f)
+            angularVelA = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        if (NormSquared(angularVelB) < 0.01f)
+            angularVelB = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+        linearVelA = Mul(linearVelA, 0.25f);
+        linearVelB = Mul(linearVelB, 0.25f);
+
+        if (NormSquared(linearVelA) < 0.01f)
+            linearVelA = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        if (NormSquared(linearVelB) < 0.01f)
+            linearVelB = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+        mA.angularVelocity = Add(mA.angularVelocity, angularVelA);
+        mB.angularVelocity = Add(mB.angularVelocity, angularVelB);
+        mA.linearVelocity = Add(mA.linearVelocity, linearVelA);
+        mB.linearVelocity = Add(mB.linearVelocity, linearVelB);
     }
 }
 
@@ -117,22 +136,6 @@ XMFLOAT3 PhysicSystem::VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3&
 {
     // v_point = linearVelocity + angularVelocity × r
     return Add(_motion.linearVelocity, Cross(_motion.angularVelocity, _r));
-}
-
-void PhysicSystem::ApplyImpulse(MotionComponent& _motion, RigidBodyComponent& _rigid, const XMFLOAT3& _impulse, const XMFLOAT3& _r, float _sign) const
-{
-    if (_rigid.type == BodyType::Static || _rigid.type == BodyType::Kinematic)
-        return;
-
-    _motion.linearVelocity = Add(_motion.linearVelocity,
-        Mul(_impulse, _rigid.massInverse * _sign));
-
-    if (_rigid.allowRotation)
-    {
-		XMFLOAT3 vec = Cross(_r, _impulse);
-        XMFLOAT3 dw = ApplyInertiaInverse(vec, _rigid.inertiaTensorWorldInverse);
-        _motion.angularVelocity = Add(_motion.angularVelocity, Mul(dw, _sign));
-    }
 }
 
 XMFLOAT3 PhysicSystem::ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const

@@ -152,11 +152,9 @@ public:
 		uint32 otherMat = RessourceManager::GetMaterialId("Default");
 
         CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
-        //for (int i = 0; i < 1000; i++)
-        //    CreateStaticBox(world, { 0.0f, 0.0f + i * 2.0f, 0.0f }, { 0.5f, 0.5f, 0.5f });
-        //CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); // cube dynamique
-		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); // cube dynamique
-		CreateStaticBox(world, { 10.0f, -2.5f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.5f, 0.5f, 0.5f }); // cube dynamique
+
+		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 2.0f); 
+
 		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 
         // -----------------------------

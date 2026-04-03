@@ -19,7 +19,6 @@ private:
     void ResolveVelocities();
 
     XMFLOAT3 VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3& _r) const;
-    void ApplyImpulse(MotionComponent& _motion, RigidBodyComponent& _rigid, const XMFLOAT3& _impulse, const XMFLOAT3& _r, float _sign) const;
     XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const;
     float AngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _t[9]) const;
 
