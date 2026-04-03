@@ -3,6 +3,7 @@
 #include "../Gameplay/Script/ScriptMovement.h"
 #include "../Gameplay/LevelManager.h"
 #include "../Gameplay/GlowStick.h"
+#include "../Gameplay/GameManager.h"
 
 void MainScene::OnInit()
 {
@@ -53,10 +54,10 @@ void MainScene::OnUpdate(float _dt)
 	{
 		m_started = true;
 	}
-	if(InputManager::IsKeyDown(J))
-	{
-		LevelManager::LoadLevel();
-	}
+    if (InputManager::IsKeyDown(J))
+    {
+        GameManager::CollectFood();
+    }
 
     if (m_started == true)
     {
@@ -89,6 +90,8 @@ void MainScene::OnUpdate(float _dt)
             
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
 
+			TransformComponent& camT = world->GetComponent<TransformComponent>(m_camera);
+			GameManager::TryValidateQuota(camT.local.GetPosition());
 
             if(m_timer >= m_dayDuration)
             {
@@ -124,6 +127,18 @@ void MainScene::OnUpdate(float _dt)
 				m_opened = true;
 				m_gasStarted = false;
 				LevelManager::ResetGas();
+
+				GameManager::NextLevel();
+
+                if(GameManager::GetGameState() == GameState::LOSE)
+                {
+                    std::cout << "You lost! Restarting level..." << std::endl;
+					GameManager::Reset();
+                    LevelManager::ReloadLevel();
+                    world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
+                    return;
+                }
+
                 LevelManager::LoadLevel();
 				world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
             }
@@ -134,6 +149,7 @@ void MainScene::OnUpdate(float _dt)
 void MainScene::OnStart()
 {
 	LevelManager::Init(4);
+	GameManager::Init(4);
 }
 
 void MainScene::OnEnd()

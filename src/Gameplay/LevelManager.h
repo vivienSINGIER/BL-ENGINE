@@ -8,6 +8,7 @@ class LevelManager
 public:
 	static void Init(int _nbPlayer);
 	static void LoadLevel();
+	static void ReloadLevel();
 	static void ReloadLabyrinthe(int _width, int _height);
 	static void SetCellSize(float _cellSize) { m_cellSize = _cellSize; }
 	static void CloseDoor(int doorIndex);

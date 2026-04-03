@@ -36,6 +36,20 @@ void LevelManager::LoadLevel()
 	std::cout << "Level " << m_levelNb << " loaded with " << m_nbPlayer << " player(s) " << "LevelSize " << m_levelSize << std::endl;
 }
 
+void LevelManager::ReloadLevel()
+{
+	m_levelSize = 21 + ((m_levelNb - 1) * 2 * m_nbPlayer);
+
+	if (m_levelSize > 51) m_levelSize = 51;
+
+	m_lightPosXStart = -m_levelSize * m_cellSize * 0.5f - 5.0f;
+
+	m_lightTravelDistance = m_levelSize * m_cellSize + 10.0f;
+
+	ReloadLabyrinthe(m_levelSize, m_levelSize);
+	std::cout << "Level " << m_levelNb << " loaded with " << m_nbPlayer << " player(s) " << "LevelSize " << m_levelSize << std::endl;
+}
+
 
 void LevelManager::ReloadLabyrinthe(int _width, int _height)
 {
