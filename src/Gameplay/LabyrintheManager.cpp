@@ -209,3 +209,8 @@ void LabyrintheManager::OpenRandomDoor()
 {
     m_scene->world->SetInactive(m_doors[m_doorOpenedNight]);
 }
+
+void LabyrintheManager::NightGas(float _dt)
+{
+
+}

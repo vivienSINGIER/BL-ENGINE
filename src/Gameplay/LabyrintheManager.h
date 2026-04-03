@@ -18,6 +18,8 @@ public:
 	static void OpenDoor(int doorIndex);
 	static void OpenRandomDoor();
 
+	static void NightGas(float _dt);
+
 private:
 	static float m_cellSize;
 	static Scene* m_scene;
@@ -27,5 +29,7 @@ private:
 	static int m_nbPlayer;
 
 	static int m_doorOpenedNight;
+	static EntityId m_wallsGas[4];
+
 };
 #endif // !LABYRINTHE_MANAGER_H_DEFINED

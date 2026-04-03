@@ -15,6 +15,7 @@ public:
 	static void OpenRandomDoor();
 	static float GetLightPosXStart() { return m_lightPosXStart; }
 	static float GetLightTravelDistance() { return m_lightTravelDistance; }
+	static void NightGas(float _dt);
 
 private:
 	static float m_cellSize;
