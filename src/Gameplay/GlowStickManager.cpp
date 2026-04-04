@@ -48,8 +48,8 @@ int GlowStickManager::FindClosestGlowStick(float _x, float _z, float _radius)
 			closestDistSq = distSq;
 			closestIndex = i;
 		}
-		return closestIndex;
 	}
+	return closestIndex;
 }
 
 GlowStickEntry& GlowStickManager::GetEntry(int _index)

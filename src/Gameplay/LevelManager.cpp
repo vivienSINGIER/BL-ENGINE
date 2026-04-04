@@ -86,3 +86,8 @@ void LevelManager::ResetGas()
 {
 	LabyrintheManager::ResetGas();
 }
+
+void LevelManager::SetPlayer(int playerIndex, EntityId playerEntity)
+{
+	LabyrintheManager::SetPlayer(playerIndex, playerEntity);
+}

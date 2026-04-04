@@ -18,6 +18,8 @@ private:
 	EntityId m_laby;
 	EntityId m_light;
 
+	EntityId m_player[4];
+
 	XMFLOAT3 m_lightPos;
 	float m_lightTravelDistance;
 	float m_lightPosXStart;

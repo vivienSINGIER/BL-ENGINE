@@ -19,13 +19,14 @@ public:
 	static void StartGas(float _nightDuration);
 	static void NightGas(float _dt, float _nightDuration);
 	static void ResetGas();
+	static void SetPlayer(int playerIndex, EntityId playerEntity);
+
 private:
 	static float m_cellSize;
 	static Scene* m_scene;
 	static int m_levelSize;
 	static int m_levelNb;
 	static int m_nbPlayer;
-
 	static float m_lightPosXStart;
 	static float m_lightTravelDistance;
 

@@ -11,7 +11,6 @@ void Magu::Awake()
 	mr.geoId = RessourceManager::GetGeometryId("Cube");
 	mr.materialId = RessourceManager::GetMaterialId("White");
 
-	PickNewWanderTarget();
 }
 
 void Magu::Update(float _dt)
@@ -135,5 +134,15 @@ XMFLOAT3 Magu::GetMyPos()
 
 bool Magu::IsPlayerFarEnough(float _x, float _z)
 {
-
+	XMFLOAT3 pos = GetMyPos();
+	for (int i = 0; i < 4; i++)
+	{
+		if (m_player[i] == 0) continue;
+		auto& playerT = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<TransformComponent>(m_player[i]);
+		float dx = playerT.local.GetPosition().x - _x;
+		float dz = playerT.local.GetPosition().z - _z;
+		if ((dx * dx + dz * dz) < (playerSafeRadius * playerSafeRadius))
+			return false;
+	}
+	return true;
 }

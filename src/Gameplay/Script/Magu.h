@@ -23,6 +23,8 @@ public:
 	float moveSpeed = 2.0f;
 	float carryDuration = 5.0f;
 
+	void SetPlayer(int playerIndex, EntityId playerEntity) { if (playerIndex >= 0 && playerIndex < 4) m_player[playerIndex] = playerEntity; }
+
 private:
 	MaguState m_state = MaguState::WANDERING;
 
@@ -33,6 +35,8 @@ private:
 	int m_targetStickIndex = -1;
 	float m_carryTimer = 0.0f;
 	float m_labyrintheSize = 0.0f;
+
+	EntityId m_player[4];
 
 	void PickNewWanderTarget();
 	void MoveTowards(XMFLOAT3 _dest, float _dt);

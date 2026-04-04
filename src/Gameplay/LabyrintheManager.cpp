@@ -2,6 +2,8 @@
 #include "LabyrintheHelper.h"
 #include "ItemManager.h"
 #include <iostream>
+#include "../Gameplay/Script/Magu.h"
+#include "GlowStickManager.h"
 
 float LabyrintheManager::m_cellSize = 0;
 Scene* LabyrintheManager::m_scene = nullptr;
@@ -15,6 +17,9 @@ float LabyrintheManager::m_gasWallStartX[4] = {};
 float LabyrintheManager::m_gasTimer = 0.0f;
 float LabyrintheManager::m_gasDuration = 0.0f;
 EntityId LabyrintheManager::m_wallsGas[4] = {};
+Vector<EntityId> LabyrintheManager::m_MaguEntities;
+EntityId LabyrintheManager::m_player[4] = {};
+float LabyrintheManager::m_labySize = 0.0f;
 
 void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 {
@@ -151,6 +156,7 @@ void LabyrintheManager::Init(int _cellSize, Scene* _scene, int _nbPlayer)
 	m_levelNb = 1;
 	m_nbPlayer = _nbPlayer;
 	ItemManager::Init(_scene);
+	GlowStickManager::Init(_scene);
 }
 
 void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
@@ -160,6 +166,8 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
     LabyrintheHelper::Enclose(grid);
 
 	m_doorOpenedNight = LabyrintheHelper::RandomInt(0, 3);
+
+    m_labySize = _width / 2;
 
     int cx = _width / 2;
     int cy = _height / 2;
@@ -217,6 +225,7 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
     LabyrintheHelper::Lobby(grid, rxMin, rxMax, ryMin, ryMax);
     Laby3d(grid);
 	ItemManager::SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
+	SpawnMagu(1 + m_levelNb / 2);
 
     LabyrintheHelper::bfs_check(grid);
     LabyrintheHelper::printGrid(grid);
@@ -224,10 +233,11 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
 
 void LabyrintheManager::DestroyLabyrinthe()
 {
-	ItemManager::DestroyItems();
+    ItemManager::DestroyItems();
+    GlowStickManager::Clear(); 
+    m_MaguEntities.clear();    
     for (EntityId e : m_Entities)
         m_scene->world->DestroyEntity(e);
-
     m_Entities.clear();
 }
 
@@ -289,4 +299,26 @@ void LabyrintheManager::ResetGas()
     for (int i = 0; i < 4; i++)
         if (m_wallsGas[i] != 0)
             m_scene->world->SetInactive(m_wallsGas[i]);
+}
+
+void LabyrintheManager::SpawnMagu(int _count)
+{
+    for (int i = 0; i < _count; i++)
+    {
+        EntityId e = m_scene->world->CreateEntity();
+        m_MaguEntities.push_back(e);
+        m_Entities.push_back(e);
+        m_scene->world->AddScript<Magu>(e).SetSizeLabyrinthe(m_labySize);
+    }
+}
+
+void LabyrintheManager::SetPlayer(int playerIndex, EntityId playerEntity)
+{
+    if (playerIndex < 0 || playerIndex >= m_nbPlayer) return;
+    m_player[playerIndex] = playerEntity;
+    for (EntityId magu : m_MaguEntities)
+    {
+        Magu& maguScript = m_scene->world->GetScript<Magu>(magu);
+		maguScript.SetPlayer(playerIndex, playerEntity);
+    }
 }

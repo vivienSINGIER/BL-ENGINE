@@ -4,6 +4,7 @@
 #include "../Gameplay/LevelManager.h"
 #include "../Gameplay/GlowStick.h"
 #include "../Gameplay/GameManager.h"
+#include "../Gameplay/Script/Magu.h"
 
 void MainScene::OnInit()
 {
@@ -19,6 +20,7 @@ void MainScene::OnInit()
 
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
 	ComponentRegistry::RegisterScript<GlowStick>();
+    ComponentRegistry::RegisterScript<Magu>();
 
 	m_camera = world->CreateEntity();
 	TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
@@ -32,6 +34,7 @@ void MainScene::OnInit()
 	ColliderComponent& col = world->AddComponent<ColliderComponent>(m_camera);
 	phys.SetMass(1.0f);
 	phys.ToggleGravity();
+	m_player[0] = m_camera;
 
 	m_light = world->CreateEntity();
 	TransformComponent& lt = world->AddComponent<TransformComponent>(m_light);
@@ -150,6 +153,7 @@ void MainScene::OnStart()
 {
 	LevelManager::Init(4);
 	GameManager::Init(4);
+    LevelManager::SetPlayer(0, m_camera);
 }
 
 void MainScene::OnEnd()

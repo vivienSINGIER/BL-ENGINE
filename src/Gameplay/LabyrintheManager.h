@@ -22,13 +22,19 @@ public:
 	static void StartGas(float _nightDuration);
 	static void ResetGas();
 
+	static void SetPlayer(int playerIndex, EntityId playerEntity);
+	static void SpawnMagu(int _count);
+
 private:
 	static float m_cellSize;
+	static float m_labySize;
 	static Scene* m_scene;
 	static Vector<EntityId> m_Entities;
+	static Vector<EntityId> m_MaguEntities;
 	static int m_levelNb;
 	static EntityId m_doors[4];
 	static int m_nbPlayer;
+	static EntityId m_player[4];
 
 	static int m_doorOpenedNight;
 	static float m_gasWallTargetX[4];
