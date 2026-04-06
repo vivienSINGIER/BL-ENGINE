@@ -1,5 +1,5 @@
 #include "GlowStick.h"
-
+#include "GlowStickManager.h"
 
 void GlowStick::Awake()
 {
@@ -27,6 +27,7 @@ void GlowStick::DropGlowStick(float _x, float _y, float _z)
 	SceneManager::GetSceneWithId(sceneId)->world->SetActive(entity);
 	TransformComponent& t = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<TransformComponent>(entity);
 	t.local.SetPosition(XMFLOAT3(_x, _y, _z));
+	GlowStickManager::AddGlowStick(entity, _x, _y, _z);
 }
 
 void GlowStick::ChangeColor(XMFLOAT4 _color)

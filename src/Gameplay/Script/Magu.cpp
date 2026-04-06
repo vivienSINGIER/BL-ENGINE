@@ -1,5 +1,6 @@
 #include "Magu.h"
 #include "GlowStickManager.h"
+#include <iostream>
 
 void Magu::Awake()
 {
@@ -40,7 +41,7 @@ void Magu::Update(float _dt)
 	{
 		auto& entry = GlowStickManager::GetEntry(m_targetStickIndex);
 		XMFLOAT3 dest = { entry.x, 0.5f, entry.z };
-		MoveTowards(m_targetPosition, _dt);
+		MoveTowards(dest, _dt);
 
 		if (ReachedTagert(dest, 1.0f))
 		{
