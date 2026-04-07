@@ -1,165 +1,247 @@
 #include "PhysicIntegrateSystem.h"
-#include <iostream>
+#include "../Core/Utils.hpp"
 
-namespace
+void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent& _rigid, MotionComponent& _motion, ColliderComponent& _shape, TransformComponent& _transform)
 {
-    constexpr float kSleepLinearThreshold = 0.05f;
-    constexpr float kSleepAngularThreshold = 0.05f;
-	constexpr float kSleepTimeThreshold = 0.2f;
+    if (_rigid.type != BodyType::Dynamic) return;
+    if (_motion.isSleeping) return;
 
-	constexpr float kAngularDamping = 2.0f;
-}
-
-void PhysicIntegrateSystem::OnStartUpdate(float _dt)
-{
-}
-
-void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, ColliderComponent& _collider, TransformComponent& _transform)
-{
-    if (_physic.type == BodyType::Static)
-        return;
-	if (_physic.isSleeping)
-		return;
-
-    _transform.local.Move(IntegrateVelocity(_physic, _dt));
-
-    if (_collider.type == ColliderType::Box)
-        BoxInertie(_physic, _collider);
-    else
-        SphereInertie(_physic, _collider);
-
-    if (_physic.rotation)
+    // Recalcul uniquement si nécessaire.
+    if (_rigid.inertiaDirty)
     {
-        XMFLOAT3 deltaAngle = IntegrateTorque(_physic, _dt);
+        ComputeBodyInertiaTensor(_rigid, _shape);
+        _rigid.inertiaDirty = false;
+    }
+
+    if (_rigid.allowRotation)
+        UpdateWorldInertiaTensor(_rigid, _transform);
+
+    // Intégration normale
+    XMFLOAT3 deltaPos = IntegrateLinearVelocity(_rigid, _motion, _dt);
+    _transform.local.Move(deltaPos);
+
+    if (_rigid.allowRotation)
+    {
+        XMFLOAT3 deltaAngle = IntegrateAngularVelocity(_rigid, _motion, _dt);
         UpdateQuaternion(_transform, deltaAngle);
     }
     else
     {
-        _physic.angularVelocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        _physic.torque = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        _motion.angularVelocity = { 0,0,0 };
+        _motion.torque = { 0,0,0 };
     }
 
-    // Sleep logic
-    XMFLOAT3 velocityForSleep = _physic.velocity;
+    // Sleep
+	float linearSq = NormSquared(_motion.linearVelocity);
+	float angularSq = NormSquared(_motion.angularVelocity);
 
-    if (_physic.hasSupportContact)
+    bool lowMotion = linearSq < (kSleepLinearThreshold) && angularSq < (kSleepAngularThreshold);
+
+    if (lowMotion) 
+    { 
+        _motion.sleepTimer += _dt;
+
+        if (_motion.sleepTimer >= kSleepTimeThreshold)
+            _motion.Sleep();
+    }
+    else 
     {
-        XMFLOAT3 n = Normalize(_physic.supportNormal);
-        float vn = Dot(velocityForSleep, n);
+        _motion.sleepTimer = 0.0f; 
+    }
+}
 
-        velocityForSleep = Subtract(velocityForSleep, Mul(n, vn));
-
-        if (abs(vn) < 0.1f)
-            _physic.velocity = Subtract(_physic.velocity, Mul(n, vn));
+void PhysicIntegrateSystem::ComputeBodyInertiaTensor(RigidBodyComponent& _rigid, ColliderComponent& _shape)
+{
+    if (!_rigid.allowRotation)
+    {
+        _rigid.ZeroTensors();
+        return;
     }
 
-    float linearSq = NormSquared(velocityForSleep);
-    float angularSq = NormSquared(_physic.angularVelocity);
+    float m = _rigid.mass;
+    float ixx = 0.0f, iyy = 0.0f, izz = 0.0f;
 
-    float linearThresholdSq = kSleepLinearThreshold * kSleepLinearThreshold;
-    float angularThresholdSq = kSleepAngularThreshold * kSleepAngularThreshold;
-
-    bool lowMotion =
-        linearSq < linearThresholdSq &&
-        angularSq < angularThresholdSq;
-
-    if (lowMotion && _physic.hasSupportContact)
+    switch (_shape.type)
     {
-        _physic.sleepTimer += _dt;
-
-        if (_physic.sleepTimer >= kSleepTimeThreshold)
+        case ShapeType::Box:
         {
-            std::cout << "Entity " << _e << " is sleeping." << std::endl;
-            _physic.Sleep();
+            const XMFLOAT3& h = _shape.shape.box.halfExtents;
+            float w = h.x * 2.0f;
+            float ht = h.y * 2.0f;
+            float d  = h.z * 2.0f;
+
+            ixx = (1.0f / 12.0f) * m * (ht*ht + d*d);
+            iyy = (1.0f / 12.0f) * m * (w*w  + d*d);
+            izz = (1.0f / 12.0f) * m * (w*w  + ht*ht);
+            break;
+        }
+
+        case ShapeType::Sphere:
+        {
+            float r = _shape.shape.sphere.radius;
+            ixx = iyy = izz = (2.0f / 5.0f) * m * r * r;
+            break;
+        }
+
+        case ShapeType::Capsule:
+        {
+            float r  = _shape.shape.capsule.radius;
+            float hh = _shape.shape.capsule.halfHeight;
+            float h  = hh * 2.0f; // hauteur du cylindre central
+
+            // Répartition de la masse entre cylindre et deux hémisphères.
+            float volCyl = 3.14159265f * r * r * h;
+            float volSph = (4.0f / 3.0f) * 3.14159265f * r * r * r;
+            float totalVol = volCyl + volSph;
+
+            float massCyl = (totalVol > 0.0f) ? m * volCyl / totalVol : 0.0f;
+            float massSph = m - massCyl;
+
+            // Cylindre.
+            float ixx_cyl = (massCyl / 12.0f) * (3.0f * r*r + h*h);
+            float iyy_cyl = (massCyl / 2.0f)  * r * r;
+
+            // Chaque hémisphère via Huygens (décalé de hh + 3r/8 du centre).
+            float d_sph   = hh + (3.0f * r) / 8.0f;
+            float ixx_sph = (2.0f / 5.0f) * (massSph * 0.5f) * r*r
+                          + (massSph * 0.5f) * d_sph * d_sph;
+            float iyy_sph = (2.0f / 5.0f) * (massSph * 0.5f) * r*r;
+
+            ixx = izz = ixx_cyl + 2.0f * ixx_sph;
+            iyy       = iyy_cyl + 2.0f * iyy_sph;
+            break;
         }
     }
-    else
+
+    _rigid.SetDiagonalInertiaTensor(ixx, iyy, izz);
+}
+
+void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,  TransformComponent& _transform)
+{
+    const float* bi = _rigid.inertiaTensorBodyInverse;
+
+    XMMATRIX I_body_inv(
+        bi[0], bi[1], bi[2], 0,
+        bi[3], bi[4], bi[5], 0,
+        bi[6], bi[7], bi[8], 0,
+        0,     0,     0,     1
+    );
+
+    XMVECTOR q   = XMLoadFloat4(&_transform.local.GetRotation());
+    XMMATRIX R   = XMMatrixRotationQuaternion(q);
+    XMMATRIX RT  = XMMatrixTranspose(R);
+
+    XMMATRIX I_world_inv = R * I_body_inv * RT;
+
+    XMFLOAT4X4 tmp;
+    XMStoreFloat4x4(&tmp, I_world_inv);
+
+    float* wi = _rigid.inertiaTensorWorldInverse;
+    for (int r = 0; r < 3; ++r)
+        for (int c = 0; c < 3; ++c)
+            wi[r*3+c] = tmp.m[r][c];
+}
+
+XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rigid, MotionComponent& _motion, float _dt)
+{
+    XMFLOAT3 accel = { 0.0f, 0.0f, 0.0f };
+
+    // F = ma → a = F * (1/m)
+    accel.x += _motion.force.x * _rigid.massInverse;
+    accel.y += _motion.force.y * _rigid.massInverse;
+    accel.z += _motion.force.z * _rigid.massInverse;
+
+    // Gravité : accélération directe
+    if (_rigid.useGravity)
     {
-        _physic.sleepTimer = 0.0f;
+        accel.x += m_gravity.x * _rigid.gravityScale;
+        accel.y += m_gravity.y * _rigid.gravityScale;
+        accel.z += m_gravity.z * _rigid.gravityScale;
     }
 
-    _physic.hasSupportContact = false;
-	_physic.supportNormal = XMFLOAT3(0.0f, 0.0f, 0.0f);
-}
+    // Intégration vitesse
+    _motion.linearVelocity.x += accel.x * _dt;
+    _motion.linearVelocity.y += accel.y * _dt;
+    _motion.linearVelocity.z += accel.z * _dt;
 
-void PhysicIntegrateSystem::OnEndUpdate(float _dt)
-{
-}
+    // Amortissement linéaire.
+    float damp = 1.0f / (1.0f + _rigid.linearDamping * _dt);
+    _motion.linearVelocity.x *= damp;
+    _motion.linearVelocity.y *= damp;
+    _motion.linearVelocity.z *= damp;
 
-XMFLOAT3 PhysicIntegrateSystem::IntegrateVelocity(PhysicComponent& _physic, float _dt)
-{
-    XMFLOAT3 dragForce = Mul(_physic.velocity, -m_airDrag);
-    XMFLOAT3 totalForces = Add(_physic.forces, dragForce);
-    XMFLOAT3 acceleration = Mul(totalForces, _physic.massInverse);
-
-    if (_physic.useGravity)
-        acceleration = Add(acceleration, m_gravityAccel);
-
-    _physic.acceleration = acceleration;
-    _physic.velocity = Add(_physic.velocity, Mul(acceleration, _dt));
-    _physic.forces = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
-    return Mul(_physic.velocity, _dt);
-}
-
-XMFLOAT3 PhysicIntegrateSystem::IntegrateTorque(PhysicComponent& _physic, float _dt)
-{
-    XMFLOAT3 angularAcceleration =
+    // Résistance de l'air
+    // F_drag = -dragCoefficient * |v| * v
+    if (_rigid.dragCoefficient > 0.0f)
     {
-        _physic.torque.x * _physic.inertieInverse.x,
-        _physic.torque.y * _physic.inertieInverse.y,
-        _physic.torque.z * _physic.inertieInverse.z
+		float speed = NormSquared(_motion.linearVelocity);
+
+        if (speed > 0.1f)
+        {
+            // F_drag * (1/m) = -drag * |v| * v * massInverse
+            float dragAccel = _rigid.dragCoefficient * speed * _rigid.massInverse;
+
+            float dragDamp = 1.0f / (1.0f + dragAccel * _dt);
+            _motion.linearVelocity.x *= dragDamp;
+            _motion.linearVelocity.y *= dragDamp;
+            _motion.linearVelocity.z *= dragDamp;
+        }
+    }
+
+    // Remise à zéro des forces — les scripts réappliquent chaque frame.
+    _motion.force = { 0.0f, 0.0f, 0.0f };
+
+    return
+    {
+        _motion.linearVelocity.x * _dt,
+        _motion.linearVelocity.y * _dt,
+        _motion.linearVelocity.z * _dt
+    };
+}
+
+XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _rigid, MotionComponent& _motion, float _dt)
+{
+    // α = I_world_inv · τ
+    const float* wi = _rigid.inertiaTensorWorldInverse;
+    XMFLOAT3 alpha =
+    {
+        wi[0]*_motion.torque.x + wi[1]*_motion.torque.y + wi[2]*_motion.torque.z,
+        wi[3]*_motion.torque.x + wi[4]*_motion.torque.y + wi[5]*_motion.torque.z,
+        wi[6]*_motion.torque.x + wi[7]*_motion.torque.y + wi[8]*_motion.torque.z
     };
 
-    _physic.angularVelocity = Add(_physic.angularVelocity, Mul(angularAcceleration, _dt));
+    _motion.angularVelocity.x += alpha.x * _dt;
+    _motion.angularVelocity.y += alpha.y * _dt;
+    _motion.angularVelocity.z += alpha.z * _dt;
 
-    float angularDampingFactor = 1.0f / (1.0f + kAngularDamping * _dt);
-    _physic.angularVelocity = Mul(_physic.angularVelocity, angularDampingFactor);
+    // Amortissement angulaire.
+    float damp = 1.0f / (1.0f + _rigid.angularDamping * _dt);
+    _motion.angularVelocity.x *= damp;
+    _motion.angularVelocity.y *= damp;
+    _motion.angularVelocity.z *= damp;
 
-    if (NormSquared(_physic.angularVelocity) < 1e-4f)
-        _physic.angularVelocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
+    // Seuil numérique — évite la dérive flottante sur les corps quasi-immobiles.
+	float aSq = NormSquared(_motion.angularVelocity);
+    if (aSq < kMinAngularVelocitySq)
+        _motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
 
-    _physic.torque = XMFLOAT3(0.0f, 0.0f, 0.0f);
+    _motion.torque = { 0.0f, 0.0f, 0.0f };
 
-    return Mul(_physic.angularVelocity, _dt); //Angle delta
+    return
+    {
+        _motion.angularVelocity.x * _dt,
+        _motion.angularVelocity.y * _dt,
+        _motion.angularVelocity.z * _dt
+    };
 }
 
-void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, XMFLOAT3& deltaAngle)
+void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
     XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
-    XMVECTOR qDelta = XMQuaternionRotationRollPitchYaw(deltaAngle.x, deltaAngle.y, deltaAngle.z);
-    XMVECTOR qNew = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
+    XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
+    XMVECTOR qNew     = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
     XMFLOAT4 out;
     XMStoreFloat4(&out, qNew);
     _transform.local.SetRotationQuaternion(out);
 }
-
-void PhysicIntegrateSystem::BoxInertie(PhysicComponent& _physic, ColliderComponent& _collider)
-{
-	OBB& obb = _collider.obb;
-
-    float w = obb.halfExtents.x * 2.0f;
-    float h = obb.halfExtents.y * 2.0f;
-    float d = obb.halfExtents.z * 2.0f;
-    float m = _physic.mass;
-
-    _physic.inertie.x = (1.0f / 12.0f) * m * (h * h + d * d);
-    _physic.inertie.y = (1.0f / 12.0f) * m * (w * w + d * d);
-    _physic.inertie.z = (1.0f / 12.0f) * m * (w * w + h * h);
-
-    _physic.inertieInverse.x = (_physic.inertie.x > 0.0f) ? 1.0f / _physic.inertie.x : 0.0f;
-    _physic.inertieInverse.y = (_physic.inertie.y > 0.0f) ? 1.0f / _physic.inertie.y : 0.0f;
-    _physic.inertieInverse.z = (_physic.inertie.z > 0.0f) ? 1.0f / _physic.inertie.z : 0.0f;
-}
-
-void PhysicIntegrateSystem::SphereInertie(PhysicComponent& _physic, ColliderComponent& _collider)
-{
-	float radius = _collider.colliderTransform.GetScale().x * 0.5f;
-
-    float i = (2.0f / 5.0f) * _physic.mass * radius * radius;
-
-    _physic.inertie = { i, i, i };
-    _physic.inertieInverse = (i > 0.0f) ? XMFLOAT3{ 1.0f / i, 1.0f / i, 1.0f / i } : XMFLOAT3{ 0.0f, 0.0f, 0.0f };
-}
-

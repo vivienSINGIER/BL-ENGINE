@@ -62,22 +62,23 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
     if (m_pSceneManager == nullptr)
         m_pSceneManager = new SceneManager;
 
-    m_pContactManager = new ContactManager();
 
     ComponentRegistry::Init();
 
-    SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::Update);
     SystemScheduler::Get().RegisterSystem<MeshRendererSystem>(Phase::Render, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<CameraSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);
     SystemScheduler::Get().RegisterSystem<SendSystem>(Phase::NetworkSend);
+
+	BroadPhaseSystem* bps = SystemScheduler::Get().RegisterSystem<BroadPhaseSystem>(Phase::FixedUpdate);
+	NarrowPhaseSystem* nps = SystemScheduler::Get().RegisterSystem<NarrowPhaseSystem>(Phase::FixedUpdate);
+	PhysicSystem* ps = SystemScheduler::Get().RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
     SystemScheduler::Get().RegisterSystem<PhysicIntegrateSystem>(Phase::FixedUpdate);
-    SystemScheduler::Get().RegisterSystem<ColliderSystem>(Phase::FixedUpdate);
-	SystemScheduler::Get().RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
-    SystemScheduler::Get().GetSystem<ColliderSystem>()->SetContactManager(GetContactManager());
-    SystemScheduler::Get().GetSystem<ColliderSystem>()->InitializePartitionGrid(XMINT2(100, 100), 2);
-	SystemScheduler::Get().GetSystem<PhysicSystem>()->SetContactManager(GetContactManager());
+    SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::FixedUpdate);
+
+	nps->SetBroadPhaseSystem(bps);
+	ps->SetNarrowPhaseSystem(nps);
 }
 
 void EngineManager::Run()
@@ -113,7 +114,6 @@ void EngineManager::Run()
 void EngineManager::Exit()
 {
     delete m_pRessourceManager;
-    delete m_pContactManager;
 }
 
 void EngineManager::HostServer(int _port)

@@ -10,7 +10,7 @@
 template <typename T>
 T& World::AddComponent(EntityId _e, T const& _val)
 {
-    assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
+    assert(IsAlive(_e) && "Can't add component to dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
     assert(!ComponentRegistry::IsScript(ComponentType::Id<T>()) && "Component should not be a script");
 
@@ -20,7 +20,7 @@ T& World::AddComponent(EntityId _e, T const& _val)
 template <typename T>
 void World::RemoveComponent(EntityId _e)
 {
-    assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
+    assert(IsAlive(_e) && "Can't remove component from dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     m_commandQueue.EmplaceRemove<T>(_e);
@@ -29,7 +29,7 @@ void World::RemoveComponent(EntityId _e)
 template <typename T>
 T& World::GetComponent(EntityId _e)
 {
-    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(IsAlive(_e) && "Can't access component from dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     ComponentId cid = ComponentType::Id<T>();
@@ -54,7 +54,7 @@ T& World::GetComponent(EntityId _e)
 template <typename T>
 bool World::HasComponent(EntityId _e)
 {
-    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(IsAlive(_e) && "Can't access component from dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     ComponentId cid = ComponentType::Id<T>();
@@ -67,7 +67,7 @@ bool World::HasComponent(EntityId _e)
 template <typename T>
 void World::SetActiveComponent(EntityId _e, bool _value)
 {
-    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(IsAlive(_e) && "Can't set active component on dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     ComponentId cid = ComponentType::Id<T>();
@@ -95,7 +95,7 @@ void World::SetActiveComponent(EntityId _e, bool _value)
 template <typename T>
 bool World::IsActiveComponent(EntityId _e)
 {
-    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(IsAlive(_e) && "Can't set active component on dead entity");
     assert(ComponentRegistry::IsRegistered(ComponentType::Id<T>()) && "Component is not registered");
 
     ComponentId cid = ComponentType::Id<T>();

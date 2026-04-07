@@ -18,9 +18,12 @@ public:
     EntityManager entityManager;
 
     Vector<EntityId> GetEntities();
+    EntityRecord& GetRecord(EntityId _e);
     
     EntityId CreateEntity(EntityId _id = 0, bool isCopied = false, ComponentMask _requiredMask = 0);
     void DestroyEntity(EntityId _entity);
+
+    bool IsAlive(EntityId _e);
     
     void SetActive(EntityId _entity);
     void SetInactive(EntityId _entity);

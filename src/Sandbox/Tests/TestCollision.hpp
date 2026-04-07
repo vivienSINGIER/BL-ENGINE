@@ -1,4 +1,4 @@
-#ifndef TEST_COLLISION_HPP_DEFINED
+﻿#ifndef TEST_COLLISION_HPP_DEFINED
 #define TEST_COLLISION_HPP_DEFINED
 
 #include "Test.h"
@@ -11,8 +11,7 @@ public:
     {
         void Update(float dt) override
         {
-            Transform& transform = GetComponent<TransformComponent>().local;
-            InputManager::HandleInput();
+            TransformComponent& t = GetComponent<TransformComponent>();
 
             if (InputManager::IsKey(Z))
                 t.local.Move(XMFLOAT3(0.0f, 0.0f, 2.0f * dt));
@@ -29,53 +28,104 @@ public:
         }
     };
 
-    static EntityId CreateCube(World* world,
+    // Corps dynamique (cube) 
+    static EntityId CreateDynamicBox(World* world,
         const XMFLOAT3& position,
-        const XMFLOAT3& scale,
-        uint32 material,
-        bool dynamicBody,
-        float mass = 1.0f,
-        bool useGravity = true,
-        bool rotation = false,
-        const XMFLOAT3& velocity = XMFLOAT3(0.0f, 0.0f, 0.0f),
-        float staticFriction = 0.5f,
-        float dynamicFriction = 0.3f,
-        float restitution = 0.0f)
+        const XMFLOAT3& halfExtents,
+		const XMFLOAT3& initialVelocity = { 0.0f, 0.0f, 0.0f },
+        float mass = 1.0f)
+    {
+        EntityId e = world->CreateEntity();
+
+        // Transform
+        TransformComponent& t = world->AddComponent<TransformComponent>(e);
+        t.local.SetPosition(position);
+        t.local.SetScale({ 1.0f, 1.0f, 1.0f });
+        t.local.AddYPR({ 0.0f, 0.0f, XM_PIDIV2 });
+
+        MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
+        mr.geoId = RessourceManager::GetGeometryId("Cube");
+
+        // Shape
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
+        s.SetBox(halfExtents);
+
+        // RigidBody
+        RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
+        r.SetMass(mass);
+        r.type = BodyType::Dynamic;
+        r.useGravity = true;
+        r.allowRotation = true;
+
+        // Motion
+        MotionComponent& m = world->AddComponent<MotionComponent>(e);
+		m.linearVelocity = initialVelocity;
+
+        return e;
+    }
+
+    // Corps statique (sol)
+    static EntityId CreateStaticBox(World* world, const XMFLOAT3& position, const XMFLOAT3& scale, const XMFLOAT3& halfExtents)
     {
         EntityId e = world->CreateEntity();
 
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
-        t.local.SetScale(scale);
+		t.local.SetScale(scale);
 
-        ColliderComponent& c = world->AddComponent<ColliderComponent>(e);
-        c.type = ColliderType::Box;
+		MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
+        mr.geoId = RessourceManager::GetGeometryId("Cube");
 
-        PhysicComponent& p = world->AddComponent<PhysicComponent>(e);
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
+        s.SetBox(halfExtents);
 
-        if (dynamicBody)
-        {
-            p.type = BodyType::Dynamic;
-            p.SetMass(mass);
-            p.useGravity = useGravity;
-            p.rotation = rotation;
-            p.velocity = velocity;
-            p.staticFriction = staticFriction;
-            p.dynamicFriction = dynamicFriction;
-            p.restitution = restitution;
-        }
-        else
-        {
-            p.SetStatic();
-            p.staticFriction = staticFriction;
-            p.dynamicFriction = dynamicFriction;
-            p.restitution = restitution;
-        }
+        RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
+        r.SetStatic();  // massInverse = 0, tenseurs = 0
 
-        MeshRenderer& m = world->AddComponent<MeshRenderer>(e);
-		m.geoId = RessourceManager::GetGeometryId("Cube");
-        if (material)
-			m.materialId = material;
+        return e;
+    }
+
+    // Sphère dynamique
+    static EntityId CreateDynamicSphere(World* world, const XMFLOAT3& position, float radius, float mass = 1.0f)
+    {
+        EntityId e = world->CreateEntity();
+
+        TransformComponent& t = world->AddComponent<TransformComponent>(e);
+        t.local.SetPosition(position);
+
+        MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
+        mr.geoId = RessourceManager::GetGeometryId("Sphere");
+
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
+        s.SetSphere(radius * 0.5f);
+
+        RigidBodyComponent& r = world->AddComponent<RigidBodyComponent>(e);
+        r.SetMass(mass);
+        r.type = BodyType::Dynamic;
+        r.useGravity = true;
+
+        world->AddComponent<MotionComponent>(e);
+
+        return e;
+    }
+
+    // Trigger (zone de détection)
+    static EntityId CreateTrigger(World* world,
+        const XMFLOAT3& position,
+        const XMFLOAT3& halfExtents)
+    {
+        EntityId e = world->CreateEntity();
+
+        TransformComponent& t = world->AddComponent<TransformComponent>(e);
+        t.local.SetPosition(position);
+
+        ColliderComponent& s = world->AddComponent<ColliderComponent>(e);
+        s.SetBox(halfExtents);
+        s.isTrigger = true;  // pas de réponse physique
+
+        // Pas de RigidBodyComponent ni MotionComponent —
+        // la broad phase et la narrow phase le traitent quand même
+        // car elles ne demandent que ShapeComponent + TransformComponent.
 
         return e;
     }
@@ -88,6 +138,7 @@ public:
         World* world = scene->world;
 
         RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
+		RessourceManager::AddGeometry("Sphere", GeometryFactory::BuildIcosphere(EngineManager::GetDevice(), 10));
         uint32 shaderId = RessourceManager::AddShader("LitColored", ShaderFactory::CreateLitColored(EngineManager::GetDevice()));
         Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
         RessourceManager::AddMaterial("White", white);
@@ -99,123 +150,12 @@ public:
         uint32 mat = RessourceManager::GetMaterialId("White");
 		uint32 otherMat = RessourceManager::GetMaterialId("Default");
 
-        // -----------------------------
-        // SOL PRINCIPAL
-        // -----------------------------
-        CreateCube(
-            world,
-            XMFLOAT3(0.0f, -1.0f, 0.0f),
-            XMFLOAT3(80.0f, 1.0f, 80.0f),
-            mat,
-            false,
-            1.0f,
-            false,
-            false,
-            XMFLOAT3(0, 0, 0),
-            0.8f,
-            0.6f,
-            0.0f
-        );
+        CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
 
-        // -----------------------------
-        // TEST A : chute simple
-        // -----------------------------
-        CreateCube(
-            world,
-            XMFLOAT3(-15.0f, 5.0f, 0.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            otherMat,
-            true,
-            1.0f,
-            true,
-            false,
-            XMFLOAT3(0, 0, 0),
-            0.0f,
-            0.0f,
-            0.0f
-        );
+		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
+		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
 
-        // -----------------------------
-        // TEST B : glissement sans friction
-        // -----------------------------
-        CreateCube(
-            world,
-            XMFLOAT3(-8.0f, 0.0f, 0.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            otherMat,
-            true,
-            1.0f,
-            true,
-            false,
-            XMFLOAT3(-3.0f, 0.0f, 0.0f),
-            0.0f,
-            0.0f,
-            0.0f
-        );
-
-        // -----------------------------
-        // TEST C : glissement avec friction
-        // -----------------------------
-        CreateCube(
-            world,
-            XMFLOAT3(-8.0f, 0.0f, -2.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            otherMat,
-            true,
-            1.0f,
-            true,
-            false,
-            XMFLOAT3(-3.0f, 0.0f, 0.0f),
-            0.5f,
-            0.3f,
-            0.0f
-        );
-
-        // -----------------------------
-        // TEST D : empilement
-        // -----------------------------
-        CreateCube(world, XMFLOAT3(8.0f, 0.0f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
-        CreateCube(world, XMFLOAT3(8.0f, 2.1f, 0.0f), XMFLOAT3(1, 1, 1), otherMat, true, 1.0f, true, true);
-        //CreateCube(world, XMFLOAT3(8.0f, 2.2f, 0.0f), XMFLOAT3(1, 1, 1), nullptr, true, 1.0f, true, true);
-
-        // -----------------------------
-        // TEST E : collision lat�rale
-        // -----------------------------
-        CreateCube(
-            world,
-            XMFLOAT3(0.0f, 0.0f, 6.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            otherMat,
-            true,
-            1.0f,
-            false,
-            false,
-            XMFLOAT3(5.0f, 0.0f, 0.0f),
-            0.0f,
-            0.0f,
-            0.0f
-        );
-
-        CreateCube(
-            world,
-            XMFLOAT3(4.0f, 0.0f, 6.0f),
-            XMFLOAT3(1.0f, 1.0f, 1.0f),
-            otherMat,
-            true,
-            1.0f,
-            false,
-            false,
-            XMFLOAT3(0.0f, 0.0f, 0.0f),
-            0.0f,
-            0.0f,
-            0.0f
-        );
-
-        // -----------------------------
-		// TEST F : Rotation
-        // -----------------------------
-        CreateCube(world, XMFLOAT3(0.0f, 1.0f, -4.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(6.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
-        CreateCube(world, XMFLOAT3(3.0f, 0.0f, -4.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), otherMat, true, 1.0f, true, true, XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 
         // -----------------------------
         // CAMERA

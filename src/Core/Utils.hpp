@@ -33,6 +33,51 @@ inline XMFLOAT3 Mul(const XMFLOAT3& a, const XMFLOAT3& b)
     return { a.x * b.x, a.y * b.y, a.z * b.z };
 }
 
+inline XMFLOAT3 Div(const XMFLOAT3& v, float s)
+{
+    return { v.x / s, v.y / s, v.z / s };
+}
+
+inline XMFLOAT3 Div(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return { a.x / b.x, a.y / b.y, a.z / b.z };
+}
+
+inline XMFLOAT3 Abs(const XMFLOAT3& v)
+{
+    return { fabsf(v.x), fabsf(v.y), fabsf(v.z) };
+}
+
+inline bool Less(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+	return (a.x < b.x) && (a.y < b.y) && (a.z < b.z);
+}
+
+inline bool LessEqual(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x <= b.x) && (a.y <= b.y) && (a.z <= b.z);
+}
+
+inline bool Greater(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x > b.x) && (a.y > b.y) && (a.z > b.z);
+}
+
+inline bool GreaterEqual(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return (a.x >= b.x) && (a.y >= b.y) && (a.z >= b.z);
+}
+
+inline XMFLOAT3 Snap(const XMFLOAT3& _v, float _threshold)
+{
+    return
+    {
+        (fabsf(_v.x) <= _threshold) ? 0.0f : _v.x,
+        (fabsf(_v.y) <= _threshold) ? 0.0f : _v.y,
+        (fabsf(_v.z) <= _threshold) ? 0.0f : _v.z
+    };
+}
+
 inline XMFLOAT3 Normalize(const XMFLOAT3& v)
 {
     XMVECTOR vec = XMLoadFloat3(&v);
