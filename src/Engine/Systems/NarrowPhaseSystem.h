@@ -41,9 +41,6 @@ struct EPAFace
 class NarrowPhaseSystem : public System<ColliderComponent, TransformComponent>
 {
 public:
-    void OnStartUpdate(float _dt) override;
-    void OnEndUpdate(float _dt) override;
-
     void Update(float _dt) override;
 
     void SetBroadPhaseSystem(BroadPhaseSystem* _bp) { m_broadPhase = _bp; }
@@ -149,7 +146,7 @@ private:
 
     static constexpr int   kGJKMaxIterations = 64;
     static constexpr int   kEPAMaxIterations = 64;
-    static constexpr float kEPATolerance     = 0.0001f;
+    static constexpr float kEPATolerance     = 0.1f;
 };
 
 #endif // !NARROW_PHASE_SYSTEM_H_DEFINED

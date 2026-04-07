@@ -4,24 +4,14 @@
 #include <Utils.hpp>
 #include <iostream>
 
-void NarrowPhaseSystem::OnStartUpdate(float _dt)
+void NarrowPhaseSystem::Update(float _dt)
 {
     m_cache.BeginFrame();
-}
-
-void NarrowPhaseSystem::OnEndUpdate(float _dt)
-{
     if (m_broadPhase == nullptr)
         return;
 
     for (const CandidatePair& pair : m_broadPhase->GetCandidatePairs())
         ProcessPair(pair.a, pair.b);
-}
-
-void NarrowPhaseSystem::Update(float _dt)
-{
-    OnStartUpdate(_dt);
-    OnEndUpdate(_dt);
 }
 
 bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
@@ -47,7 +37,7 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
     ContactManifold manifold;
     manifold.a           = _a;
     manifold.b           = _b;
-    manifold.normal      = normal;
+    manifold.normal      = Snap(normal, 0.1f);
     manifold.penetration = penetration;
     manifold.isTrigger   = shapeA.isTrigger || shapeB.isTrigger;
 

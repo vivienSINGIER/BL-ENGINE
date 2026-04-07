@@ -21,13 +21,12 @@ private:
 	void UpdateSleepState(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB);
     void ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB,
         RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB,
-        XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal, float _j);
+        XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal,
+        const XMFLOAT3& _vRelPre, float _j);
 
     XMFLOAT3 VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3& _r) const;
     XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const;
     float AngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _t[9]) const;
-
-    XMFLOAT3 Snap(const XMFLOAT3& _v, float _threshold) const;
 
     MotionComponent&    GetMotion(EntityId _e);
     RigidBodyComponent* GetRigid(EntityId _e);
@@ -45,7 +44,7 @@ private:
 	static constexpr float kSleepThreshold = 0.5f;
 
     static constexpr float kPenetrationSlop = 0.01f;
-    static constexpr float kBeta = 0.5f;
+    static constexpr float kBeta = 0.2f;
 };
 
 #endif // !PHYSIC_SYSTEM_H_DEFINED

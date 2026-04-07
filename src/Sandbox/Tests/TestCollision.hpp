@@ -28,7 +28,7 @@ public:
         }
     };
 
-    // ─── Corps dynamique (cube) ───────────────────────────────────────────────────
+    // Corps dynamique (cube) 
     static EntityId CreateDynamicBox(World* world,
         const XMFLOAT3& position,
         const XMFLOAT3& halfExtents,
@@ -41,6 +41,7 @@ public:
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
         t.local.SetScale({ 1.0f, 1.0f, 1.0f });
+        t.local.AddYPR({ 0.0f, 0.0f, XM_PIDIV2 });
 
         MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
@@ -63,7 +64,7 @@ public:
         return e;
     }
 
-    // ─── Corps statique (sol) ────────────────────────────────────────────────────
+    // Corps statique (sol)
     static EntityId CreateStaticBox(World* world, const XMFLOAT3& position, const XMFLOAT3& scale, const XMFLOAT3& halfExtents)
     {
         EntityId e = world->CreateEntity();
@@ -84,7 +85,7 @@ public:
         return e;
     }
 
-    // ─── Sphère dynamique ────────────────────────────────────────────────────────
+    // Sphère dynamique
     static EntityId CreateDynamicSphere(World* world, const XMFLOAT3& position, float radius, float mass = 1.0f)
     {
         EntityId e = world->CreateEntity();
@@ -151,8 +152,8 @@ public:
 
         CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
 
-		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 3.0f, 0.0f, 0.0f }, 2.0f); 
-		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 2.0f); 
+		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
+		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
 
 		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 
