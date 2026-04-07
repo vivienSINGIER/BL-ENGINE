@@ -1,5 +1,6 @@
 #include "World.h"
 #include "ComponentRegistry.h"
+#include "Network/Client.h"
 
 World::World()
 {
@@ -17,7 +18,7 @@ Vector<EntityId> World::GetEntities()
     return entities;
 }
 
-EntityId World::CreateEntity(EntityId _id, bool isCopied)
+EntityId World::CreateEntity(EntityId _id, bool isCopied, ComponentMask _requiredMask)
 {
     EntityId e;
     if (isCopied == true)
@@ -34,6 +35,8 @@ EntityId World::CreateEntity(EntityId _id, bool isCopied)
     root->storage.FinishPush();
 
     m_commandQueue.EmplaceCreate(e);
+    if (_requiredMask.count() > 0)
+        m_commandQueue.SetRequiredMask(_id, _requiredMask);
     
     return e;
 }
@@ -49,12 +52,32 @@ void World::SetActive(EntityId _entity)
 {
     EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = true;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = true;
+    p.setActiveState.isEntity = true;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 void World::SetInactive(EntityId _entity)
 {
     EntityRecord& rec = entityManager.GetRecord(_entity);
     rec.isActive = false;
+    
+    Packet p;
+    p.header.type = PacketType::SetActiveState;
+    p.header.entityId = _entity;
+    p.header.sceneId = SceneManager::GetCurrentScene()->GetId();
+    
+    p.setActiveState.isActive = false;
+    p.setActiveState.isEntity = true;
+    
+    EngineManager::GetServer()->SendGeneralReliablePacket(p);
 }
 
 bool World::IsActive(EntityId _entity)
@@ -94,6 +117,19 @@ void* World::GetRawComponent(EntityId _e, ComponentId _cid)
     return stored;
 }
 
+void World::SetActiveComponentRaw(EntityId _e, ComponentId _cid, bool _value)
+{
+    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
+    
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(_cid) && "Component not present");
+
+    src->storage.SetActive(_cid, rec.row, _value);
+}
+
 void World::AddRawScript(EntityId _e, ComponentId _cid)
 {
     assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
@@ -108,9 +144,10 @@ void World::AddRawScript(EntityId _e, ComponentId _cid)
     void* ptr = m_commandQueue.EmplaceAddRaw(_e, _cid, ComponentRegistry::GetSize(_cid), nullptr);
     IScript* script = ComponentRegistry::ConstructScript(_cid, ptr);
     
-    script->world = this;
+    script->sceneId = m_sceneId;
     script->entity = _e;
-
+    script->m_isSynced = false;
+    
     ComponentId cid = _cid;
     reg->push_back(cid);
 
@@ -141,6 +178,19 @@ IScript* World::GetRawScript(EntityId _e, ComponentId _cid)
 
     IScript* stored = reinterpret_cast<IScript*>(src->storage.GetRaw(cid, rec.row));
     return stored;
+}
+
+void World::SetActiveScriptRaw(EntityId _e, ComponentId _cid, bool _value)
+{
+    assert(entityManager.IsAlive(_e) && "Can't set active script on dead entity");
+    assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
+    
+    EntityRecord& rec = entityManager.GetRecord(_e);
+    Archetype* src = rec.archetype;
+
+    assert(src->mask.test(_cid) && "Component not present");
+
+    src->storage.SetActive(_cid, rec.row, _value);
 }
 
 void World::Update(float _dt)

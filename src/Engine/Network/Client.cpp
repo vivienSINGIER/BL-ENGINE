@@ -31,6 +31,7 @@ void Client::SendPackets()
     {
         if (pending.canResend)
         {
+            pending.packet.header.clientId = m_id;
             GetSocket()->Send(pending.packet.Data(), pending.packet.Size(), pending.target);
             pending.canResend = false;
         }
@@ -41,6 +42,7 @@ void Client::SendPackets()
 
     for (Packet packet : m_packets)
     {
+        packet.header.clientId = m_id;
         GetSocket()->Send(packet.Data(), packet.Size(), m_serverAddress);
     }
     m_packets.clear();
@@ -50,6 +52,11 @@ void Client::Connect(sockaddr_in _addr)
 {
     m_serverAddress = _addr;
     m_isConnected = true;
+}
+
+void Client::Disconnect()
+{
+    m_isConnected = false;
 }
 
 DWORD Client::ReceiveThread(LPVOID _lpParam)

@@ -13,19 +13,20 @@
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/ColliderComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
-
+#include "../Components/OwnerComponent.hpp"
 
 void ComponentRegistry::Init()
 {
     RegisterComponent<TransformComponent>();
     RegisterComponent<MeshRenderer>();
-    RegisterComponent<CameraComponent>();
+    RegisterComponent<CameraComponent>(true);
     RegisterComponent<LightComponent>();
     RegisterComponent<MotionComponent>();
     RegisterComponent<RigidBodyComponent>();
 	RegisterComponent<ColliderComponent>();
     RegisterComponent<NetworkComponent>();
     RegisterComponent<ScriptRegistry>();
+    RegisterComponent<OwnerComponent>();
 }
 
 IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
@@ -39,8 +40,12 @@ IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
 IScript* ComponentRegistry::ConstructScript(ComponentId _id, void* ptr)
 {
     for (auto& info : m_registeredComponents)
+    {
         if (info.id == _id)
+        {
             return info.scriptConstructor(ptr);
+        }
+    }
     
     return nullptr;
 }
@@ -50,6 +55,14 @@ bool ComponentRegistry::IsRegistered(ComponentId _id)
     for (auto& info : m_registeredComponents)
         if (info.id == _id)
             return true;
+    return false;
+}
+
+bool ComponentRegistry::IsClientOnly(ComponentId _id)
+{
+    for (auto& info : m_registeredComponents)
+        if (info.id == _id)
+            return info.isClientOnly;
     return false;
 }
 
@@ -75,6 +88,17 @@ uint8 ComponentRegistry::GetNetworkFlag(ComponentId _id)
         if (info.id == _id)
             return info.networkFlag;
     return 0;
+}
+
+void ComponentRegistry::ClearClientSideBits(ComponentMask& _mask)
+{
+    for (uint32 i = 0; i < ComponentType::Count(); i++)
+    {
+        if (IsRegistered(i) == false) continue;
+        if (IsClientOnly(i) == false) continue;
+
+        _mask.reset(i);
+    }
 }
 
 ComponentId ComponentRegistry::NextId()

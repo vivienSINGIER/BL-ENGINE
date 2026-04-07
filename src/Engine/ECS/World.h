@@ -19,7 +19,7 @@ public:
 
     Vector<EntityId> GetEntities();
     
-    EntityId CreateEntity(EntityId _id = 0, bool isCopied = false);
+    EntityId CreateEntity(EntityId _id = 0, bool isCopied = false, ComponentMask _requiredMask = 0);
     void DestroyEntity(EntityId _entity);
     
     void SetActive(EntityId _entity);
@@ -29,9 +29,12 @@ public:
     void AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data);
     void RemoveRawComponent(EntityId _e, ComponentId _cid);
     void* GetRawComponent(EntityId _e, ComponentId _cid);
+    void SetActiveComponentRaw(EntityId _e, ComponentId _cid, bool _value);
+    
     void AddRawScript(EntityId _e, ComponentId _cid);
     void RemoveRawScript(EntityId _e, ComponentId _cid);
     IScript* GetRawScript(EntityId _e, ComponentId _cid);
+    void SetActiveScriptRaw(EntityId _e, ComponentId _cid, bool _value);
     
     template <typename T> T& AddComponent(EntityId _e, T const& _val = T{});
     template <typename T> void RemoveComponent(EntityId _e);
@@ -55,6 +58,8 @@ public:
     void OnArchetypeCreated(Archetype* _arch);
 
 private:
+    uint32 m_sceneId = 0;
+    
     ArchetypeRegistry m_archetypeRegistry;
     Vector<QueryBase*> m_queries;
     ComponentCommandQueue m_commandQueue;
@@ -67,6 +72,7 @@ private:
     static void TryMatchQuery(QueryBase* _query, Archetype* _arch);
 
     friend class ComponentCommandQueue;
+    friend class Scene;
 };
 
 #include "World.inl"

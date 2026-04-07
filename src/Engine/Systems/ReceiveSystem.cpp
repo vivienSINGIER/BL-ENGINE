@@ -52,6 +52,11 @@ void ReceiveSystem::HandleClientReceive()
                     m_client->SetId(p.connect.cliendId);
                     break;
                 }
+            case PacketType::DisconnectAck:
+                {
+                    m_client->OnAckReceived(p.header.ackId);
+                    m_client->Disconnect();
+                };
             case PacketType::AddScene:
                 {
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
@@ -79,13 +84,12 @@ void ReceiveSystem::HandleClientReceive()
                     Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
                     if (scene == nullptr) break;
                     
-                    if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
-
                     m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
-
+                    
+                    if (scene->world->entityManager.IsAlive(p.header.entityId)) break;
                     if (EngineManager::GetServer() != nullptr) break;
 
-                    scene->world->CreateEntity(p.header.entityId, true);
+                    scene->world->CreateEntity(p.header.entityId, true, p.createEntity.componentMask);
 
                     break;
                 }
@@ -151,9 +155,40 @@ void ReceiveSystem::HandleClientReceive()
                 }
             case PacketType::Update:
                 {
+                    if (p.header.clientId == m_client->GetId())
+                        break;
+                    if (m_server != nullptr && p.header.clientId == 0)
+                        break;
                     HandleUpdatePacket(p);
                     break;
                 }
+            case PacketType::SetActiveState:
+            {
+                Scene* scene = SceneManager::GetSceneWithId(p.header.sceneId);
+                if (scene == nullptr) break;
+
+                if (!scene->world->entityManager.IsAlive(p.header.entityId)) break;
+
+                m_client->SendAck(p.header.ackId, m_client->GetServerAddress());
+                
+                if (EngineManager::GetServer() != nullptr) break;
+                    
+                if (p.setActiveState.isEntity)
+                {
+                    if (p.setActiveState.isActive)
+                        scene->world->SetActive(p.header.entityId);
+                    else 
+                        scene->world->SetInactive(p.header.entityId);
+                }
+                else
+                {
+                    if (ComponentRegistry::IsScript(p.setActiveState.cid))
+                        scene->world->SetActiveScriptRaw(p.header.entityId, p.setActiveState.cid, p.setActiveState.isActive);
+                    else
+                        scene->world->SetActiveComponentRaw(p.header.entityId, p.setActiveState.cid, p.setActiveState.isActive); 
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -165,7 +200,7 @@ void ReceiveSystem::HandleClientReceive()
 void ReceiveSystem::HandleServerReceive()
 {
     Vector<ReceivedPacket>& vReceived = m_server->GetReceived();
-
+    
     m_server->GetCritSection().Enter();
     for (ReceivedPacket& received : vReceived)
     {
@@ -183,16 +218,35 @@ void ReceiveSystem::HandleServerReceive()
             case PacketType::Connect:
                 {
                     m_server->AddClient(addr);
+                    
+                    ClientInfo* c = m_server->FindClient(addr);
 
+                    if (c->isConnected == true) break;
+                    c->isConnected = true;
+                    
                     Packet np;
                     np.header.type = PacketType::ConnectAck;
                     np.header.ackId = p.header.ackId;
                     np.connect.addr = m_server->GetSocket()->GetAddr();
-                    np.connect.cliendId = m_server->FindClient(addr)->id;
+                    np.connect.cliendId = c->id;
                         
                     m_server->RegisterTargetedPacket(np, addr);
 
                     m_server->QueueSyncPackets(addr);
+                    
+                    break;
+                }
+            case PacketType::Disconnect:
+                {
+                    ClientInfo* c = m_server->FindClient(addr);
+
+                    c->isConnected = false;
+
+                    Packet np;
+                    np.header.type = PacketType::DisconnectAck;
+                    np.header.ackId = p.header.ackId;
+                        
+                    m_server->RegisterTargetedPacket(np, addr);
                     
                     break;
                 }
@@ -226,11 +280,19 @@ void ReceiveSystem::HandleUpdatePacket(Packet& p)
     {
         for (int i = 0; i < p.update.componentCount; i++)
         {
-            ComponentEntry entry = p.update.components[i];
+            ComponentEntry& entry = p.update.components[i];
             
             if (cid != entry.ComponentId) continue;
-            
-            memcpy(arch->storage.GetRaw(cid, rec.row), entry.data, entry.size);
+
+            if (ComponentRegistry::IsScript(cid))
+            {
+                IScript* before = reinterpret_cast<IScript*>(arch->storage.GetRaw(cid, rec.row));
+                IScript* s = reinterpret_cast<IScript*>(entry.data);
+                s->m_isSynced = before->m_isSynced;
+                memcpy(arch->storage.GetRaw(cid, rec.row), before, entry.size);
+            }
+            else
+                memcpy(arch->storage.GetRaw(cid, rec.row), entry.data, entry.size);
         }
     }
 }
