@@ -145,7 +145,7 @@ void Server::QueueEntitySyncPackets(EntityId _e, uint32 _sceneId, const sockaddr
 	sp.header.sceneId = _sceneId;
 	sp.header.entityId = _e;
 	
-	EntityRecord& rec = s->world->entityManager.GetRecord(_e);
+	EntityRecord& rec = s->world->GetRecord(_e);
 	Archetype* arch = rec.archetype;
 	sp.createEntity.componentMask = arch->mask;
 	ComponentRegistry::ClearClientSideBits(sp.createEntity.componentMask);

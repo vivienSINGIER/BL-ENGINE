@@ -18,6 +18,11 @@ Vector<EntityId> World::GetEntities()
     return entities;
 }
 
+EntityRecord& World::GetRecord(EntityId _e)
+{
+    return entityManager.GetRecord(_e);
+}
+
 EntityId World::CreateEntity(EntityId _id, bool isCopied, ComponentMask _requiredMask)
 {
     EntityId e;
@@ -43,9 +48,14 @@ EntityId World::CreateEntity(EntityId _id, bool isCopied, ComponentMask _require
 
 void World::DestroyEntity(EntityId _entity)
 {
-    assert(entityManager.IsAlive(_entity) && "Destroying dead entity");
+    assert(IsAlive(_entity) && "Destroying dead entity");
 
     m_commandQueue.EmplaceDestroy(_entity);
+}
+
+bool World::IsAlive(EntityId _e)
+{
+    return IsAlive(_e) || m_commandQueue.IsAlive(_e);
 }
 
 void World::SetActive(EntityId _entity)
@@ -87,7 +97,7 @@ bool World::IsActive(EntityId _entity)
 
 void World::AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const void* _data)
 {
-    assert(entityManager.IsAlive(_e) && "Can't add component to dead entity");
+    assert(IsAlive(_e) && "Can't add component to dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
     assert(!ComponentRegistry::IsScript(_cid) && "Component should not be a script");
 
@@ -96,7 +106,7 @@ void World::AddRawComponent(EntityId _e, ComponentId _cid, uint64 _size, const v
 
 void World::RemoveRawComponent(EntityId _e, ComponentId _cid)
 {
-    assert(entityManager.IsAlive(_e) && "Can't remove component from dead entity");
+    assert(IsAlive(_e) && "Can't remove component from dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
 
     m_commandQueue.EmplaceRemoveRaw(_e, _cid);
@@ -104,7 +114,7 @@ void World::RemoveRawComponent(EntityId _e, ComponentId _cid)
 
 void* World::GetRawComponent(EntityId _e, ComponentId _cid)
 {
-    assert(entityManager.IsAlive(_e) && "Can't access component from dead entity");
+    assert(IsAlive(_e) && "Can't access component from dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
 
     ComponentId cid = _cid;
@@ -119,7 +129,7 @@ void* World::GetRawComponent(EntityId _e, ComponentId _cid)
 
 void World::SetActiveComponentRaw(EntityId _e, ComponentId _cid, bool _value)
 {
-    assert(entityManager.IsAlive(_e) && "Can't set active component on dead entity");
+    assert(IsAlive(_e) && "Can't set active component on dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Component is not registered");
     
     EntityRecord& rec = entityManager.GetRecord(_e);
@@ -167,7 +177,7 @@ void World::RemoveRawScript(EntityId _e, ComponentId _cid)
 
 IScript* World::GetRawScript(EntityId _e, ComponentId _cid)
 {
-    assert(entityManager.IsAlive(_e) && "Can't access script from dead entity");
+    assert(IsAlive(_e) && "Can't access script from dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
 
     ComponentId cid = _cid;
@@ -182,7 +192,7 @@ IScript* World::GetRawScript(EntityId _e, ComponentId _cid)
 
 void World::SetActiveScriptRaw(EntityId _e, ComponentId _cid, bool _value)
 {
-    assert(entityManager.IsAlive(_e) && "Can't set active script on dead entity");
+    assert(IsAlive(_e) && "Can't set active script on dead entity");
     assert(ComponentRegistry::IsRegistered(_cid) && "Script is not registered");
     
     EntityRecord& rec = entityManager.GetRecord(_e);

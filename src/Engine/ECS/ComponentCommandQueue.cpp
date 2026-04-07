@@ -125,6 +125,19 @@ bool ComponentCommandQueue::HasComponent(EntityId _e, ComponentId _cid)
     return false;
 }
 
+bool ComponentCommandQueue::IsAlive(EntityId _e)
+{
+    if (m_toCreate.empty() == true) return false;
+    
+    for (Command& cmd : m_toCreate)
+    {
+        if (cmd.entity == _e)
+            return true;
+    }
+    
+    return false;
+}
+
 void ComponentCommandQueue::FlushCreate(World* _pWorld)
 {
     Command& cmd = m_toCreate.back();
@@ -151,7 +164,7 @@ void ComponentCommandQueue::FlushAdd(World* _pWorld, Vector<Command>::iterator& 
     if (m_requiredMasks.contains(cmd.entity)) return;
     
     ComponentId cid = cmd.component;
-    EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
+    EntityRecord& rec = _pWorld->GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
     if (src->mask.test(cid))
@@ -202,7 +215,7 @@ void ComponentCommandQueue::FlushRemove(World* _pWorld)
     Command& cmd = m_toRemove.back();
 
     ComponentId cid = cmd.component;
-    EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
+    EntityRecord& rec = _pWorld->GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
     
     if (!src->mask.test(cid)) // Component not present
@@ -234,10 +247,10 @@ void ComponentCommandQueue::FlushDestroy(World* _pWorld)
     Command& cmd = m_toDestroy.back();
 
     ComponentId cid = cmd.component;
-    EntityRecord& rec = _pWorld->entityManager.GetRecord(cmd.entity);
+    EntityRecord& rec = _pWorld->GetRecord(cmd.entity);
     Archetype* src = rec.archetype;
 
-    assert(_pWorld->entityManager.IsAlive(cmd.entity) && "Destroying dead entity");
+    assert(_pWorld->IsAlive(cmd.entity) && "Destroying dead entity");
         
     _pWorld->NotifyScripts(cmd.entity, &IScript::Destroy);
     
