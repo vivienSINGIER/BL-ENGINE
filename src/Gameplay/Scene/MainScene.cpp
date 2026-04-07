@@ -49,7 +49,7 @@ void MainScene::OnInit()
 
 void MainScene::OnUpdate(float _dt)
 {
-
+    TransformComponent& camT = world->GetComponent<TransformComponent>(m_camera);
     TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
 	LightComponent& l = world->GetComponent<LightComponent>(m_light);
 
@@ -93,8 +93,6 @@ void MainScene::OnUpdate(float _dt)
             
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
 
-			TransformComponent& camT = world->GetComponent<TransformComponent>(m_camera);
-			GameManager::TryValidateQuota(camT.local.GetPosition());
 
             if(m_timer >= m_dayDuration)
             {
@@ -124,6 +122,9 @@ void MainScene::OnUpdate(float _dt)
 
             if (m_timer >= m_nightDuration)
             {
+                
+                GameManager::TryValidateQuota(camT.local.GetPosition());
+
                 m_timer = 0.0f;
                 m_isDay = true;
                 m_isNight = false;
@@ -151,8 +152,8 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-	LevelManager::Init(4);
-	GameManager::Init(4);
+	LevelManager::Init(1);
+	GameManager::Init(1);
     LevelManager::SetPlayer(0, m_camera);
 }
 

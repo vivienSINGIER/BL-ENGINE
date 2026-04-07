@@ -25,6 +25,7 @@ public:
 	static void SetPlayer(int playerIndex, EntityId playerEntity);
 	static void SpawnMagu(int _count);
 
+	static void SetLevel(int _levelNb) { m_levelNb = _levelNb; }
 private:
 	static float m_cellSize;
 	static float m_labySize;

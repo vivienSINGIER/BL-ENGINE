@@ -33,6 +33,7 @@ void LevelManager::LoadLevel()
 	m_lightTravelDistance = m_levelSize * m_cellSize + 10.0f;
 
 	ReloadLabyrinthe(m_levelSize, m_levelSize);
+	LabyrintheManager::SetLevelNb(m_levelNb);
 	std::cout << "Level " << m_levelNb << " loaded with " << m_nbPlayer << " player(s) " << "LevelSize " << m_levelSize << std::endl;
 }
 

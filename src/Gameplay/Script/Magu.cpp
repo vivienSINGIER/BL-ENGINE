@@ -4,7 +4,6 @@
 
 void Magu::Awake()
 {
-	
 	TransformComponent& t = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<TransformComponent>(entity);
 	t.local.SetPosition(XMFLOAT3(0.0f, 0.5f, 0.0f));
 

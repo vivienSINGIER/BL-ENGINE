@@ -4,7 +4,7 @@ int       GameManager::m_quota = 0;
 int       GameManager::m_collected = 0;
 int       GameManager::m_levelNb = 0;
 int       GameManager::m_nbPlayer = 0;
-float     GameManager::m_lobbyRadius = 6.0f;
+float     GameManager::m_lobbyRadius = 10.0f;
 GameState GameManager::m_gameState = GameState::PLAYING;
 bool      GameManager::m_validated = false;
 int 	 GameManager::m_currentLevel = 1;
@@ -61,6 +61,7 @@ bool GameManager::TryValidateQuota(XMFLOAT3 _playerPos)
 		return false;
 
 	float dist = sqrtf(_playerPos.x * _playerPos.x + _playerPos.y * _playerPos.y + _playerPos.z * _playerPos.z);
+	std::cout << "Player distance from lobby: " << dist << " (radius: " << m_lobbyRadius << ")\n";
 	if(dist <= m_lobbyRadius)
 	{
 		m_validated = true;
