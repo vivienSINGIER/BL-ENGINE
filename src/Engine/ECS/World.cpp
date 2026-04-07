@@ -55,7 +55,7 @@ void World::DestroyEntity(EntityId _entity)
 
 bool World::IsAlive(EntityId _e)
 {
-    return IsAlive(_e) || m_commandQueue.IsAlive(_e);
+    return entityManager.IsAlive(_e) || m_commandQueue.IsAlive(_e);
 }
 
 void World::SetActive(EntityId _entity)
