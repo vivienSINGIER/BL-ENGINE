@@ -41,7 +41,7 @@ public:
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
         t.local.SetScale({ 1.0f, 1.0f, 1.0f });
-        t.local.AddYPR({ 0.0f, 0.0f, XM_PIDIV2 });
+        //t.local.AddYPR({ 0.0f, 0.0f, XM_PIDIV2 });
 
         MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
@@ -153,7 +153,7 @@ public:
         CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
 
 		CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
-		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
+		//CreateDynamicBox(world, { 0.0f, 1.5f, 0.5f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
 
 		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
 

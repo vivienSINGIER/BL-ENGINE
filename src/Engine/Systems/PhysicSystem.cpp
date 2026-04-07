@@ -34,83 +34,91 @@ void PhysicSystem::ResolveVelocities(float _dt)
         MotionComponent& motionB = GetMotion(manifold.b);
 
         if (motionA.isSleeping && motionB.isSleeping)
-			continue;
+            continue;
 
-		UpdateSleepState(motionA, motionB, rigidA, rigidB);
+        UpdateSleepState(motionA, motionB, rigidA, rigidB);
 
-        // Résolution séquentielle : chaque point est traité l'un après l'autre.
+        struct PointCache
+        {
+            XMFLOAT3 rA, rB;
+            XMFLOAT3 vRelPre;   // vRel avant toute impulsion (pour la friction)
+            float    jPhysics;  // impulsion physique pure (sans biais)
+            float    jBias;     // correction positionnelle (translation uniquement)
+            bool     active;    // false si vn >= 0
+        };
+
+        PointCache cache[ContactManifold::kMaxPoints];
+
+        XMFLOAT3 centerA = GetCenter(manifold.a);
+        XMFLOAT3 centerB = GetCenter(manifold.b);
+
         for (int i = 0; i < manifold.pointCount; ++i)
         {
+            PointCache& pc = cache[i];
+            pc.active = false;
+
             const ContactPoint& point = manifold.points[i];
 
-            // rA, rB : vecteurs du centre de masse au point de contact.
-            //   rA = Point i - GA
-            //   rB = Point i - GB
-            XMFLOAT3 rA = Subtract(point.position, GetCenter(manifold.a));
-            XMFLOAT3 rB = Subtract(point.position, GetCenter(manifold.b));
+            pc.rA = Subtract(point.position, centerA);
+            pc.rB = Subtract(point.position, centerB);
 
-            XMFLOAT3 vA = VelocityAtPoint(motionA, rA);
-            XMFLOAT3 vB = VelocityAtPoint(motionB, rB);
+            XMFLOAT3 vA = VelocityAtPoint(motionA, pc.rA);
+            XMFLOAT3 vB = VelocityAtPoint(motionB, pc.rB);
+            pc.vRelPre = Subtract(vB, vA);
 
-            XMFLOAT3 vRel = Subtract(vB, vA);
-
-            // vn = vitesse relative le long de la normale.
-            // Si vn >= 0, les corps s'éloignent déjà : pas d'impulsion.
-
-            float vn = Dot(vRel, manifold.normal);
+            float vn = Dot(pc.vRelPre, manifold.normal);
             if (vn >= 0.0f)
                 continue;
 
-            // coefficient de restitution (e)
             float restitution = Min(rigidA->restitution, rigidB->restitution);
             if (fabsf(vn) < kRestitutionThreshold)
                 restitution = 0.0f;
 
-
-            //   Meff = 1/mA + 1/mB
-            //        + (IA^-1 * (rA x n) x rA) ° n
-            //        + (IB^-1 * (rB x n) x rB) ° n
             float effectiveMass = rigidA->massInverse + rigidB->massInverse
-                + AngularMassTerm(rA, manifold.normal, rigidA->inertiaTensorWorldInverse)
-                + AngularMassTerm(rB, manifold.normal, rigidB->inertiaTensorWorldInverse);
+                + AngularMassTerm(pc.rA, manifold.normal, rigidA->inertiaTensorWorldInverse)
+                + AngularMassTerm(pc.rB, manifold.normal, rigidB->inertiaTensorWorldInverse);
 
             if (effectiveMass <= 0.0f)
                 continue;
 
             float bias = kBeta * invDt * Max(0.0f, point.penetration - kPenetrationSlop);
-
-            // j : scalaire de l'impulsion.
-            // j = -(1 + e) * vn / Meff
-            // Le signe négatif inverse la composante de rapprochement.
-            float j = (-(1.0f + restitution) * vn + bias) / effectiveMass;
-
-            // J : vecteur d'impulsion, orienté selon la normale de contact.
-            // J = j * n
-            XMFLOAT3 J = Mul(manifold.normal, j);
-
-            // Application immédiate de l'impulsion sur les vitesses.
-            // Translation :
-            //   vGA' = vGA - J / mA     (A reçoit l'impulsion en sens inverse)
-            //   vGB' = vGB + J / mB     (B reçoit l'impulsion dans le sens de n)
-            // Rotation :
-            //   omegaA' = omegaA - IA^-1 * (rA x J)
-            //   omegaB' = omegaB + IB^-1 * (rB x J)
-
-            motionA.linearVelocity = Subtract(motionA.linearVelocity, Mul(J, rigidA->massInverse));
-            motionA.angularVelocity = Subtract(motionA.angularVelocity,
-                ApplyInertiaInverse(Cross(rA, J), rigidA->inertiaTensorWorldInverse));
-
-            motionB.linearVelocity = Add(motionB.linearVelocity, Mul(J, rigidB->massInverse));
-            motionB.angularVelocity = Add(motionB.angularVelocity,
-                ApplyInertiaInverse(Cross(rB, J), rigidB->inertiaTensorWorldInverse));
-
-			ApplyFriction(motionA, motionB, rigidA, rigidB, rA, rB, manifold.normal, j);
+            pc.jPhysics = -(1.0f + restitution) * vn / effectiveMass;
+            pc.jBias = bias / effectiveMass;
+            pc.active = true;
         }
 
-		motionA.linearVelocity = Snap(motionA.linearVelocity, kLinearSnapThreshold);
-		motionA.angularVelocity = Snap(motionA.angularVelocity, kAngularSnapThreshold);
-		motionB.linearVelocity = Snap(motionB.linearVelocity, kLinearSnapThreshold);
-		motionB.angularVelocity = Snap(motionB.angularVelocity, kAngularSnapThreshold);
+        for (int i = 0; i < manifold.pointCount; ++i)
+        {
+            const PointCache& pc = cache[i];
+            if (!pc.active) continue;
+
+            XMFLOAT3 JPhysics = Mul(manifold.normal, pc.jPhysics);
+            XMFLOAT3 JBias = Mul(manifold.normal, pc.jBias);
+
+            motionA.linearVelocity = Subtract(motionA.linearVelocity,
+                Mul(Add(JPhysics, JBias), rigidA->massInverse));
+            motionB.linearVelocity = Add(motionB.linearVelocity,
+                Mul(Add(JPhysics, JBias), rigidB->massInverse));
+
+            motionA.angularVelocity = Subtract(motionA.angularVelocity,
+                ApplyInertiaInverse(Cross(pc.rA, JPhysics), rigidA->inertiaTensorWorldInverse));
+            motionB.angularVelocity = Add(motionB.angularVelocity,
+                ApplyInertiaInverse(Cross(pc.rB, JPhysics), rigidB->inertiaTensorWorldInverse));
+        }
+
+        for (int i = 0; i < manifold.pointCount; ++i)
+        {
+            const PointCache& pc = cache[i];
+            if (!pc.active) continue;
+
+            ApplyFriction(motionA, motionB, rigidA, rigidB,
+                pc.rA, pc.rB, manifold.normal, pc.vRelPre, pc.jPhysics);
+        }
+
+        motionA.linearVelocity = Snap(motionA.linearVelocity, kLinearSnapThreshold);
+        motionA.angularVelocity = Snap(motionA.angularVelocity, kAngularSnapThreshold);
+        motionB.linearVelocity = Snap(motionB.linearVelocity, kLinearSnapThreshold);
+        motionB.angularVelocity = Snap(motionB.angularVelocity, kAngularSnapThreshold);
     }
 }
 
@@ -124,56 +132,56 @@ void PhysicSystem::UpdateSleepState(MotionComponent& _motionA, MotionComponent& 
 }
 
 void PhysicSystem::ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB,
-    XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal, float _j)
+    const XMFLOAT3& _rA, const XMFLOAT3& _rB, const XMFLOAT3& _normal, const XMFLOAT3& _vRelPre, float _j)
 {
-    // Friction de Coulomb — appliquée dans la direction tangentielle.
-    // |jt| <= mu * |j|
+    // Friction de Coulomb — séparation direction / magnitude.
+    //
+    // DIRECTION t : depuis _vRelPre (état initial, commun à tous les points).
+    // MAGNITUDE   : depuis vRel post-impulsion normale.
 
-    // Recalculer vRel avec les vitesses mises à jour.
+    XMFLOAT3 vTangentPre = Subtract(_vRelPre, Mul(_normal, Dot(_vRelPre, _normal)));
+    float    vTangentPreLen = sqrtf(NormSquared(vTangentPre));
+
+    if (vTangentPreLen < 0.01f)
+        return;
+
+    // t : direction stable, identique pour tous les points du manifold.
+    XMFLOAT3 t = Mul(vTangentPre, 1.0f / vTangentPreLen);
+
+    // Magnitude depuis vRel post-impulsion normale.
     XMFLOAT3 vA = VelocityAtPoint(_motionA, _rA);
     XMFLOAT3 vB = VelocityAtPoint(_motionB, _rB);
-    XMFLOAT3 vRel = Subtract(vB, vA);
+    XMFLOAT3 vRelPost = Subtract(vB, vA);
+    float    vt = Dot(vRelPost, t);
 
-    // Tangente : vt = vRel - (vRel.n)*n
-    XMFLOAT3 vTangent = Subtract(vRel, Mul(_normal, Dot(vRel, _normal)));
-    float vTangentLen = sqrtf(NormSquared(vTangent));
+    // Masse effective dans la direction tangentielle.
+    float Meff_t = _rigidA->massInverse + _rigidB->massInverse
+        + AngularMassTerm(_rA, t, _rigidA->inertiaTensorWorldInverse)
+        + AngularMassTerm(_rB, t, _rigidB->inertiaTensorWorldInverse);
 
-    // Si glissement suffisant.
-    if (vTangentLen > 0.01f)
-    {
-        // t : direction du glissement (opposée à la direction de friction).
-        XMFLOAT3 t = Mul(vTangent, 1.0f / vTangentLen);
+    if (Meff_t <= 0.0f)
+        return;
 
-        // Masse effective dans la direction tangentielle.
-        float Meff_t = _rigidA->massInverse + _rigidB->massInverse
-            + AngularMassTerm(_rA, t, _rigidA->inertiaTensorWorldInverse)
-            + AngularMassTerm(_rB, t, _rigidB->inertiaTensorWorldInverse);
+    float jt = -vt / Meff_t;
 
-        if (Meff_t > 0.0f)
-        {
-            // Scalaire d'impulsion tangentielle nécessaire pour annuler le glissement.
-            float jt = -vTangentLen / Meff_t;
+    // Coefficients de friction combinés (moyenne géométrique).
+    float muS = sqrtf(_rigidA->staticFriction * _rigidB->staticFriction);
+    float muD = sqrtf(_rigidA->dynamicFriction * _rigidB->dynamicFriction);
 
-            // Coefficients de friction combinés (moyenne géométrique).
-            float muS = sqrtf(_rigidA->staticFriction * _rigidB->staticFriction);
-            float muD = sqrtf(_rigidA->dynamicFriction * _rigidB->dynamicFriction);
+    // Loi de Coulomb — borné par jPhysics (sans biais).
+    XMFLOAT3 Jt;
+    if (fabsf(jt) <= muS * _j)
+        Jt = Mul(t, jt);         // Statique : annule le glissement.
+    else
+        Jt = Mul(t, -muD * _j); // Dynamique : plafonne à mu_d * j.
 
-            // Loi de Coulomb : borne par l'impulsion normale.
-            XMFLOAT3 Jt;
-            if (fabsf(jt) <= muS * _j)
-                Jt = Mul(t, jt); // Statique : on annule complètement le glissement.
-            else          
-                Jt = Mul(t, -muD * _j); // Dynamique : on plafonne à mu_d * j.
+    _motionA.linearVelocity = Subtract(_motionA.linearVelocity, Mul(Jt, _rigidA->massInverse));
+    _motionA.angularVelocity = Subtract(_motionA.angularVelocity,
+        ApplyInertiaInverse(Cross(_rA, Jt), _rigidA->inertiaTensorWorldInverse));
 
-            _motionA.linearVelocity = Subtract(_motionA.linearVelocity, Mul(Jt, _rigidA->massInverse));
-            _motionA.angularVelocity = Subtract(_motionA.angularVelocity,
-                ApplyInertiaInverse(Cross(_rA, Jt), _rigidA->inertiaTensorWorldInverse));
-
-            _motionB.linearVelocity = Add(_motionB.linearVelocity, Mul(Jt, _rigidB->massInverse));
-            _motionB.angularVelocity = Add(_motionB.angularVelocity,
-                ApplyInertiaInverse(Cross(_rB, Jt), _rigidB->inertiaTensorWorldInverse));
-        }
-    }
+    _motionB.linearVelocity = Add(_motionB.linearVelocity, Mul(Jt, _rigidB->massInverse));
+    _motionB.angularVelocity = Add(_motionB.angularVelocity,
+        ApplyInertiaInverse(Cross(_rB, Jt), _rigidB->inertiaTensorWorldInverse));
 }
 
 void PhysicSystem::ResolvePenetrations()
@@ -241,7 +249,7 @@ MotionComponent& PhysicSystem::GetMotion(EntityId _e)
         return world->GetComponent<MotionComponent>(_e);
 
     m_nullMotion = MotionComponent{};
-	m_nullMotion.isSleeping = true;
+    m_nullMotion.isSleeping = true;
     return m_nullMotion;
 }
 

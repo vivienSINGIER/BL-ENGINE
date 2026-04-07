@@ -49,11 +49,11 @@ struct SpatialHashGrid
 
 struct EntityGridState
 {
-    XMFLOAT3      lastPosition = { 1e38f, 1e38f, 1e38f }; // sentinelle → force update à l'init
-    XMFLOAT4      lastRotation = { 0, 0, 0, 1 };
-    XMFLOAT3      lastScale = { 1, 1, 1 };
-    Vector<uint32> occupiedKeys;                            // clés de cellules actuellement occupées
-    bool           isDynamicSrc = false;                    // source de paires ?
+    XMFLOAT3 lastPosition = { 1e38f, 1e38f, 1e38f }; // sentinelle → force update à l'init
+    XMFLOAT4 lastRotation = { 0, 0, 0, 1 };
+    XMFLOAT3 lastScale = { 1, 1, 1 };
+    Vector<uint32> occupiedKeys;  // clés de cellules actuellement occupées
+    bool isDynamicSrc = false;    // source de paires ?
 };
 
 
@@ -72,18 +72,18 @@ public:
     const Vector<CandidatePair>& GetCandidatePairs() const { return m_candidatePairs; }
 
 private:
-    // ─── AABB ─────────────────────────────────────────────────────────────────
+    // AABB
     void ComputeWorldAABB(ColliderComponent& _shape, TransformComponent& _transform);
 
-    // ─── Grille ───────────────────────────────────────────────────────────────
+    // Grille 
     void UpdateEntityInGrid(EntityId _e, ColliderComponent& _collider, TransformComponent& _transform, EntityGridState& _state);
     void RemoveEntityFromGrid(EntityId _e, EntityGridState& _state);
     void InsertEntityIntoGrid(EntityId _e, ColliderComponent& _collider, EntityGridState& _state);
 
-    // ─── Paires ───────────────────────────────────────────────────────────────
+    // Paires
     void BuildCandidatePairs();
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    // Helpers 
     bool HasMoved(const EntityGridState& _state, TransformComponent& _transform) const;
     bool IsDynamicSource(EntityId _e) const;
 
@@ -96,7 +96,7 @@ private:
     static constexpr float kMovedEpsilon = 1e-5f;
 
 private:
-    float          m_cellSize = 4.0f;
+    float m_cellSize = 4.0f;
     SpatialHashGrid m_grid;
 
     // État par entité — persisté entre frames.

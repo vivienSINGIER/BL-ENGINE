@@ -21,7 +21,8 @@ private:
 	void UpdateSleepState(MotionComponent& _motionA, MotionComponent& _motionB, RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB);
     void ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB,
         RigidBodyComponent* _rigidA, RigidBodyComponent* _rigidB,
-        XMFLOAT3& _rA, XMFLOAT3& _rB, XMFLOAT3& _normal, float _j);
+        const XMFLOAT3& _rA, const XMFLOAT3& _rB, const XMFLOAT3& _normal,
+        const XMFLOAT3& _vRelPre, float _j);
 
     XMFLOAT3 VelocityAtPoint(MotionComponent& _motion, const XMFLOAT3& _r) const;
     XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _t[9]) const;

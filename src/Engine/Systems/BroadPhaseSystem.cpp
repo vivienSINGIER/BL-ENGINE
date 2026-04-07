@@ -159,25 +159,31 @@ void BroadPhaseSystem::BuildCandidatePairs()
                 for (EntityId tgt : bucket.all)
                 {
                     if (src == tgt) continue;
-                    m_pairKeys.emplace_back(src, tgt);
+                    // Normalisation (lo, hi) pour que (A,B) et (B,A) soient identiques.
+                    EntityId lo = (src < tgt) ? src : tgt;
+                    EntityId hi = (src < tgt) ? tgt : src;
+
+                    m_pairKeys.emplace_back(lo, hi);
                 }
             }
         });
 
+    // Tri puis suppression des doublons.
+    std::sort(m_pairKeys.begin(), m_pairKeys.end());
+    m_pairKeys.erase(std::unique(m_pairKeys.begin(), m_pairKeys.end()), m_pairKeys.end());
+
+    // Filtre AABB et construction des paires candidates finales.
     m_candidatePairs.reserve(m_pairKeys.size());
-    for (auto& key : m_pairKeys)
+    for (const auto& [lo, hi] : m_pairKeys)
     {
-        EntityId a = key.first;
-        EntityId b = key.second;
+        if (!world->HasComponent<ColliderComponent>(lo) ||
+            !world->HasComponent<ColliderComponent>(hi)) continue;
 
-        if (!world->HasComponent<ColliderComponent>(a) ||
-            !world->HasComponent<ColliderComponent>(b)) continue;
-
-        ColliderComponent& shapeA = world->GetComponent<ColliderComponent>(a);
-        ColliderComponent& shapeB = world->GetComponent<ColliderComponent>(b);
+        ColliderComponent& shapeA = world->GetComponent<ColliderComponent>(lo);
+        ColliderComponent& shapeB = world->GetComponent<ColliderComponent>(hi);
 
         if (shapeA.aabb.Overlaps(shapeB.aabb))
-            m_candidatePairs.push_back({ a, b });
+            m_candidatePairs.push_back({ lo, hi });
     }
 }
 
