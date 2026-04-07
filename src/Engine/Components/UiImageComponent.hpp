@@ -4,7 +4,7 @@
 #include "../../Core/Transform2D.h"
 #include "../Render/Generic/Render.h"
 
-struct UiImage
+struct UiImageComponent
 {
     uint32 spriteId;
     uint32 materialId;

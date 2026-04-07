@@ -1,10 +1,12 @@
 #ifndef IMAGESYSTEM_H_DEFINED
 #define IMAGESYSTEM_H_DEFINED
 
-class ImageSystem
+#include "../ECS/ISystem.h"
+#include "Components/UiImageComponent.hpp"
+
+struct Image : public System<UiImageComponent>
 {
-public:
-    
+    void OnUpdate(float _dt, EntityId _e, UiImageComponent& _image);
 };
 
 #endif
