@@ -3,6 +3,7 @@
 #include "../ECS/World.h"
 #include <Utils.hpp>
 #include <iostream>
+#include "../ECS/Script.h"
 
 void NarrowPhaseSystem::Update(float _dt)
 {
@@ -44,6 +45,9 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
     BuildManifold(manifold, shapeA, transA, shapeB, transB, normal, penetration, contactA, contactB);
 
     m_cache.AddManifold(manifold);
+    shapeA.isTrigger ? world->NotifyScripts(_a, &IScript::OnTrigger, _b) : world->NotifyScripts(_a, &IScript::OnCollision, _b);
+    shapeB.isTrigger ? world->NotifyScripts(_b, &IScript::OnTrigger, _a) : world->NotifyScripts(_b, &IScript::OnCollision, _a);
+    
     return true;
 }
 
