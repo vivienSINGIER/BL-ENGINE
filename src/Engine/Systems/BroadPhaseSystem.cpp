@@ -30,11 +30,9 @@ void BroadPhaseSystem::OnUpdate(float _dt, EntityId _e, ColliderComponent& _coll
 {
     EntityGridState& state = m_entityStates[_e];
 
-    // Si l'entité n'a pas bougé depuis la dernière frame, on ne touche pas à la grille.
     if (HasMoved(state, _transform) == false)
         return;
 
-    // L'entité a bougé (ou c'est la première frame) → mise à jour.
     ComputeWorldAABB(_collider, _transform);
     UpdateEntityInGrid(_e, _collider, _transform, state);
 }
@@ -148,6 +146,7 @@ bool BroadPhaseSystem::IsDynamicSource(EntityId _e) const
 void BroadPhaseSystem::BuildCandidatePairs()
 {
     m_pairKeys.clear();
+    m_candidatePairs.clear();
 
     m_grid.ForEachCell([&](uint32 /*key*/, const CellBucket& bucket)
         {

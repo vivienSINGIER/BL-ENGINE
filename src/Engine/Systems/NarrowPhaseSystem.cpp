@@ -20,34 +20,55 @@ bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
     if (!world->HasComponent<ColliderComponent>(_a) || !world->HasComponent<ColliderComponent>(_b))
         return false;
 
-    ColliderComponent&    shapeA = world->GetComponent<ColliderComponent>(_a);
-    ColliderComponent&    shapeB = world->GetComponent<ColliderComponent>(_b);
+    ColliderComponent& shapeA = world->GetComponent<ColliderComponent>(_a);
+    ColliderComponent& shapeB = world->GetComponent<ColliderComponent>(_b);
     TransformComponent& transA = world->GetComponent<TransformComponent>(_a);
     TransformComponent& transB = world->GetComponent<TransformComponent>(_b);
 
     GJKSimplex simplex;
-    if (!GJK(shapeA, transA, shapeB, transB, simplex))
+    bool gjkResult = GJK(shapeA, transA, shapeB, transB, simplex);
+
+    if (!gjkResult)
+    {
+        // Les shapes ne se touchent pas selon GJK
+        // Mais si les AABB se chevauchent fortement, c'est suspect
+        XMFLOAT3 posA = transA.world.GetPosition();
+        XMFLOAT3 posB = transB.world.GetPosition();
+        float dist = sqrtf(
+            (posA.x - posB.x) * (posA.x - posB.x) +
+            (posA.y - posB.y) * (posA.y - posB.y) +
+            (posA.z - posB.z) * (posA.z - posB.z));
+        if (dist < 1.5f) // seuil à ajuster selon ta taille de cube
+            printf("[TUNNEL] GJK=0 mais dist=%.4f simplex=%d posA=(%.2f,%.2f,%.2f) posB=(%.2f,%.2f,%.2f)\n",
+                dist, simplex.count,
+                posA.x, posA.y, posA.z,
+                posB.x, posB.y, posB.z);
         return false;
+    }
+
+    if (simplex.count < 4)
+        printf("[DEGENERATE] GJK=1 count=%d\n", simplex.count);
 
     XMFLOAT3 normal, contactA, contactB;
-    float    penetration;
+    float penetration;
+    bool epaResult = EPA(shapeA, transA, shapeB, transB, simplex, normal, penetration, contactA, contactB);
 
-    if (!EPA(shapeA, transA, shapeB, transB, simplex, normal, penetration, contactA, contactB))
+    if (!epaResult)
         return false;
 
     ContactManifold manifold;
-    manifold.a           = _a;
-    manifold.b           = _b;
-    manifold.normal      = Snap(normal, 0.1f);
+    manifold.a = _a;
+    manifold.b = _b;
+    manifold.normal = normal;  // Snap retiré : altérait la normale pour les contacts obliques.
     manifold.penetration = penetration;
-    manifold.isTrigger   = shapeA.isTrigger || shapeB.isTrigger;
+    manifold.isTrigger = shapeA.isTrigger || shapeB.isTrigger;
 
     BuildManifold(manifold, shapeA, transA, shapeB, transB, normal, penetration, contactA, contactB);
 
     m_cache.AddManifold(manifold);
     shapeA.isTrigger ? world->NotifyScripts(_a, &IScript::OnTrigger, _b) : world->NotifyScripts(_a, &IScript::OnCollision, _b);
     shapeB.isTrigger ? world->NotifyScripts(_b, &IScript::OnTrigger, _a) : world->NotifyScripts(_b, &IScript::OnCollision, _a);
-    
+
     return true;
 }
 
@@ -55,9 +76,9 @@ XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformCompo
 {
     switch (_collider.type)
     {
-        case ShapeType::Box:     return SupportBox    (_collider, _transform, _dir);
-        case ShapeType::Sphere:  return SupportSphere (_collider, _transform, _dir);
-        case ShapeType::Capsule: return SupportCapsule(_collider, _transform, _dir);
+    case ShapeType::Box:     return SupportBox(_collider, _transform, _dir);
+    case ShapeType::Sphere:  return SupportSphere(_collider, _transform, _dir);
+    case ShapeType::Capsule: return SupportCapsule(_collider, _transform, _dir);
     }
     return { 0,0,0 };
 }
@@ -67,15 +88,15 @@ XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformCo
     // Transformer la direction en espace local pour éviter de tourner les 8 coins.
     // En espace local, le support d'un AABB centré en zéro est simplement
     // sign(localDir) * halfExtents.
-    XMVECTOR q       = XMLoadFloat4(&_transform.world.GetRotation());
-    XMMATRIX rotInv  = XMMatrixTranspose(XMMatrixRotationQuaternion(q));
-    XMVECTOR dirW    = XMVectorSet(_dir.x, _dir.y, _dir.z, 0.0f);
-    XMVECTOR dirL    = XMVector3Transform(dirW, rotInv);
+    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
+    XMMATRIX rotInv = XMMatrixTranspose(XMMatrixRotationQuaternion(q));
+    XMVECTOR dirW = XMVectorSet(_dir.x, _dir.y, _dir.z, 0.0f);
+    XMVECTOR dirL = XMVector3Transform(dirW, rotInv);
 
     XMFLOAT3 localDir;
     XMStoreFloat3(&localDir, dirL);
 
-    const XMFLOAT3& h     = _collider.shape.box.halfExtents;
+    const XMFLOAT3& h = _collider.shape.box.halfExtents;
     const XMFLOAT3& scale = _transform.world.GetScale();
 
     XMFLOAT3 localSupport =
@@ -104,8 +125,8 @@ XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, Transfor
 {
     // Support d'une sphère : centre + rayon * normalize(direction).
     const XMFLOAT3& scale = _transform.world.GetScale();
-    float maxScale        = Max(Max(scale.x, scale.y), scale.z);
-    float worldRadius     = _collider.shape.sphere.radius * maxScale;
+    float maxScale = Max(Max(scale.x, scale.y), scale.z);
+    float worldRadius = _collider.shape.sphere.radius * maxScale;
 
     XMFLOAT3 normDir = Normalize(_dir);
     const XMFLOAT3& pos = _transform.world.GetPosition();
@@ -123,29 +144,29 @@ XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _collider, Transfo
     // La capsule est un segment + sphère.
     // Support = choisir l'extrémité du segment la plus dans la direction,
     //           puis ajouter rayon * normalize(direction).
-    XMVECTOR q   = XMLoadFloat4(&_transform.world.GetRotation());
+    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
     XMMATRIX rot = XMMatrixRotationQuaternion(q);
 
     const XMFLOAT3& scale = _transform.world.GetScale();
-    float r  = _collider.shape.capsule.radius     * Max(scale.x, scale.z);
+    float r = _collider.shape.capsule.radius * Max(scale.x, scale.z);
     float hh = _collider.shape.capsule.halfHeight * scale.y;
 
     // Axe Y local tourné en espace monde.
     XMFLOAT3 worldUp;
-    XMStoreFloat3(&worldUp, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,1,0,0), rot)));
+    XMStoreFloat3(&worldUp, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
 
     const XMFLOAT3& pos = _transform.world.GetPosition();
 
     // Les deux extrémités du segment central.
-    XMFLOAT3 topPoint = { pos.x + worldUp.x*hh, pos.y + worldUp.y*hh, pos.z + worldUp.z*hh };
-    XMFLOAT3 botPoint = { pos.x - worldUp.x*hh, pos.y - worldUp.y*hh, pos.z - worldUp.z*hh };
+    XMFLOAT3 topPoint = { pos.x + worldUp.x * hh, pos.y + worldUp.y * hh, pos.z + worldUp.z * hh };
+    XMFLOAT3 botPoint = { pos.x - worldUp.x * hh, pos.y - worldUp.y * hh, pos.z - worldUp.z * hh };
 
     // Choisir l'extrémité la plus dans la direction donnée.
     XMFLOAT3 bestPoint = (Dot(_dir, topPoint) >= Dot(_dir, botPoint)) ? topPoint : botPoint;
 
     // Ajouter le rayon dans la direction.
     XMFLOAT3 normDir = Normalize(_dir);
-    return { bestPoint.x + normDir.x*r, bestPoint.y + normDir.y*r, bestPoint.z + normDir.z*r };
+    return { bestPoint.x + normDir.x * r, bestPoint.y + normDir.y * r, bestPoint.z + normDir.z * r };
 }
 
 GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
@@ -154,9 +175,9 @@ GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
     const XMFLOAT3& _dir) const
 {
     GJKSupportPoint sp;
-    sp.pointA    = Support(_colliderA, _transformA, _dir);
+    sp.pointA = Support(_colliderA, _transformA, _dir);
     XMFLOAT3 negDir = { -_dir.x, -_dir.y, -_dir.z };
-    sp.pointB    = Support(_colliderB, _transformB, negDir);
+    sp.pointB = Support(_colliderB, _transformB, negDir);
     sp.minkowski = Subtract(sp.pointA, sp.pointB);
     return sp;
 }
@@ -166,36 +187,61 @@ bool NarrowPhaseSystem::GJK(
     ColliderComponent& _colliderB, TransformComponent& _transformB,
     GJKSimplex& _outSimplex)
 {
-    // Direction initiale : axe entre les centres.
     const XMFLOAT3& posA = _transformA.world.GetPosition();
     const XMFLOAT3& posB = _transformB.world.GetPosition();
-    XMFLOAT3 direction   = Subtract(posA, posB);
 
-    if (LengthSq(direction) < 1e-8f)
-        direction = { 1, 0, 0 };
-
-    GJKSupportPoint support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
-    _outSimplex.Push(support);
-
-    // Nouvelle direction : vers l'origine depuis le premier point.
-    direction = { -support.minkowski.x, -support.minkowski.y, -support.minkowski.z };
-
-    for (int iter = 0; iter < kGJKMaxIterations; ++iter)
+    // GJK multi-départ.
+    //
+    // La direction centre-à-centre est optimale en général. Mais pour les
+    // contacts face-à-face en rotation, la perpendiculaire calculée par
+    // UpdateLine longe la face de la différence de Minkowski au lieu de la
+    // traverser — le support suivant ne passe pas l'origine et GJK échoue
+    // même si les shapes s'intersectent réellement.
+    //
+    // La solution : si la direction naturelle échoue, relancer avec des axes
+    // cardinaux. Un axe aligné sur la normale de contact traversera
+    // directement la zone d'intersection.
+    //
+    // Coût : au pire 7× GJK, en pratique 1-2 directions suffisent.
+    const XMFLOAT3 startDirs[] =
     {
-        if (LengthSq(direction) < 1e-10f)
-            return true;
+        Subtract(posA, posB),   // direction naturelle (meilleure en général)
+        {  0,  1,  0 },         // Y+  (contact vertical)
+        {  1,  0,  0 },         // X+  (contact latéral)
+        {  0,  0,  1 },         // Z+  (contact en profondeur)
+        {  0, -1,  0 },         // Y-
+        { -1,  0,  0 },         // X-
+        {  0,  0, -1 },         // Z-
+    };
 
-        support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
+    for (int attempt = 0; attempt < 7; ++attempt)
+    {
+        XMFLOAT3 direction = startDirs[attempt];
+        if (LengthSq(direction) < 1e-8f) continue;
 
-        // Si le nouveau point ne dépasse pas l'origine dans cette direction,
-        // l'origine est hors de A⊖B : pas d'intersection.
-        if (Dot(support.minkowski, direction) < 0.0f)
-            return false;
+        _outSimplex = GJKSimplex{};
 
+        GJKSupportPoint support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
         _outSimplex.Push(support);
 
-        if (UpdateSimplex(_outSimplex, direction))
-            return true;
+        direction = { -support.minkowski.x, -support.minkowski.y, -support.minkowski.z };
+
+        bool found = false;
+        for (int iter = 0; iter < kGJKMaxIterations; ++iter)
+        {
+            if (LengthSq(direction) < 1e-10f) { found = true; break; }
+
+            support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
+
+            // Tolérance epsilon : évite de rejeter les contacts tangents.
+            if (Dot(support.minkowski, direction) < -1e-6f) break;
+
+            _outSimplex.Push(support);
+
+            if (UpdateSimplex(_outSimplex, direction)) { found = true; break; }
+        }
+
+        if (found) return true;
     }
 
     return false;
@@ -205,9 +251,9 @@ bool NarrowPhaseSystem::UpdateSimplex(GJKSimplex& _simplex, XMFLOAT3& _direction
 {
     switch (_simplex.count)
     {
-        case 2: return UpdateLine      (_simplex, _direction);
-        case 3: return UpdateTriangle  (_simplex, _direction);
-        case 4: return UpdateTetrahedron(_simplex, _direction);
+    case 2: return UpdateLine(_simplex, _direction);
+    case 3: return UpdateTriangle(_simplex, _direction);
+    case 4: return UpdateTetrahedron(_simplex, _direction);
     }
     return false;
 }
@@ -221,7 +267,16 @@ bool NarrowPhaseSystem::UpdateLine(GJKSimplex& _simplex, XMFLOAT3& _direction)
     XMFLOAT3 ao = { -a.x, -a.y, -a.z };
 
     if (Dot(ab, ao) > 0.0f)
-        _direction = TripleProduct(ab, ao, ab);
+    {
+        XMFLOAT3 perp = TripleProduct(ab, ao, ab);
+
+        // Triple product quasi-nul : l'origine est sur le segment AB
+        // (intersection sur une arête de la différence de Minkowski).
+        if (LengthSq(perp) < 1e-10f)
+            return true;
+
+        _direction = perp;
+    }
     else
     {
         _simplex.count = 1;
@@ -237,9 +292,9 @@ bool NarrowPhaseSystem::UpdateTriangle(GJKSimplex& _simplex, XMFLOAT3& _directio
     const XMFLOAT3& b = _simplex.points[1].minkowski;
     const XMFLOAT3& c = _simplex.points[2].minkowski;
 
-    XMFLOAT3 ab  = Subtract(b, a);
-    XMFLOAT3 ac  = Subtract(c, a);
-    XMFLOAT3 ao  = { -a.x, -a.y, -a.z };
+    XMFLOAT3 ab = Subtract(b, a);
+    XMFLOAT3 ac = Subtract(c, a);
+    XMFLOAT3 ao = { -a.x, -a.y, -a.z };
     XMFLOAT3 abc = Cross(ab, ac);
 
     if (Dot(Cross(abc, ac), ao) > 0.0f)
@@ -284,10 +339,10 @@ bool NarrowPhaseSystem::UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direc
     const XMFLOAT3& c = _simplex.points[2].minkowski;
     const XMFLOAT3& d = _simplex.points[3].minkowski;
 
-    XMFLOAT3 ab  = Subtract(b, a);
-    XMFLOAT3 ac  = Subtract(c, a);
-    XMFLOAT3 ad  = Subtract(d, a);
-    XMFLOAT3 ao  = { -a.x, -a.y, -a.z };
+    XMFLOAT3 ab = Subtract(b, a);
+    XMFLOAT3 ac = Subtract(c, a);
+    XMFLOAT3 ad = Subtract(d, a);
+    XMFLOAT3 ao = { -a.x, -a.y, -a.z };
 
     XMFLOAT3 abc = Cross(ab, ac);
     XMFLOAT3 acd = Cross(ac, ad);
@@ -296,9 +351,8 @@ bool NarrowPhaseSystem::UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direc
     // Tester les 3 faces visibles depuis l'origine.
     if (Dot(abc, ao) > 0.0f)
     {
-        // Face ABC visible : garder ABC, chercher dans cette direction.
-        _simplex.points[3] = _simplex.points[0];
-        _simplex.points[0] = _simplex.points[0];
+        // Face ABC visible depuis l'origine : D (points[3]) est derrière.
+        // A(0), B(1), C(2) sont déjà en bonne position → on supprime D simplement.
         _simplex.count = 3;
         return UpdateTriangle(_simplex, _direction);
     }
@@ -332,7 +386,35 @@ bool NarrowPhaseSystem::EPA(
 
     // S'assurer qu'on a un tétraèdre valide.
     if (_simplex.count < 4)
-        return false;
+    {
+
+        const XMFLOAT3 axes[] =
+        {
+            {1,0,0}, {0,1,0}, {0,0,1},
+            {-1,0,0}, {0,-1,0}, {0,0,-1}
+        };
+
+        for (const XMFLOAT3& axis : axes)
+        {
+            if (_simplex.count >= 4) break;
+
+            GJKSupportPoint sp = MinkowskiSupport(
+                _colliderA, _transformA, _colliderB, _transformB, axis);
+
+            bool duplicate = false;
+            for (int i = 0; i < _simplex.count; ++i)
+            {
+                XMFLOAT3 diff = Subtract(sp.minkowski, _simplex.points[i].minkowski);
+                float d = LengthSq(diff);
+                if (d < 1e-4f) { duplicate = true; break; }
+            }
+            if (!duplicate)
+                _simplex.Push(sp);
+        }
+
+        if (_simplex.count < 4)
+            return false;
+    }
 
     // Initialiser le polytope avec les 4 faces du tétraèdre GJK.
     faces.push_back(MakeFace(_simplex.points[0], _simplex.points[1], _simplex.points[2]));
@@ -357,7 +439,7 @@ bool NarrowPhaseSystem::EPA(
         // Convergé si le nouveau point n'est pas significativement plus loin.
         if (newDist - closest.distance < kEPATolerance)
         {
-            _outNormal      = closest.normal;
+            _outNormal = closest.normal;
             _outPenetration = closest.distance;
 
             // Interpolation barycentrique pour retrouver les points de contact.
@@ -367,14 +449,14 @@ bool NarrowPhaseSystem::EPA(
 
             XMFLOAT3 v0 = Subtract(closest.b.minkowski, closest.a.minkowski);
             XMFLOAT3 v1 = Subtract(closest.c.minkowski, closest.a.minkowski);
-            XMFLOAT3 v2 = Subtract(p,                   closest.a.minkowski);
+            XMFLOAT3 v2 = Subtract(p, closest.a.minkowski);
 
             float d00 = Dot(v0, v0);
             float d01 = Dot(v0, v1);
             float d11 = Dot(v1, v1);
             float d20 = Dot(v2, v0);
             float d21 = Dot(v2, v1);
-            float denom = d00*d11 - d01*d01;
+            float denom = d00 * d11 - d01 * d01;
 
             if (fabsf(denom) < 1e-8f)
             {
@@ -383,8 +465,8 @@ bool NarrowPhaseSystem::EPA(
             }
             else
             {
-                float v = (d11*d20 - d01*d21) / denom;
-                float w = (d00*d21 - d01*d20) / denom;
+                float v = (d11 * d20 - d01 * d21) / denom;
+                float w = (d00 * d21 - d01 * d20) / denom;
                 float u = 1.0f - v - w;
 
                 // Clamp pour robustesse numérique.
@@ -396,15 +478,15 @@ bool NarrowPhaseSystem::EPA(
 
                 _outContactA =
                 {
-                    u*closest.a.pointA.x + v*closest.b.pointA.x + w*closest.c.pointA.x,
-                    u*closest.a.pointA.y + v*closest.b.pointA.y + w*closest.c.pointA.y,
-                    u*closest.a.pointA.z + v*closest.b.pointA.z + w*closest.c.pointA.z
+                    u * closest.a.pointA.x + v * closest.b.pointA.x + w * closest.c.pointA.x,
+                    u * closest.a.pointA.y + v * closest.b.pointA.y + w * closest.c.pointA.y,
+                    u * closest.a.pointA.z + v * closest.b.pointA.z + w * closest.c.pointA.z
                 };
                 _outContactB =
                 {
-                    u*closest.a.pointB.x + v*closest.b.pointB.x + w*closest.c.pointB.x,
-                    u*closest.a.pointB.y + v*closest.b.pointB.y + w*closest.c.pointB.y,
-                    u*closest.a.pointB.z + v*closest.b.pointB.z + w*closest.c.pointB.z
+                    u * closest.a.pointB.x + v * closest.b.pointB.x + w * closest.c.pointB.x,
+                    u * closest.a.pointB.y + v * closest.b.pointB.y + w * closest.c.pointB.y,
+                    u * closest.a.pointB.z + v * closest.b.pointB.z + w * closest.c.pointB.z
                 };
             }
 
@@ -432,12 +514,12 @@ bool NarrowPhaseSystem::EPA(
             {
                 if (i == j) continue;
                 // Arête dupliquée si les deux extrémités sont inversées.
-                XMFLOAT3 diffA = Subtract(edges[i].first.minkowski,  edges[j].second.minkowski);
+                XMFLOAT3 diffA = Subtract(edges[i].first.minkowski, edges[j].second.minkowski);
                 XMFLOAT3 diffB = Subtract(edges[i].second.minkowski, edges[j].first.minkowski);
                 if (LengthSq(diffA) < 1e-8f && LengthSq(diffB) < 1e-8f)
                 {
-                    edges.erase(edges.begin() + max(i,j));
-                    edges.erase(edges.begin() + min(i,j));
+                    edges.erase(edges.begin() + max(i, j));
+                    edges.erase(edges.begin() + min(i, j));
                     --i;
                     break;
                 }
@@ -461,13 +543,13 @@ EPAFace NarrowPhaseSystem::MakeFace(const GJKSupportPoint& _a, const GJKSupportP
 
     XMFLOAT3 ab = Subtract(_b.minkowski, _a.minkowski);
     XMFLOAT3 ac = Subtract(_c.minkowski, _a.minkowski);
-    face.normal  = Normalize(Cross(ab, ac));
+    face.normal = Normalize(Cross(ab, ac));
     face.distance = Dot(face.normal, _a.minkowski);
 
     // S'assurer que la normale pointe vers l'extérieur (loin de l'origine).
     if (face.distance < 0.0f)
     {
-        face.normal   = { -face.normal.x, -face.normal.y, -face.normal.z };
+        face.normal = { -face.normal.x, -face.normal.y, -face.normal.z };
         face.distance = -face.distance;
         std::swap(face.b, face.c);
     }
@@ -480,7 +562,7 @@ int NarrowPhaseSystem::FindClosestFace(const Vector<EPAFace>& _faces) const
     if (_faces.empty())
         return -1;
 
-    int   bestIdx  = 0;
+    int   bestIdx = 0;
     float bestDist = _faces[0].distance;
 
     for (int i = 1; i < (int)_faces.size(); ++i)
@@ -488,7 +570,7 @@ int NarrowPhaseSystem::FindClosestFace(const Vector<EPAFace>& _faces) const
         if (_faces[i].distance < bestDist)
         {
             bestDist = _faces[i].distance;
-            bestIdx  = i;
+            bestIdx = i;
         }
     }
 
@@ -521,18 +603,18 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
     if (_colliderA.type == ShapeType::Box && _colliderB.type == ShapeType::Box)
     {
         // Face de référence : la face de A la plus antiparallèle à la normale.
-        XMVECTOR qA  = XMLoadFloat4(&_transformA.world.GetRotation());
+        XMVECTOR qA = XMLoadFloat4(&_transformA.world.GetRotation());
         XMMATRIX rotA = XMMatrixRotationQuaternion(qA);
         const XMFLOAT3& scaleA = _transformA.world.GetScale();
-        const XMFLOAT3& hA     = _colliderA.shape.box.halfExtents;
+        const XMFLOAT3& hA = _colliderA.shape.box.halfExtents;
 
         XMFLOAT3 axesA[3];
-        XMStoreFloat3(&axesA[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1,0,0,0), rotA)));
-        XMStoreFloat3(&axesA[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,1,0,0), rotA)));
-        XMStoreFloat3(&axesA[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,0,1,0), rotA)));
+        XMStoreFloat3(&axesA[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotA)));
+        XMStoreFloat3(&axesA[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotA)));
+        XMStoreFloat3(&axesA[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotA)));
 
         int    refAxis = 0;
-        float  refDot  = fabsf(Dot(_normal, axesA[0]));
+        float  refDot = fabsf(Dot(_normal, axesA[0]));
         for (int i = 1; i < 3; ++i)
         {
             float d = fabsf(Dot(_normal, axesA[i]));
@@ -541,7 +623,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
 
         // Face de référence centrée autour du point support.
         bool positiveFace = Dot(_normal, axesA[refAxis]) > 0.0f;
-        float hRef = (refAxis==0 ? hA.x*scaleA.x : refAxis==1 ? hA.y*scaleA.y : hA.z*scaleA.z);
+        float hRef = (refAxis == 0 ? hA.x * scaleA.x : refAxis == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
         const XMFLOAT3& posA = _transformA.world.GetPosition();
         float sign = positiveFace ? 1.0f : -1.0f;
 
@@ -555,8 +637,8 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         // Construire les 4 coins de la face de référence.
         int ax1 = (refAxis + 1) % 3;
         int ax2 = (refAxis + 2) % 3;
-        float h1 = (ax1==0 ? hA.x*scaleA.x : ax1==1 ? hA.y*scaleA.y : hA.z*scaleA.z);
-        float h2 = (ax2==0 ? hA.x*scaleA.x : ax2==1 ? hA.y*scaleA.y : hA.z*scaleA.z);
+        float h1 = (ax1 == 0 ? hA.x * scaleA.x : ax1 == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
+        float h2 = (ax2 == 0 ? hA.x * scaleA.x : ax2 == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
 
         XMFLOAT3 refFace[4] =
         {
@@ -567,18 +649,18 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         };
 
         // Face incidente de B.
-        XMVECTOR qB  = XMLoadFloat4(&_transformB.world.GetRotation());
+        XMVECTOR qB = XMLoadFloat4(&_transformB.world.GetRotation());
         XMMATRIX rotB = XMMatrixRotationQuaternion(qB);
         const XMFLOAT3& scaleB = _transformB.world.GetScale();
-        const XMFLOAT3& hB     = _colliderB.shape.box.halfExtents;
+        const XMFLOAT3& hB = _colliderB.shape.box.halfExtents;
 
         XMFLOAT3 axesB[3];
-        XMStoreFloat3(&axesB[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1,0,0,0), rotB)));
-        XMStoreFloat3(&axesB[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,1,0,0), rotB)));
-        XMStoreFloat3(&axesB[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0,0,1,0), rotB)));
+        XMStoreFloat3(&axesB[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotB)));
+        XMStoreFloat3(&axesB[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotB)));
+        XMStoreFloat3(&axesB[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotB)));
 
         int    incAxis = 0;
-        float  incDot  = fabsf(Dot(_normal, axesB[0]));
+        float  incDot = fabsf(Dot(_normal, axesB[0]));
         for (int i = 1; i < 3; ++i)
         {
             float d = fabsf(Dot(_normal, axesB[i]));
@@ -586,7 +668,7 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
         }
 
         bool positiveFaceB = Dot(_normal, axesB[incAxis]) < 0.0f;
-        float hIncRef = (incAxis==0 ? hB.x*scaleB.x : incAxis==1 ? hB.y*scaleB.y : hB.z*scaleB.z);
+        float hIncRef = (incAxis == 0 ? hB.x * scaleB.x : incAxis == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
         const XMFLOAT3& posB2 = _transformB.world.GetPosition();
         float signB = positiveFaceB ? 1.0f : -1.0f;
 
@@ -599,8 +681,8 @@ void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
 
         int ix1 = (incAxis + 1) % 3;
         int ix2 = (incAxis + 2) % 3;
-        float ih1 = (ix1==0 ? hB.x*scaleB.x : ix1==1 ? hB.y*scaleB.y : hB.z*scaleB.z);
-        float ih2 = (ix2==0 ? hB.x*scaleB.x : ix2==1 ? hB.y*scaleB.y : hB.z*scaleB.z);
+        float ih1 = (ix1 == 0 ? hB.x * scaleB.x : ix1 == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
+        float ih2 = (ix2 == 0 ? hB.x * scaleB.x : ix2 == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
 
         XMFLOAT3 incFace[4] =
         {
