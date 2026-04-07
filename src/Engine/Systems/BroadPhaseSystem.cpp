@@ -159,20 +159,16 @@ void BroadPhaseSystem::BuildCandidatePairs()
                 for (EntityId tgt : bucket.all)
                 {
                     if (src == tgt) continue;
-                    m_pairKeys.push_back(MakePairKey(src, tgt));
+                    m_pairKeys.emplace_back(src, tgt);
                 }
             }
         });
 
-    std::sort(m_pairKeys.begin(), m_pairKeys.end());
-    auto last = std::unique(m_pairKeys.begin(), m_pairKeys.end());
-    m_pairKeys.erase(last, m_pairKeys.end());
-
     m_candidatePairs.reserve(m_pairKeys.size());
-    for (uint64 key : m_pairKeys)
+    for (auto& key : m_pairKeys)
     {
-        EntityId a = static_cast<EntityId>(key >> 32);
-        EntityId b = static_cast<EntityId>(key & 0xFFFFFFFF);
+        EntityId a = key.first;
+        EntityId b = key.second;
 
         if (!world->HasComponent<ColliderComponent>(a) ||
             !world->HasComponent<ColliderComponent>(b)) continue;

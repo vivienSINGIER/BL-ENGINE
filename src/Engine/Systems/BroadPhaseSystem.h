@@ -93,13 +93,6 @@ private:
             (_x * 73856093) ^ (_y * 19349663) ^ (_z * 83492791));
     }
 
-    inline uint64 MakePairKey(EntityId _a, EntityId _b) const
-    {
-        if (_a > _b) std::swap(_a, _b);
-        return (static_cast<uint64>(static_cast<uint32>(_a)) << 32) |
-            static_cast<uint32>(_b);
-    }
-
     static constexpr float kMovedEpsilon = 1e-5f;
 
 private:
@@ -109,7 +102,7 @@ private:
     // État par entité — persisté entre frames.
     std::unordered_map<EntityId, EntityGridState> m_entityStates;
 
-    Vector<uint64>        m_pairKeys;
+    Vector<std::pair<EntityId, EntityId>> m_pairKeys;
     Vector<CandidatePair> m_candidatePairs;
 };
 

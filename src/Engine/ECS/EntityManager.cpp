@@ -55,6 +55,7 @@ void EntityManager::Destroy(EntityId _e)
 bool EntityManager::IsAlive(EntityId _e)
 {
     uint32 index = EntityIndex(_e);
+    uint32 gen = EntityGen(_e);
     return index < m_vRecords.size() && m_vRecords[index].gen == EntityGen(_e);
 }
 
