@@ -72,9 +72,9 @@ inline XMFLOAT3 Snap(const XMFLOAT3& _v, float _threshold)
 {
     return
     {
-        (fabsf(_v.x) < _threshold) ? 0.0f : _v.x,
-        (fabsf(_v.y) < _threshold) ? 0.0f : _v.y,
-        (fabsf(_v.z) < _threshold) ? 0.0f : _v.z
+        (fabsf(_v.x) <= _threshold) ? 0.0f : _v.x,
+        (fabsf(_v.y) <= _threshold) ? 0.0f : _v.y,
+        (fabsf(_v.z) <= _threshold) ? 0.0f : _v.z
     };
 }
 

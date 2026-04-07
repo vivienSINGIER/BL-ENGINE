@@ -235,16 +235,6 @@ float PhysicSystem::AngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, c
     return Dot(Cross(ApplyInertiaInverse(rxn, _t), _r), _axis);
 }
 
-XMFLOAT3 PhysicSystem::Snap(const XMFLOAT3& _v, float _threshold) const
-{
-    return
-    {
-        (fabsf(_v.x) < _threshold) ? 0.0f : _v.x,
-        (fabsf(_v.y) < _threshold) ? 0.0f : _v.y,
-        (fabsf(_v.z) < _threshold) ? 0.0f : _v.z
-    };
-}
-
 MotionComponent& PhysicSystem::GetMotion(EntityId _e)
 {
     if (world->HasComponent<MotionComponent>(_e))

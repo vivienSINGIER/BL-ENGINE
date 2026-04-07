@@ -29,8 +29,8 @@ struct RigidBodyComponent
 
     // Propriétés matériau 
     float restitution     = 0.0f;   // 0 = parfaitement inélastique, 1 = parfaitement élastique
-    float staticFriction  = 0.1f;
-    float dynamicFriction = 0.05f;
+    float staticFriction  = 0.0f;
+    float dynamicFriction = 0.0f;
 
     // Configuration
     BodyType type          = BodyType::Dynamic;
