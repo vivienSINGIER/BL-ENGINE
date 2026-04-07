@@ -161,6 +161,7 @@ void Transform::UpdateFromParent(Transform const& parent)
 void Transform::SetPosition(XMFLOAT3 const& position)
 {
     pos = position;
+    dirty |= (uint8)DIRTY_FLAG::POS;
 }
 
 void Transform::Move(XMFLOAT3 const& delta)
