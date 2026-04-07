@@ -9,6 +9,7 @@
 #include "ECS/SystemScheduler.h"
 #include "Network/Client.h"
 #include "Network/Server.h"
+#include "Systems/ImageSystem.h"
 
 EngineManager* EngineManager::s_pInstance = nullptr;
 
@@ -66,6 +67,7 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
 
     SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::Update);
     SystemScheduler::Get().RegisterSystem<MeshRendererSystem>(Phase::Render, NetworkFlag::CLIENT);
+    SystemScheduler::Get().RegisterSystem<ImageSystem>(Phase::Render, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<CameraSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);

@@ -28,7 +28,7 @@ public:
     Transform2D& operator=(const Transform2D& other);
     Transform2D& operator=(Transform2D&& other) noexcept;
 
-    XMFLOAT3X3& GetMatrix();
+    XMFLOAT4X4& GetMatrix();
 
     void SetIdentity();
     void UpdateMatrix();
@@ -55,11 +55,12 @@ public:
     void Rotate(float _delta);
     void ResetRotation();
 
+private:
     XMFLOAT2   pos   = { 0.0f, 0.0f };
     XMFLOAT2   scale = { 1.0f, 1.0f };
     float      angle = 0.0f;
-
-    XMFLOAT3X3 matrix;
+    
+    XMFLOAT4X4 matrix;
 
     uint32 dirty = 0;
 };

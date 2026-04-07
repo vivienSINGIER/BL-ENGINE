@@ -207,10 +207,10 @@ public:
             for (int y = 0; y < _grid[0].size(); y++)
                 if (_grid[x][y] == 'X')
                 {
-                    EntityId e = scene->world.CreateEntity();
-                    TransformComponent& t = scene->world.AddComponent<TransformComponent>(e);
-                    MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(e);
-                    m.geo = RessourceManager::GetGeometry("CUBE");
+                    EntityId e = scene->world->CreateEntity();
+                    TransformComponent& t = scene->world->AddComponent<TransformComponent>(e);
+                    MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);
+                    // m.geo = RessourceManager::GetGeometry("CUBE");
                     t.local.SetPosition(XMFLOAT3(x, 0.0f, y));
                 }
         }
@@ -220,10 +220,10 @@ public:
     {
 		srand(time(nullptr));
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
-        Scene* scene = SceneManager::GetSceneWithName("Default");
-        scene->world.RegisterSystem<TransformSystem>(Phase::Update);
-        scene->world.RegisterSystem<MeshRendererSystem>(Phase::Render);
-		scene->world.RegisterSystem<LightSystem>(Phase::PreRender);
+  //       Scene* scene = SceneManager::GetSceneWithName("Default");
+  //       scene->world->RegisterSystem<TransformSystem>(Phase::Update);
+  //       scene->world->RegisterSystem<MeshRendererSystem>(Phase::Render);
+		// scene->world->RegisterSystem<LightSystem>(Phase::PreRender);
 
 		RessourceManager::AddGeometry("CUBE", GeometryFactory::BuildCube(EngineManager::GetDevice()));
 
@@ -237,20 +237,20 @@ public:
         XMFLOAT3 target = XMFLOAT3(0.1f, 0.0f, 0.0f);
         cam.LookAt(target);
 
-		EntityId ground = scene->world.CreateEntity();
-		TransformComponent& t = scene->world.AddComponent<TransformComponent>(ground);
-		MeshRenderer& m = scene->world.AddComponent<MeshRenderer>(ground);
-		m.geo = RessourceManager::GetGeometry("CUBE");
-		t.local.SetPosition(XMFLOAT3(m_widthGrid / 2.0f, -1.0f, m_heightGrid / 2.0f));
-		t.local.SetScale(XMFLOAT3(m_widthGrid, 1.0f, m_heightGrid));
-		m.material = mat;
-
-		EntityId light = scene->world.CreateEntity();
-		TransformComponent& tLight = scene->world.AddComponent<TransformComponent>(light);
-		LightComponent& l = scene->world.AddComponent<LightComponent>(light);
-        l.type = LightType::Directional;
-		l.SetStrength(0.5f);
-		tLight.local.LookTo(XMFLOAT3(-1.0f, -1.0f, -1.0f));
+		// EntityId ground = scene->world->CreateEntity();
+		// TransformComponent& t = scene->world->AddComponent<TransformComponent>(ground);
+		// MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(ground);
+		// // m.geo = RessourceManager::GetGeometry("CUBE");
+		// t.local.SetPosition(XMFLOAT3(m_widthGrid / 2.0f, -1.0f, m_heightGrid / 2.0f));
+		// t.local.SetScale(XMFLOAT3(m_widthGrid, 1.0f, m_heightGrid));
+		// // m.material = mat;
+  //
+		// EntityId light = scene->world->CreateEntity();
+		// TransformComponent& tLight = scene->world->AddComponent<TransformComponent>(light);
+		// LightComponent& l = scene->world->AddComponent<LightComponent>(light);
+  //       l.type = LightType::Directional;
+		// l.SetStrength(0.5f);
+		// tLight.local.LookTo(XMFLOAT3(-1.0f, -1.0f, -1.0f));
 
 
         EngineManager::GetDevice()->SetMainCamera(&cam);
@@ -270,7 +270,7 @@ public:
         int ryMin = cy - rH; if (ryMin % 2 == 1) ryMin--;
         int ryMax = cy + rH; if (ryMax % 2 == 1) ryMax++;
 
-        // Murs de séparation
+        // Murs de sï¿½paration
         for (int i = 0; i < m_widthGrid; i++)
         {
             grid[i][ryMin] = 'X';

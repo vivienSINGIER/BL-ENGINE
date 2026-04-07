@@ -15,14 +15,15 @@ static XMMATRIX Build2DMatrix(const XMFLOAT2& pos, const XMFLOAT2& scale, float 
     );
 }
 
-static void StoreFloat3x3From2DMatrix(XMFLOAT3X3& out, const XMFLOAT2& pos, const XMFLOAT2& scale, float angle)
+static void StoreFloat4x4From2DMatrix(XMFLOAT4X4& out, const XMFLOAT2& pos, const XMFLOAT2& scale, float angle)
 {
     float c = cosf(angle);
     float s = sinf(angle);
 
-    out._11 = scale.x * c;   out._12 = scale.x * s;  out._13 = 0.0f;
-    out._21 = -scale.y * s;  out._22 = scale.y * c;  out._23 = 0.0f;
-    out._31 = pos.x;         out._32 = pos.y;         out._33 = 1.0f;
+    out._11 = scale.x * c;   out._12 = scale.x * s;  out._13 = 0.0f;  out._14 = 0.0f;
+    out._21 = -scale.y * s;  out._22 = scale.y * c;  out._23 = 0.0f;  out._24 = 0.0f;
+    out._31 = 0.0f;          out._32 = 0.0f;          out._33 = 1.0f;  out._34 = 0.0f;
+    out._41 = pos.x;         out._42 = pos.y;         out._43 = 0.0f;  out._44 = 1.0f;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +78,7 @@ Transform2D& Transform2D::operator=(Transform2D&& other) noexcept
 // Matrix
 // ---------------------------------------------------------------------------
 
-XMFLOAT3X3& Transform2D::GetMatrix()
+XMFLOAT4X4& Transform2D::GetMatrix()
 {
     if (dirty & (uint32)DIRTY_FLAG_2D::WORLD)
         UpdateMatrix();
@@ -89,19 +90,14 @@ void Transform2D::SetIdentity()
     pos   = XMFLOAT2(0.0f, 0.0f);
     scale = XMFLOAT2(1.0f, 1.0f);
     angle = 0.0f;
-
-    XMFLOAT3X3 id;
-    id._11 = 1; id._12 = 0; id._13 = 0;
-    id._21 = 0; id._22 = 1; id._23 = 0;
-    id._31 = 0; id._32 = 0; id._33 = 1;
-    matrix    = id;
-
+    
+    XMStoreFloat4x4(&matrix, XMMatrixIdentity());
     dirty = 0;
 }
 
 void Transform2D::UpdateMatrix()
 {
-    StoreFloat3x3From2DMatrix(matrix, pos, scale, angle);
+    StoreFloat4x4From2DMatrix(matrix, pos, scale, angle);
 
     dirty &= ~(uint32)DIRTY_FLAG_2D::POS;
     dirty &= ~(uint32)DIRTY_FLAG_2D::SCALE;
@@ -136,21 +132,21 @@ void Transform2D::UpdateFromParent(Transform2D const& parent)
 void Transform2D::SetPosition(XMFLOAT2 const& position)
 {
     pos = position;
-    dirty |= (uint32)DIRTY_FLAG_2D::POS;
+    dirty |= (uint32)DIRTY_FLAG_2D::POS | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::Move(XMFLOAT2 const& delta)
 {
     pos.x += delta.x;
     pos.y += delta.y;
-    dirty |= (uint32)DIRTY_FLAG_2D::POS;
+    dirty |= (uint32)DIRTY_FLAG_2D::POS | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::Move(XMFLOAT2 const& dir, float distance)
 {
     pos.x += dir.x * distance;
     pos.y += dir.y * distance;
-    dirty |= (uint32)DIRTY_FLAG_2D::POS;
+    dirty |= (uint32)DIRTY_FLAG_2D::POS | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 // ---------------------------------------------------------------------------
@@ -160,27 +156,27 @@ void Transform2D::Move(XMFLOAT2 const& dir, float distance)
 void Transform2D::SetScale(XMFLOAT2 const& _scale)
 {
     scale = _scale;
-    dirty |= (uint32)DIRTY_FLAG_2D::SCALE;
+    dirty |= (uint32)DIRTY_FLAG_2D::SCALE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::SetScale(float _scale)
 {
     scale = { _scale, _scale };
-    dirty |= (uint32)DIRTY_FLAG_2D::SCALE;
+    dirty |= (uint32)DIRTY_FLAG_2D::SCALE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::Scale(XMFLOAT2 const& _scale)
 {
     scale.x *= _scale.x;
     scale.y *= _scale.y;
-    dirty |= (uint32)DIRTY_FLAG_2D::SCALE;
+    dirty |= (uint32)DIRTY_FLAG_2D::SCALE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::Scale(float _scale)
 {
     scale.x *= _scale;
     scale.y *= _scale;
-    dirty |= (uint32)DIRTY_FLAG_2D::SCALE;
+    dirty |= (uint32)DIRTY_FLAG_2D::SCALE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,17 +186,17 @@ void Transform2D::Scale(float _scale)
 void Transform2D::SetRotation(float _angle)
 {
     angle = _angle;
-    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE;
+    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::Rotate(float _delta)
 {
     angle += _delta;
-    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE;
+    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE | (uint32)DIRTY_FLAG_2D::WORLD;
 }
 
 void Transform2D::ResetRotation()
 {
     angle = 0.0f;
-    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE;
+    dirty |= (uint32)DIRTY_FLAG_2D::ROTATE | (uint32)DIRTY_FLAG_2D::WORLD;
 }

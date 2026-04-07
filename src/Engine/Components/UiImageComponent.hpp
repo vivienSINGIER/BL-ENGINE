@@ -1,8 +1,7 @@
-#ifndef MESH_RENDERER_H_DEFINED
-#define MESH_RENDERER_H_DEFINED
+#ifndef UI_IMAGE_H_DEFINED
+#define UI_IMAGE_H_DEFINED
 
 #include "../../Core/Transform2D.h"
-#include "../Render/Generic/Render.h"
 
 struct UiImageComponent
 {

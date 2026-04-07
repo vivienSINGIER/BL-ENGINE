@@ -29,6 +29,16 @@ public:
 	static uint32 GetShaderId(String _name) { return s_pInstance->m_mShaderIds[_name]; };
 	static Shader* GetShader(String _name);
 	static Shader* GetShader(uint32 _id) { return s_pInstance->m_vShaders[_id]; }
+	
+	static uint32 AddUiMaterial(String _name, UiMaterial* pMat);
+	static uint32 GetUiMaterialId(String _name) { return s_pInstance->m_mUiMaterialIds[_name]; };
+	static UiMaterial* GetUiMaterial(String _name);
+	static UiMaterial* GetUiMaterial(uint32 _id) { return s_pInstance->m_vUiMaterials[_id]; }
+
+	static uint32 AddUiShader(String _name, UiShader* _pUiShader);
+	static uint32 GetUiShaderId(String _name) { return s_pInstance->m_mUiShaderIds[_name]; };
+	static UiShader* GetUiShader(String _name);
+	static UiShader* GetUiShader(uint32 _id) { return s_pInstance->m_vUiShaders[_id]; }
 
 	static uint32 AddFont(String _name, RenderFont* _pFont);
 	static uint32 GetFontId(String _name) { return s_pInstance->m_mFontIds[_name]; };
@@ -51,7 +61,9 @@ private:
 	Vector<Geometry*> m_vGeometries;
 	Vector<Sprite*> m_vSprites;
 	Vector<Shader*> m_vShaders;
+	Vector<UiShader*> m_vUiShaders;
 	Vector<Material*> m_vMaterials;
+	Vector<UiMaterial*> m_vUiMaterials;
 	Vector<RenderFont*> m_vFonts;
 	Vector<Texture*> m_vTextures;
 	Vector<Camera*> m_vCameras;
@@ -59,7 +71,9 @@ private:
 	UnorderedMap<String, uint32> m_mGeometryIds;
 	UnorderedMap<String, uint32> m_mSpriteIds;
 	UnorderedMap<String, uint32> m_mShaderIds;
+	UnorderedMap<String, uint32> m_mUiShaderIds;
 	UnorderedMap<String, uint32> m_mMaterialIds;
+	UnorderedMap<String, uint32> m_mUiMaterialIds;
 	UnorderedMap<String, uint32> m_mFontIds;
 	UnorderedMap<String, uint32> m_mTextureIds;
 	UnorderedMap<String, uint32> m_mCameraIds;

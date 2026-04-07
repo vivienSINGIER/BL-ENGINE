@@ -62,6 +62,38 @@ Shader* RessourceManager::GetShader(String _name)
     return s_pInstance->m_vShaders[s_pInstance->m_mShaderIds[_name]];
 }
 
+uint32 RessourceManager::AddUiMaterial(String _name, UiMaterial* pMat)
+{
+    assert(s_pInstance->m_mUiMaterialIds.contains(_name) == false && "Material already exists");
+    
+    s_pInstance->m_vUiMaterials.push_back(pMat);
+    s_pInstance->m_mUiMaterialIds[_name] = s_pInstance->m_vUiMaterials.size() - 1;
+    return s_pInstance->m_mUiMaterialIds[_name];
+}
+
+UiMaterial* RessourceManager::GetUiMaterial(String _name)
+{
+    if (s_pInstance->m_mUiMaterialIds.contains(_name) == false) return nullptr;
+
+    return s_pInstance->m_vUiMaterials[s_pInstance->m_mUiMaterialIds[_name]];
+}
+
+uint32 RessourceManager::AddUiShader(String _name, UiShader* _pUiShader)
+{
+    assert(s_pInstance->m_mUiShaderIds.contains(_name) == false && "UiShader already exists");
+    
+    s_pInstance->m_vUiShaders.push_back(_pUiShader);
+    s_pInstance->m_mUiShaderIds[_name] = s_pInstance->m_vUiShaders.size() - 1;
+    return s_pInstance->m_mUiShaderIds[_name];
+}
+
+UiShader* RessourceManager::GetUiShader(String _name)
+{
+    if (s_pInstance->m_mUiShaderIds.contains(_name) == false) return nullptr;
+
+    return s_pInstance->m_vUiShaders[s_pInstance->m_mUiShaderIds[_name]];
+}
+
 uint32 RessourceManager::AddFont(String _name, RenderFont* _pFont)
 {
     assert(s_pInstance->m_mFontIds.contains(_name) == false && "Font already exists");

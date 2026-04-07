@@ -22,6 +22,7 @@
 #include "Components/LightComponent.hpp"
 #include "Components/NetworkComponent.hpp"
 #include "Components/OwnerComponent.hpp"
+#include "Components/UiImageComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"
