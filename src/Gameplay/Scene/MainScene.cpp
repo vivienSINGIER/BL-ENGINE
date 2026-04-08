@@ -271,6 +271,11 @@ void MainScene::LoadRessources()
     medicMat->SetTexture("Albedo", RessourceManager::GetTexture("Medic"));
 	RessourceManager::AddMaterial("MedicMaterial", medicMat);
 
+	Texture* gasTexture = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/gas.dds");
+	RessourceManager::AddTexture("Gas", gasTexture);
+	Material* gasMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
+	gasMat->SetTexture("Albedo", RessourceManager::GetTexture("Gas"));
+	RessourceManager::AddMaterial("GasMaterial", gasMat);
 }
 
 void MainScene::PreserveInventory()

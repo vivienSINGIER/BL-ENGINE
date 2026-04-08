@@ -66,7 +66,7 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
         TransformComponent& tGas = m_scene->world->AddComponent<TransformComponent>(gasWall);
         MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(gasWall);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
-        mr.materialId = RessourceManager::GetMaterialId("DoorMaterial");
+        mr.materialId = RessourceManager::GetMaterialId("GasMaterial");
         tGas.local.SetPosition(startPos[i]);
         tGas.local.SetScale(gasScale[i]);
         m_scene->world->SetInactive(gasWall);
