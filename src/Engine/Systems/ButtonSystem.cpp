@@ -17,12 +17,11 @@ void ButtonSystem::OnUpdate(float _dt, EntityId _e, UiButtonComponent& _button)
         TransitionState(_button, UiButtonComponent::ButtonStateType::DISABLED);
     else if (_button.isPressed   && _button.currState != UiButtonComponent::ButtonStateType::PRESSED)
         TransitionState(_button, UiButtonComponent::ButtonStateType::PRESSED);
-    else if (_button.isHovered  && _button.currState != UiButtonComponent::ButtonStateType::HOVERED)
+    else if (_button.isHovered && _button.isPressed == false && _button.currState != UiButtonComponent::ButtonStateType::HOVERED)
         TransitionState(_button, UiButtonComponent::ButtonStateType::HOVERED);
-    else if (_button.currState != UiButtonComponent::ButtonStateType::IDLE)
+    else if (_button.currState != UiButtonComponent::ButtonStateType::IDLE && _button.isHovered == false && _button.isPressed   == false)
         TransitionState(_button, UiButtonComponent::ButtonStateType::IDLE);
-
-
+    
     Draw(_button);
 }
 
@@ -45,8 +44,8 @@ bool ButtonSystem::IsHovered(UiButtonComponent& _button)
     XMFLOAT2 pos = _button.transform.GetPosition();
     XMFLOAT2 scale = _button.transform.GetScale();
     
-    int dX = mousePos.x - (int)pos.x;
-    int dY = mousePos.y - (int)pos.y;
+    int dX = abs(mousePos.x - (int)pos.x);
+    int dY = abs(mousePos.y - (int)pos.y);
 
     if (dX > (int)((float)_button.m_halfWidth * scale.x))
         return false;

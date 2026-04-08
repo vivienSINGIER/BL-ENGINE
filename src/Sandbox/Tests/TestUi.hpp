@@ -65,6 +65,10 @@ public:
         UiMaterial* uiMaterial2 = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
         RessourceManager::AddUiMaterial("UiRed", uiMaterial2);
         uiMaterial2->SetFloat4("Color", {1.0f, 0.0f, 0.0f, 1.0f});
+        
+        UiMaterial* uiMaterial3 = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+        RessourceManager::AddUiMaterial("UiGreen", uiMaterial3);
+        uiMaterial3->SetFloat4("Color", {0.0f, 1.0f, 0.0f, 1.0f});
 
         EngineManager::GetInstance().HostServer();
     
@@ -74,7 +78,12 @@ public:
         UiButtonComponent& b = scene->world->AddComponent<UiButtonComponent>(e);
         b.spriteId = RessourceManager::GetSpriteId("Square");
         b.states[UiButtonComponent::ButtonStateType::IDLE].materialId = RessourceManager::GetUiMaterialId("UiDefault");
+        
         b.states[UiButtonComponent::ButtonStateType::HOVERED].materialId = RessourceManager::GetUiMaterialId("UiRed");
+        b.states[UiButtonComponent::ButtonStateType::HOVERED].stateScale = XMFLOAT2(1.1f, 1.1f);
+        
+        b.states[UiButtonComponent::ButtonStateType::PRESSED].materialId = RessourceManager::GetUiMaterialId("UiGreen");
+        b.states[UiButtonComponent::ButtonStateType::PRESSED].statePos = XMFLOAT2(0.0f, -10.0f);
         
         scene->world->AddScript<TestScript>(e);
         
