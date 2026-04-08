@@ -13,9 +13,6 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
         _rigid.inertiaDirty = false;
     }
 
-    if (_rigid.allowRotation)
-        UpdateWorldInertiaTensor(_rigid, _transform);
-
     // Intégration normale
     XMFLOAT3 deltaPos = IntegrateLinearVelocity(_rigid, _motion, _dt);
     _transform.local.Move(deltaPos);
@@ -31,9 +28,12 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
         _motion.torque = { 0,0,0 };
     }
 
+    if (_rigid.allowRotation)
+        UpdateWorldInertiaTensor(_rigid, _transform);
+
     // Sleep
-	float linearSq = NormSquared(_motion.linearVelocity);
-	float angularSq = NormSquared(_motion.angularVelocity);
+	float linearSq = LengthSq(_motion.linearVelocity);
+	float angularSq = LengthSq(_motion.angularVelocity);
 
     bool lowMotion = linearSq < (kSleepLinearThreshold) && angularSq < (kSleepAngularThreshold);
 
@@ -127,9 +127,9 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,
         0,     0,     0,     1
     );
 
-    XMVECTOR q   = XMLoadFloat4(&_transform.local.GetRotation());
-    XMMATRIX R   = XMMatrixRotationQuaternion(q);
-    XMMATRIX RT  = XMMatrixTranspose(R);
+    XMVECTOR q = XMLoadFloat4(&_transform.local.GetRotation());
+    XMMATRIX R = XMMatrixRotationQuaternion(q);
+    XMMATRIX RT = XMMatrixTranspose(R);
 
     XMMATRIX I_world_inv = R * I_body_inv * RT;
 
@@ -174,7 +174,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     // F_drag = -dragCoefficient * |v| * v
     if (_rigid.dragCoefficient > 0.0f)
     {
-		float speed = NormSquared(_motion.linearVelocity);
+		float speed = Length(_motion.linearVelocity);
 
         if (speed > 0.1f)
         {
@@ -221,7 +221,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
     _motion.angularVelocity.z *= damp;
 
     // Seuil numérique — évite la dérive flottante sur les corps quasi-immobiles.
-	float aSq = NormSquared(_motion.angularVelocity);
+	float aSq = LengthSq(_motion.angularVelocity);
     if (aSq < kMinAngularVelocitySq)
         _motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
 

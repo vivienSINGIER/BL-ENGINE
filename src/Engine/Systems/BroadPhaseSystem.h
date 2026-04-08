@@ -49,7 +49,7 @@ struct SpatialHashGrid
 
 struct EntityGridState
 {
-    XMFLOAT3 lastPosition = { 1e38f, 1e38f, 1e38f }; // sentinelle → force update à l'init
+    XMFLOAT3 lastPosition = { 1e38f, 1e38f, 1e38f }; // sentinelle -> force update à l'init
     XMFLOAT4 lastRotation = { 0, 0, 0, 1 };
     XMFLOAT3 lastScale = { 1, 1, 1 };
     Vector<uint32> occupiedKeys;  // clés de cellules actuellement occupées
@@ -89,8 +89,7 @@ private:
 
     inline uint32 HashCell(int _x, int _y, int _z) const
     {
-        return static_cast<uint32>(
-            (_x * 73856093) ^ (_y * 19349663) ^ (_z * 83492791));
+        return static_cast<uint32>((_x * 73856093) ^ (_y * 19349663) ^ (_z * 83492791));
     }
 
     static constexpr float kMovedEpsilon = 1e-5f;

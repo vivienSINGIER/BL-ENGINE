@@ -1,791 +1,891 @@
 #include "NarrowPhaseSystem.h"
-#include <cfloat>
 #include "../ECS/World.h"
-#include <Utils.hpp>
-#include <iostream>
-#include "../ECS/Script.h"
+#include <algorithm>
+#include <cfloat>
 
-void NarrowPhaseSystem::Update(float _dt)
+inline bool NearlyEqual(const XMFLOAT3& a, const XMFLOAT3& b, float eps = kContactMergeEpsilon)
 {
-    m_cache.BeginFrame();
-    if (m_broadPhase == nullptr)
-        return;
-
-    for (const CandidatePair& pair : m_broadPhase->GetCandidatePairs())
-        ProcessPair(pair.a, pair.b);
+    XMFLOAT3 d = Subtract(a, b);
+    return LengthSq(d) <= eps * eps;
 }
 
-bool NarrowPhaseSystem::ProcessPair(EntityId _a, EntityId _b)
+struct Plane
 {
-    if (!world->HasComponent<ColliderComponent>(_a) || !world->HasComponent<ColliderComponent>(_b))
-        return false;
+    XMFLOAT3 n;
+    float d; // intérieur si dot(n, p) - d <= 0
+};
 
-    ColliderComponent& shapeA = world->GetComponent<ColliderComponent>(_a);
-    ColliderComponent& shapeB = world->GetComponent<ColliderComponent>(_b);
-    TransformComponent& transA = world->GetComponent<TransformComponent>(_a);
-    TransformComponent& transB = world->GetComponent<TransformComponent>(_b);
-
-    GJKSimplex simplex;
-    bool gjkResult = GJK(shapeA, transA, shapeB, transB, simplex);
-
-    if (!gjkResult)
-    {
-        // Les shapes ne se touchent pas selon GJK
-        // Mais si les AABB se chevauchent fortement, c'est suspect
-        XMFLOAT3 posA = transA.world.GetPosition();
-        XMFLOAT3 posB = transB.world.GetPosition();
-        float dist = sqrtf(
-            (posA.x - posB.x) * (posA.x - posB.x) +
-            (posA.y - posB.y) * (posA.y - posB.y) +
-            (posA.z - posB.z) * (posA.z - posB.z));
-        if (dist < 1.5f) // seuil à ajuster selon ta taille de cube
-            printf("[TUNNEL] GJK=0 mais dist=%.4f simplex=%d posA=(%.2f,%.2f,%.2f) posB=(%.2f,%.2f,%.2f)\n",
-                dist, simplex.count,
-                posA.x, posA.y, posA.z,
-                posB.x, posB.y, posB.z);
-        return false;
-    }
-
-    if (simplex.count < 4)
-        printf("[DEGENERATE] GJK=1 count=%d\n", simplex.count);
-
-    XMFLOAT3 normal, contactA, contactB;
-    float penetration;
-    bool epaResult = EPA(shapeA, transA, shapeB, transB, simplex, normal, penetration, contactA, contactB);
-
-    if (!epaResult)
-        return false;
-
-    ContactManifold manifold;
-    manifold.a = _a;
-    manifold.b = _b;
-    manifold.normal = normal;  // Snap retiré : altérait la normale pour les contacts obliques.
-    manifold.penetration = penetration;
-    manifold.isTrigger = shapeA.isTrigger || shapeB.isTrigger;
-
-    BuildManifold(manifold, shapeA, transA, shapeB, transB, normal, penetration, contactA, contactB);
-
-    m_cache.AddManifold(manifold);
-    shapeA.isTrigger ? world->NotifyScripts(_a, &IScript::OnTrigger, _b) : world->NotifyScripts(_a, &IScript::OnCollision, _b);
-    shapeB.isTrigger ? world->NotifyScripts(_b, &IScript::OnTrigger, _a) : world->NotifyScripts(_b, &IScript::OnCollision, _a);
-
-    return true;
-}
-
-XMFLOAT3 NarrowPhaseSystem::Support(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
+struct Segment
 {
-    switch (_collider.type)
-    {
-    case ShapeType::Box:     return SupportBox(_collider, _transform, _dir);
-    case ShapeType::Sphere:  return SupportSphere(_collider, _transform, _dir);
-    case ShapeType::Capsule: return SupportCapsule(_collider, _transform, _dir);
-    }
-    return { 0,0,0 };
-}
+    XMFLOAT3 a;
+    XMFLOAT3 b;
+};
 
-XMFLOAT3 NarrowPhaseSystem::SupportBox(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
+static const int kEdgeAxisA[9] = { 0,0,0, 1,1,1, 2,2,2 };
+static const int kEdgeAxisB[9] = { 0,1,2, 0,1,2, 0,1,2 };
+
+static constexpr float kEdgePreferenceEpsilon = 0.02f;
+static constexpr float kEdgeValidationTolerance = 0.1f;
+
+inline bool IsPointNearOBB(const XMFLOAT3& p, const NarrowOBB& box, float tolerance)
 {
-    // Transformer la direction en espace local pour éviter de tourner les 8 coins.
-    // En espace local, le support d'un AABB centré en zéro est simplement
-    // sign(localDir) * halfExtents.
-    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
-    XMMATRIX rotInv = XMMatrixTranspose(XMMatrixRotationQuaternion(q));
-    XMVECTOR dirW = XMVectorSet(_dir.x, _dir.y, _dir.z, 0.0f);
-    XMVECTOR dirL = XMVector3Transform(dirW, rotInv);
+    XMFLOAT3 d = Subtract(p, box.c);
 
-    XMFLOAT3 localDir;
-    XMStoreFloat3(&localDir, dirL);
-
-    const XMFLOAT3& h = _collider.shape.box.halfExtents;
-    const XMFLOAT3& scale = _transform.world.GetScale();
-
-    XMFLOAT3 localSupport =
-    {
-        (localDir.x >= 0.0f ? 1.0f : -1.0f) * h.x * scale.x,
-        (localDir.y >= 0.0f ? 1.0f : -1.0f) * h.y * scale.y,
-        (localDir.z >= 0.0f ? 1.0f : -1.0f) * h.z * scale.z
-    };
-
-    // Appliquer l'offset local.
-    localSupport.x += _collider.localOffset.x;
-    localSupport.y += _collider.localOffset.y;
-    localSupport.z += _collider.localOffset.z;
-
-    // Retransformer en espace monde.
-    XMMATRIX rot = XMMatrixRotationQuaternion(q);
-    XMVECTOR worldSup = XMVector3Transform(XMVectorSet(localSupport.x, localSupport.y, localSupport.z, 0.0f), rot);
-
-    const XMFLOAT3& pos = _transform.world.GetPosition();
-    XMFLOAT3 result;
-    XMStoreFloat3(&result, worldSup);
-    return { result.x + pos.x, result.y + pos.y, result.z + pos.z };
-}
-
-XMFLOAT3 NarrowPhaseSystem::SupportSphere(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
-{
-    // Support d'une sphère : centre + rayon * normalize(direction).
-    const XMFLOAT3& scale = _transform.world.GetScale();
-    float maxScale = Max(Max(scale.x, scale.y), scale.z);
-    float worldRadius = _collider.shape.sphere.radius * maxScale;
-
-    XMFLOAT3 normDir = Normalize(_dir);
-    const XMFLOAT3& pos = _transform.world.GetPosition();
+    float lx = Dot(d, box.u[0]);
+    float ly = Dot(d, box.u[1]);
+    float lz = Dot(d, box.u[2]);
 
     return
-    {
-        pos.x + _collider.localOffset.x + normDir.x * worldRadius,
-        pos.y + _collider.localOffset.y + normDir.y * worldRadius,
-        pos.z + _collider.localOffset.z + normDir.z * worldRadius
-    };
+        fabsf(lx) <= box.e.x + tolerance &&
+        fabsf(ly) <= box.e.y + tolerance &&
+        fabsf(lz) <= box.e.z + tolerance;
 }
 
-XMFLOAT3 NarrowPhaseSystem::SupportCapsule(ColliderComponent& _collider, TransformComponent& _transform, const XMFLOAT3& _dir) const
+inline int TangentAxis0(int normalAxis)
 {
-    // La capsule est un segment + sphère.
-    // Support = choisir l'extrémité du segment la plus dans la direction,
-    //           puis ajouter rayon * normalize(direction).
-    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
-    XMMATRIX rot = XMMatrixRotationQuaternion(q);
-
-    const XMFLOAT3& scale = _transform.world.GetScale();
-    float r = _collider.shape.capsule.radius * Max(scale.x, scale.z);
-    float hh = _collider.shape.capsule.halfHeight * scale.y;
-
-    // Axe Y local tourné en espace monde.
-    XMFLOAT3 worldUp;
-    XMStoreFloat3(&worldUp, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
-
-    const XMFLOAT3& pos = _transform.world.GetPosition();
-
-    // Les deux extrémités du segment central.
-    XMFLOAT3 topPoint = { pos.x + worldUp.x * hh, pos.y + worldUp.y * hh, pos.z + worldUp.z * hh };
-    XMFLOAT3 botPoint = { pos.x - worldUp.x * hh, pos.y - worldUp.y * hh, pos.z - worldUp.z * hh };
-
-    // Choisir l'extrémité la plus dans la direction donnée.
-    XMFLOAT3 bestPoint = (Dot(_dir, topPoint) >= Dot(_dir, botPoint)) ? topPoint : botPoint;
-
-    // Ajouter le rayon dans la direction.
-    XMFLOAT3 normDir = Normalize(_dir);
-    return { bestPoint.x + normDir.x * r, bestPoint.y + normDir.y * r, bestPoint.z + normDir.z * r };
+    return (normalAxis == 0) ? 1 : 0;
 }
 
-GJKSupportPoint NarrowPhaseSystem::MinkowskiSupport(
-    ColliderComponent& _colliderA, TransformComponent& _transformA,
-    ColliderComponent& _colliderB, TransformComponent& _transformB,
-    const XMFLOAT3& _dir) const
+inline int TangentAxis1(int normalAxis)
 {
-    GJKSupportPoint sp;
-    sp.pointA = Support(_colliderA, _transformA, _dir);
-    XMFLOAT3 negDir = { -_dir.x, -_dir.y, -_dir.z };
-    sp.pointB = Support(_colliderB, _transformB, negDir);
-    sp.minkowski = Subtract(sp.pointA, sp.pointB);
-    return sp;
+    return (normalAxis == 2) ? 1 : 2;
 }
 
-bool NarrowPhaseSystem::GJK(
-    ColliderComponent& _colliderA, TransformComponent& _transformA,
-    ColliderComponent& _colliderB, TransformComponent& _transformB,
-    GJKSimplex& _outSimplex)
+int ClipPolygonAgainstPlane(const XMFLOAT3* input, int inputCount, XMFLOAT3* output, const Plane& plane)
 {
-    const XMFLOAT3& posA = _transformA.world.GetPosition();
-    const XMFLOAT3& posB = _transformB.world.GetPosition();
+    if (inputCount <= 0)
+        return 0;
 
-    // GJK multi-départ.
-    //
-    // La direction centre-à-centre est optimale en général. Mais pour les
-    // contacts face-à-face en rotation, la perpendiculaire calculée par
-    // UpdateLine longe la face de la différence de Minkowski au lieu de la
-    // traverser — le support suivant ne passe pas l'origine et GJK échoue
-    // même si les shapes s'intersectent réellement.
-    //
-    // La solution : si la direction naturelle échoue, relancer avec des axes
-    // cardinaux. Un axe aligné sur la normale de contact traversera
-    // directement la zone d'intersection.
-    //
-    // Coût : au pire 7× GJK, en pratique 1-2 directions suffisent.
-    const XMFLOAT3 startDirs[] =
-    {
-        Subtract(posA, posB),   // direction naturelle (meilleure en général)
-        {  0,  1,  0 },         // Y+  (contact vertical)
-        {  1,  0,  0 },         // X+  (contact latéral)
-        {  0,  0,  1 },         // Z+  (contact en profondeur)
-        {  0, -1,  0 },         // Y-
-        { -1,  0,  0 },         // X-
-        {  0,  0, -1 },         // Z-
-    };
-
-    for (int attempt = 0; attempt < 7; ++attempt)
-    {
-        XMFLOAT3 direction = startDirs[attempt];
-        if (LengthSq(direction) < 1e-8f) continue;
-
-        _outSimplex = GJKSimplex{};
-
-        GJKSupportPoint support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
-        _outSimplex.Push(support);
-
-        direction = { -support.minkowski.x, -support.minkowski.y, -support.minkowski.z };
-
-        bool found = false;
-        for (int iter = 0; iter < kGJKMaxIterations; ++iter)
-        {
-            if (LengthSq(direction) < 1e-10f) { found = true; break; }
-
-            support = MinkowskiSupport(_colliderA, _transformA, _colliderB, _transformB, direction);
-
-            // Tolérance epsilon : évite de rejeter les contacts tangents.
-            if (Dot(support.minkowski, direction) < -1e-6f) break;
-
-            _outSimplex.Push(support);
-
-            if (UpdateSimplex(_outSimplex, direction)) { found = true; break; }
-        }
-
-        if (found) return true;
-    }
-
-    return false;
-}
-
-bool NarrowPhaseSystem::UpdateSimplex(GJKSimplex& _simplex, XMFLOAT3& _direction)
-{
-    switch (_simplex.count)
-    {
-    case 2: return UpdateLine(_simplex, _direction);
-    case 3: return UpdateTriangle(_simplex, _direction);
-    case 4: return UpdateTetrahedron(_simplex, _direction);
-    }
-    return false;
-}
-
-bool NarrowPhaseSystem::UpdateLine(GJKSimplex& _simplex, XMFLOAT3& _direction)
-{
-    const XMFLOAT3& a = _simplex.points[0].minkowski;
-    const XMFLOAT3& b = _simplex.points[1].minkowski;
-
-    XMFLOAT3 ab = Subtract(b, a);
-    XMFLOAT3 ao = { -a.x, -a.y, -a.z };
-
-    if (Dot(ab, ao) > 0.0f)
-    {
-        XMFLOAT3 perp = TripleProduct(ab, ao, ab);
-
-        // Triple product quasi-nul : l'origine est sur le segment AB
-        // (intersection sur une arête de la différence de Minkowski).
-        if (LengthSq(perp) < 1e-10f)
-            return true;
-
-        _direction = perp;
-    }
-    else
-    {
-        _simplex.count = 1;
-        _direction = ao;
-    }
-
-    return false;
-}
-
-bool NarrowPhaseSystem::UpdateTriangle(GJKSimplex& _simplex, XMFLOAT3& _direction)
-{
-    const XMFLOAT3& a = _simplex.points[0].minkowski;
-    const XMFLOAT3& b = _simplex.points[1].minkowski;
-    const XMFLOAT3& c = _simplex.points[2].minkowski;
-
-    XMFLOAT3 ab = Subtract(b, a);
-    XMFLOAT3 ac = Subtract(c, a);
-    XMFLOAT3 ao = { -a.x, -a.y, -a.z };
-    XMFLOAT3 abc = Cross(ab, ac);
-
-    if (Dot(Cross(abc, ac), ao) > 0.0f)
-    {
-        if (Dot(ac, ao) > 0.0f)
-        {
-            // Garder a et c.
-            _simplex.points[1] = _simplex.points[2];
-            _simplex.count = 2;
-            _direction = TripleProduct(ac, ao, ac);
-        }
-        else
-        {
-            _simplex.count = 2;
-            return UpdateLine(_simplex, _direction);
-        }
-    }
-    else if (Dot(Cross(ab, abc), ao) > 0.0f)
-    {
-        _simplex.count = 2;
-        return UpdateLine(_simplex, _direction);
-    }
-    else
-    {
-        if (Dot(abc, ao) > 0.0f)
-            _direction = abc;
-        else
-        {
-            // Inverser le triangle.
-            std::swap(_simplex.points[1], _simplex.points[2]);
-            _direction = { -abc.x, -abc.y, -abc.z };
-        }
-    }
-
-    return false;
-}
-
-bool NarrowPhaseSystem::UpdateTetrahedron(GJKSimplex& _simplex, XMFLOAT3& _direction)
-{
-    const XMFLOAT3& a = _simplex.points[0].minkowski;
-    const XMFLOAT3& b = _simplex.points[1].minkowski;
-    const XMFLOAT3& c = _simplex.points[2].minkowski;
-    const XMFLOAT3& d = _simplex.points[3].minkowski;
-
-    XMFLOAT3 ab = Subtract(b, a);
-    XMFLOAT3 ac = Subtract(c, a);
-    XMFLOAT3 ad = Subtract(d, a);
-    XMFLOAT3 ao = { -a.x, -a.y, -a.z };
-
-    XMFLOAT3 abc = Cross(ab, ac);
-    XMFLOAT3 acd = Cross(ac, ad);
-    XMFLOAT3 adb = Cross(ad, ab);
-
-    // Tester les 3 faces visibles depuis l'origine.
-    if (Dot(abc, ao) > 0.0f)
-    {
-        // Face ABC visible depuis l'origine : D (points[3]) est derrière.
-        // A(0), B(1), C(2) sont déjà en bonne position → on supprime D simplement.
-        _simplex.count = 3;
-        return UpdateTriangle(_simplex, _direction);
-    }
-    if (Dot(acd, ao) > 0.0f)
-    {
-        _simplex.points[1] = _simplex.points[2];
-        _simplex.points[2] = _simplex.points[3];
-        _simplex.count = 3;
-        return UpdateTriangle(_simplex, _direction);
-    }
-    if (Dot(adb, ao) > 0.0f)
-    {
-        _simplex.points[2] = _simplex.points[1];
-        _simplex.points[1] = _simplex.points[3];
-        _simplex.count = 3;
-        return UpdateTriangle(_simplex, _direction);
-    }
-
-    // L'origine est à l'intérieur du tétraèdre.
-    return true;
-}
-
-bool NarrowPhaseSystem::EPA(
-    ColliderComponent& _colliderA, TransformComponent& _transformA,
-    ColliderComponent& _colliderB, TransformComponent& _transformB,
-    GJKSimplex& _simplex,
-    XMFLOAT3& _outNormal, float& _outPenetration,
-    XMFLOAT3& _outContactA, XMFLOAT3& _outContactB)
-{
-    Vector<EPAFace> faces;
-
-    // S'assurer qu'on a un tétraèdre valide.
-    if (_simplex.count < 4)
-    {
-
-        const XMFLOAT3 axes[] =
-        {
-            {1,0,0}, {0,1,0}, {0,0,1},
-            {-1,0,0}, {0,-1,0}, {0,0,-1}
-        };
-
-        for (const XMFLOAT3& axis : axes)
-        {
-            if (_simplex.count >= 4) break;
-
-            GJKSupportPoint sp = MinkowskiSupport(
-                _colliderA, _transformA, _colliderB, _transformB, axis);
-
-            bool duplicate = false;
-            for (int i = 0; i < _simplex.count; ++i)
-            {
-                XMFLOAT3 diff = Subtract(sp.minkowski, _simplex.points[i].minkowski);
-                float d = LengthSq(diff);
-                if (d < 1e-4f) { duplicate = true; break; }
-            }
-            if (!duplicate)
-                _simplex.Push(sp);
-        }
-
-        if (_simplex.count < 4)
-            return false;
-    }
-
-    // Initialiser le polytope avec les 4 faces du tétraèdre GJK.
-    faces.push_back(MakeFace(_simplex.points[0], _simplex.points[1], _simplex.points[2]));
-    faces.push_back(MakeFace(_simplex.points[0], _simplex.points[1], _simplex.points[3]));
-    faces.push_back(MakeFace(_simplex.points[0], _simplex.points[2], _simplex.points[3]));
-    faces.push_back(MakeFace(_simplex.points[1], _simplex.points[2], _simplex.points[3]));
-
-    for (int iter = 0; iter < kEPAMaxIterations; ++iter)
-    {
-        int closestIdx = FindClosestFace(faces);
-        if (closestIdx < 0)
-            return false;
-
-        const EPAFace& closest = faces[closestIdx];
-
-        // Chercher un point support dans la direction de la face la plus proche.
-        GJKSupportPoint support = MinkowskiSupport(
-            _colliderA, _transformA, _colliderB, _transformB, closest.normal);
-
-        float newDist = Dot(support.minkowski, closest.normal);
-
-        // Convergé si le nouveau point n'est pas significativement plus loin.
-        if (newDist - closest.distance < kEPATolerance)
-        {
-            _outNormal = closest.normal;
-            _outPenetration = closest.distance;
-
-            // Interpolation barycentrique pour retrouver les points de contact.
-            // On utilise les coordonnées barycentriques de la projection de
-            // l'origine sur la face du polytope.
-            XMFLOAT3 p = Scale(closest.normal, closest.distance);
-
-            XMFLOAT3 v0 = Subtract(closest.b.minkowski, closest.a.minkowski);
-            XMFLOAT3 v1 = Subtract(closest.c.minkowski, closest.a.minkowski);
-            XMFLOAT3 v2 = Subtract(p, closest.a.minkowski);
-
-            float d00 = Dot(v0, v0);
-            float d01 = Dot(v0, v1);
-            float d11 = Dot(v1, v1);
-            float d20 = Dot(v2, v0);
-            float d21 = Dot(v2, v1);
-            float denom = d00 * d11 - d01 * d01;
-
-            if (fabsf(denom) < 1e-8f)
-            {
-                _outContactA = closest.a.pointA;
-                _outContactB = closest.a.pointB;
-            }
-            else
-            {
-                float v = (d11 * d20 - d01 * d21) / denom;
-                float w = (d00 * d21 - d01 * d20) / denom;
-                float u = 1.0f - v - w;
-
-                // Clamp pour robustesse numérique.
-                u = Max(0.0f, Min(1.0f, u));
-                v = Max(0.0f, Min(1.0f, v));
-                w = Max(0.0f, Min(1.0f, w));
-                float sum = u + v + w;
-                if (sum > 0.0f) { u /= sum; v /= sum; w /= sum; }
-
-                _outContactA =
-                {
-                    u * closest.a.pointA.x + v * closest.b.pointA.x + w * closest.c.pointA.x,
-                    u * closest.a.pointA.y + v * closest.b.pointA.y + w * closest.c.pointA.y,
-                    u * closest.a.pointA.z + v * closest.b.pointA.z + w * closest.c.pointA.z
-                };
-                _outContactB =
-                {
-                    u * closest.a.pointB.x + v * closest.b.pointB.x + w * closest.c.pointB.x,
-                    u * closest.a.pointB.y + v * closest.b.pointB.y + w * closest.c.pointB.y,
-                    u * closest.a.pointB.z + v * closest.b.pointB.z + w * closest.c.pointB.z
-                };
-            }
-
-            return true;
-        }
-
-        Vector<std::pair<GJKSupportPoint, GJKSupportPoint>> edges;
-
-        for (int i = (int)faces.size() - 1; i >= 0; --i)
-        {
-            const EPAFace& face = faces[i];
-            if (Dot(Subtract(support.minkowski, face.a.minkowski), face.normal) > 0.0f)
-            {
-                edges.push_back({ face.a, face.b });
-                edges.push_back({ face.b, face.c });
-                edges.push_back({ face.c, face.a });
-                faces.erase(faces.begin() + i);
-            }
-        }
-
-        // Supprimer les arêtes en double (partagées par deux faces supprimées).
-        for (int i = (int)edges.size() - 1; i >= 0; --i)
-        {
-            for (int j = (int)edges.size() - 1; j >= 0; --j)
-            {
-                if (i == j) continue;
-                // Arête dupliquée si les deux extrémités sont inversées.
-                XMFLOAT3 diffA = Subtract(edges[i].first.minkowski, edges[j].second.minkowski);
-                XMFLOAT3 diffB = Subtract(edges[i].second.minkowski, edges[j].first.minkowski);
-                if (LengthSq(diffA) < 1e-8f && LengthSq(diffB) < 1e-8f)
-                {
-                    edges.erase(edges.begin() + max(i, j));
-                    edges.erase(edges.begin() + min(i, j));
-                    --i;
-                    break;
-                }
-            }
-        }
-
-        // Ajouter les nouvelles faces connectées au point support.
-        for (const auto& edge : edges)
-            faces.push_back(MakeFace(support, edge.first, edge.second));
-    }
-
-    return false;
-}
-
-EPAFace NarrowPhaseSystem::MakeFace(const GJKSupportPoint& _a, const GJKSupportPoint& _b, const GJKSupportPoint& _c) const
-{
-    EPAFace face;
-    face.a = _a;
-    face.b = _b;
-    face.c = _c;
-
-    XMFLOAT3 ab = Subtract(_b.minkowski, _a.minkowski);
-    XMFLOAT3 ac = Subtract(_c.minkowski, _a.minkowski);
-    face.normal = Normalize(Cross(ab, ac));
-    face.distance = Dot(face.normal, _a.minkowski);
-
-    // S'assurer que la normale pointe vers l'extérieur (loin de l'origine).
-    if (face.distance < 0.0f)
-    {
-        face.normal = { -face.normal.x, -face.normal.y, -face.normal.z };
-        face.distance = -face.distance;
-        std::swap(face.b, face.c);
-    }
-
-    return face;
-}
-
-int NarrowPhaseSystem::FindClosestFace(const Vector<EPAFace>& _faces) const
-{
-    if (_faces.empty())
-        return -1;
-
-    int   bestIdx = 0;
-    float bestDist = _faces[0].distance;
-
-    for (int i = 1; i < (int)_faces.size(); ++i)
-    {
-        if (_faces[i].distance < bestDist)
-        {
-            bestDist = _faces[i].distance;
-            bestIdx = i;
-        }
-    }
-
-    return bestIdx;
-}
-
-void NarrowPhaseSystem::BuildManifold(ContactManifold& _manifold,
-    ColliderComponent& _colliderA, TransformComponent& _transformA,
-    ColliderComponent& _colliderB, TransformComponent& _transformB,
-    const XMFLOAT3& _normal, float _penetration,
-    const XMFLOAT3& _contactA, const XMFLOAT3& _contactB)
-{
-    // Point de contact monde = milieu des points de contact sur chaque forme.
-    XMFLOAT3 contactWorld =
-    {
-        (_contactA.x + _contactB.x) * 0.5f,
-        (_contactA.y + _contactB.y) * 0.5f,
-        (_contactA.z + _contactB.z) * 0.5f
-    };
-
-    ContactPoint cp;
-    cp.position = contactWorld;
-    cp.localPointA = _contactA;
-    cp.localPointB = _contactB;
-    cp.penetration = _penetration;
-    _manifold.points[0] = cp;
-    _manifold.pointCount = 1;
-
-    // Pour box-box, tenter de générer un manifold complet par clipping.
-    if (_colliderA.type == ShapeType::Box && _colliderB.type == ShapeType::Box)
-    {
-        // Face de référence : la face de A la plus antiparallèle à la normale.
-        XMVECTOR qA = XMLoadFloat4(&_transformA.world.GetRotation());
-        XMMATRIX rotA = XMMatrixRotationQuaternion(qA);
-        const XMFLOAT3& scaleA = _transformA.world.GetScale();
-        const XMFLOAT3& hA = _colliderA.shape.box.halfExtents;
-
-        XMFLOAT3 axesA[3];
-        XMStoreFloat3(&axesA[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotA)));
-        XMStoreFloat3(&axesA[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotA)));
-        XMStoreFloat3(&axesA[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotA)));
-
-        int    refAxis = 0;
-        float  refDot = fabsf(Dot(_normal, axesA[0]));
-        for (int i = 1; i < 3; ++i)
-        {
-            float d = fabsf(Dot(_normal, axesA[i]));
-            if (d > refDot) { refDot = d; refAxis = i; }
-        }
-
-        // Face de référence centrée autour du point support.
-        bool positiveFace = Dot(_normal, axesA[refAxis]) > 0.0f;
-        float hRef = (refAxis == 0 ? hA.x * scaleA.x : refAxis == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
-        const XMFLOAT3& posA = _transformA.world.GetPosition();
-        float sign = positiveFace ? 1.0f : -1.0f;
-
-        XMFLOAT3 refCenter =
-        {
-            posA.x + axesA[refAxis].x * hRef * sign,
-            posA.y + axesA[refAxis].y * hRef * sign,
-            posA.z + axesA[refAxis].z * hRef * sign
-        };
-
-        // Construire les 4 coins de la face de référence.
-        int ax1 = (refAxis + 1) % 3;
-        int ax2 = (refAxis + 2) % 3;
-        float h1 = (ax1 == 0 ? hA.x * scaleA.x : ax1 == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
-        float h2 = (ax2 == 0 ? hA.x * scaleA.x : ax2 == 1 ? hA.y * scaleA.y : hA.z * scaleA.z);
-
-        XMFLOAT3 refFace[4] =
-        {
-            Add(Add(refCenter, Scale(axesA[ax1], h1)), Scale(axesA[ax2], h2)),
-            Add(Subtract(refCenter, Scale(axesA[ax1], h1)), Scale(axesA[ax2], h2)),
-            Subtract(Subtract(refCenter, Scale(axesA[ax1], h1)), Scale(axesA[ax2], h2)),
-            Add(Subtract(refCenter, Scale(axesA[ax2], h2)), Scale(axesA[ax1], h1))
-        };
-
-        // Face incidente de B.
-        XMVECTOR qB = XMLoadFloat4(&_transformB.world.GetRotation());
-        XMMATRIX rotB = XMMatrixRotationQuaternion(qB);
-        const XMFLOAT3& scaleB = _transformB.world.GetScale();
-        const XMFLOAT3& hB = _colliderB.shape.box.halfExtents;
-
-        XMFLOAT3 axesB[3];
-        XMStoreFloat3(&axesB[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotB)));
-        XMStoreFloat3(&axesB[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotB)));
-        XMStoreFloat3(&axesB[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotB)));
-
-        int    incAxis = 0;
-        float  incDot = fabsf(Dot(_normal, axesB[0]));
-        for (int i = 1; i < 3; ++i)
-        {
-            float d = fabsf(Dot(_normal, axesB[i]));
-            if (d > incDot) { incDot = d; incAxis = i; }
-        }
-
-        bool positiveFaceB = Dot(_normal, axesB[incAxis]) < 0.0f;
-        float hIncRef = (incAxis == 0 ? hB.x * scaleB.x : incAxis == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
-        const XMFLOAT3& posB2 = _transformB.world.GetPosition();
-        float signB = positiveFaceB ? 1.0f : -1.0f;
-
-        XMFLOAT3 incCenter =
-        {
-            posB2.x + axesB[incAxis].x * hIncRef * signB,
-            posB2.y + axesB[incAxis].y * hIncRef * signB,
-            posB2.z + axesB[incAxis].z * hIncRef * signB
-        };
-
-        int ix1 = (incAxis + 1) % 3;
-        int ix2 = (incAxis + 2) % 3;
-        float ih1 = (ix1 == 0 ? hB.x * scaleB.x : ix1 == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
-        float ih2 = (ix2 == 0 ? hB.x * scaleB.x : ix2 == 1 ? hB.y * scaleB.y : hB.z * scaleB.z);
-
-        XMFLOAT3 incFace[4] =
-        {
-            Add(Add(incCenter, Scale(axesB[ix1], ih1)), Scale(axesB[ix2], ih2)),
-            Add(Subtract(incCenter, Scale(axesB[ix1], ih1)), Scale(axesB[ix2], ih2)),
-            Subtract(Subtract(incCenter, Scale(axesB[ix1], ih1)), Scale(axesB[ix2], ih2)),
-            Add(Subtract(incCenter, Scale(axesB[ix2], ih2)), Scale(axesB[ix1], ih1))
-        };
-
-        // Clipping de la face incidente par les plans latéraux de la face de référence.
-        XMFLOAT3 clip0[8], clip1[8], clip2[8], clip3[8];
-        for (int i = 0; i < 4; ++i) clip0[i] = incFace[i];
-        int count = 4;
-
-        // Plan -ax1 (bord gauche de la face de référence)
-        count = ClipPolygonAgainstPlane(clip0, count, clip1,
-            Subtract(refCenter, Scale(axesA[ax1], h1)),   // point sur le plan
-            axesA[ax1]);                                   // normale : garder côté +ax1
-        if (count <= 0) return;
-
-        // Plan +ax1 (bord droit)
-        count = ClipPolygonAgainstPlane(clip1, count, clip2,
-            Add(refCenter, Scale(axesA[ax1], h1)),
-            { -axesA[ax1].x, -axesA[ax1].y, -axesA[ax1].z });
-        if (count <= 0) return;
-
-        // Plan -ax2 (bord bas)
-        count = ClipPolygonAgainstPlane(clip2, count, clip3,
-            Subtract(refCenter, Scale(axesA[ax2], h2)),
-            axesA[ax2]);
-        if (count <= 0) return;
-
-        // Plan +ax2 (bord haut)
-        XMFLOAT3 clip4[8];
-        count = ClipPolygonAgainstPlane(clip3, count, clip4,
-            Add(refCenter, Scale(axesA[ax2], h2)),
-            { -axesA[ax2].x, -axesA[ax2].y, -axesA[ax2].z });
-        if (count <= 0) return;
-
-        // Garder uniquement les points sous le plan de la face de référence.
-        XMFLOAT3 facePlaneNormal = positiveFace ? axesA[refAxis] : XMFLOAT3{ -axesA[refAxis].x, -axesA[refAxis].y, -axesA[refAxis].z };
-
-        _manifold.pointCount = 0;
-        for (int i = 0; i < count && _manifold.pointCount < ContactManifold::kMaxPoints; ++i)
-        {
-            float sep = Dot(Subtract(clip4[i], refCenter), facePlaneNormal);
-            if (sep <= 0.01f)
-            {
-                // Projeter le point sur le plan de la face de référence.
-                // Cela garantit que tous les points sont coplanaires — indispensable
-                // pour que le solver applique des impulsions uniformes sur la face.
-                XMFLOAT3 projected =
-                {
-                    clip4[i].x - facePlaneNormal.x * sep,
-                    clip4[i].y - facePlaneNormal.y * sep,
-                    clip4[i].z - facePlaneNormal.z * sep
-                };
-
-                ContactPoint newCp;
-                newCp.position = projected;
-                newCp.localPointA = projected;
-                newCp.localPointB = projected;
-                newCp.penetration = Max(0.0f, -sep);
-                _manifold.points[_manifold.pointCount++] = newCp;
-            }
-        }
-
-        if (_manifold.pointCount == 0)
-        {
-            _manifold.points[0] = cp;
-            _manifold.pointCount = 1;
-        }
-    }
-}
-
-int NarrowPhaseSystem::ClipPolygonAgainstPlane(
-    const XMFLOAT3* _in, int _inCount, XMFLOAT3* _out,
-    const XMFLOAT3& _planePoint, const XMFLOAT3& _planeNormal) const
-{
     int outCount = 0;
 
-    for (int i = 0; i < _inCount; ++i)
+    XMFLOAT3 prev = input[inputCount - 1];
+    float prevDist = Dot(plane.n, prev) - plane.d;
+
+    for (int i = 0; i < inputCount; ++i)
     {
-        const XMFLOAT3& curr = _in[i];
-        const XMFLOAT3& next = _in[(i + 1) % _inCount];
+        XMFLOAT3 curr = input[i];
+        float currDist = Dot(plane.n, curr) - plane.d;
 
-        float dCurr = Dot(Subtract(curr, _planePoint), _planeNormal);
-        float dNext = Dot(Subtract(next, _planePoint), _planeNormal);
+        bool prevInside = (prevDist <= 0.f);
+        bool currInside = (currDist <= 0.f);
 
-        if (dCurr >= 0.0f)
-            _out[outCount++] = curr;
-
-        if ((dCurr >= 0.0f) != (dNext >= 0.0f))
+        if (prevInside && currInside)
         {
-            float t = dCurr / (dCurr - dNext);
-            _out[outCount++] =
+            output[outCount++] = curr;
+        }
+        else if (prevInside && !currInside)
+        {
+            float t = prevDist / (prevDist - currDist);
+            output[outCount++] =
             {
-                curr.x + t * (next.x - curr.x),
-                curr.y + t * (next.y - curr.y),
-                curr.z + t * (next.z - curr.z)
+                prev.x + (curr.x - prev.x) * t,
+                prev.y + (curr.y - prev.y) * t,
+                prev.z + (curr.z - prev.z) * t
             };
         }
+        else if (!prevInside && currInside)
+        {
+            float t = prevDist / (prevDist - currDist);
+            output[outCount++] =
+            {
+                prev.x + (curr.x - prev.x) * t,
+                prev.y + (curr.y - prev.y) * t,
+                prev.z + (curr.z - prev.z) * t
+            };
+            output[outCount++] = curr;
+        }
+
+        prev = curr;
+        prevDist = currDist;
     }
 
     return outCount;
+}
+
+void AddContactPointUnique(ContactInfo& manifold, const XMFLOAT3& p, float penetration)
+{
+    for (int i = 0; i < manifold.pointCount; ++i)
+    {
+        if (NearlyEqual(manifold.points[i].position, p))
+        {
+            manifold.points[i].penetration = Max(manifold.points[i].penetration, penetration);
+            return;
+        }
+    }
+
+    if (manifold.pointCount < kMaxContactPoints)
+    {
+        manifold.points[manifold.pointCount].position = p;
+        manifold.points[manifold.pointCount].penetration = penetration;
+        ++manifold.pointCount;
+        return;
+    }
+
+    int shallowest = 0;
+    for (int i = 1; i < manifold.pointCount; ++i)
+    {
+        if (manifold.points[i].penetration < manifold.points[shallowest].penetration)
+            shallowest = i;
+    }
+
+    if (penetration > manifold.points[shallowest].penetration)
+    {
+        manifold.points[shallowest].position = p;
+        manifold.points[shallowest].penetration = penetration;
+    }
+}
+
+FaceQuad BuildFaceQuad(const NarrowOBB& box, int faceAxis, float sign)
+{
+    FaceQuad q;
+
+    const int t0 = TangentAxis0(faceAxis);
+    const int t1 = TangentAxis1(faceAxis);
+
+    const float faceOffset = sign * GetComponent(box.e, faceAxis);
+
+    q.normal = Mul(box.u[faceAxis], sign);
+    q.center = Add(box.c, Mul(box.u[faceAxis], faceOffset));
+
+    q.axis1 = box.u[t0];
+    q.axis2 = box.u[t1];
+
+    q.extent1 = GetComponent(box.e, t0);
+    q.extent2 = GetComponent(box.e, t1);
+
+    XMFLOAT3 e1 = Mul(q.axis1, q.extent1);
+    XMFLOAT3 e2 = Mul(q.axis2, q.extent2);
+
+    q.vertices[0] = Add(Add(q.center, e1), e2);
+    q.vertices[1] = Add(Subtract(q.center, e1), e2);
+    q.vertices[2] = Subtract(Subtract(q.center, e1), e2);
+    q.vertices[3] = Add(Subtract(q.center, e2), e1);
+
+    return q;
+}
+
+int FindIncidentFaceAxis(const NarrowOBB& incidentBox, const XMFLOAT3& referenceNormal)
+{
+    float bestAbsDot = -FLT_MAX;
+    int axis = 0;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        float d = fabsf(Dot(referenceNormal, incidentBox.u[i]));
+        if (d > bestAbsDot)
+        {
+            bestAbsDot = d;
+            axis = i;
+        }
+    }
+    return axis;
+}
+
+float FindIncidentFaceSign(const NarrowOBB& incidentBox, int axis, const XMFLOAT3& referenceNormal)
+{
+    float d = Dot(referenceNormal, incidentBox.u[axis]);
+    return (d >= 0.f) ? -1.f : 1.f;
+}
+
+Segment GetSupportEdge(const NarrowOBB& box, int edgeAxis, const XMFLOAT3& direction)
+{
+    Segment seg;
+
+    XMFLOAT3 center = box.c;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        if (i == edgeAxis)
+            continue;
+
+        float sign = (Dot(direction, box.u[i]) >= 0.f) ? 1.f : -1.f;
+        center = Add(center, Mul(box.u[i], sign * GetComponent(box.e, i)));
+    }
+
+    float extent = GetComponent(box.e, edgeAxis);
+    XMFLOAT3 along = Mul(box.u[edgeAxis], extent);
+
+    seg.a = Subtract(center, along);
+    seg.b = Add(center, along);
+    return seg;
+}
+
+void ClosestPtSegmentSegment(const XMFLOAT3& p1, const XMFLOAT3& q1, const XMFLOAT3& p2, const XMFLOAT3& q2, 
+    float& s, float& t, XMFLOAT3& c1, XMFLOAT3& c2)
+{
+    XMFLOAT3 d1 = Subtract(q1, p1);
+    XMFLOAT3 d2 = Subtract(q2, p2);
+    XMFLOAT3 r = Subtract(p1, p2);
+
+    float a = Dot(d1, d1);
+    float e = Dot(d2, d2);
+    float f = Dot(d2, r);
+
+    if (a <= 1e-8f && e <= 1e-8f)
+    {
+        s = t = 0.f;
+        c1 = p1;
+        c2 = p2;
+        return;
+    }
+
+    if (a <= 1e-8f)
+    {
+        s = 0.f;
+        t = std::clamp(f / e, 0.f, 1.f);
+    }
+    else
+    {
+        float c = Dot(d1, r);
+
+        if (e <= 1e-8f)
+        {
+            t = 0.f;
+            s = std::clamp(-c / a, 0.f, 1.f);
+        }
+        else
+        {
+            float b = Dot(d1, d2);
+            float denom = a * e - b * b;
+
+            if (denom != 0.f)
+                s = std::clamp((b * f - c * e) / denom, 0.f, 1.f);
+            else
+                s = 0.f;
+
+            t = (b * s + f) / e;
+
+            if (t < 0.f)
+            {
+                t = 0.f;
+                s = std::clamp(-c / a, 0.f, 1.f);
+            }
+            else if (t > 1.f)
+            {
+                t = 1.f;
+                s = std::clamp((b - c) / a, 0.f, 1.f);
+            }
+        }
+    }
+
+    c1 = Add(p1, Mul(d1, s));
+    c2 = Add(p2, Mul(d2, t));
+}
+
+void NarrowPhaseSystem::Update(float _dt)
+{
+    m_results.clear();
+    m_triggerResults.clear();
+    
+    if (m_broadPhase == nullptr)
+        return;
+
+    const Vector<CandidatePair>& pairs = m_broadPhase->GetCandidatePairs();
+
+    for (const CandidatePair& pair : pairs)
+    {
+        if (!world->HasComponent<ColliderComponent>(pair.a) ||
+            !world->HasComponent<ColliderComponent>(pair.b))
+            continue;
+
+        ColliderComponent& colA = world->GetComponent<ColliderComponent>(pair.a);
+        ColliderComponent& colB = world->GetComponent<ColliderComponent>(pair.b);
+
+        ContactInfo contact = Dispatch(colA, colB);
+
+        if (contact.hit == false)
+            continue;
+
+        CollisionResult result{ pair.a, pair.b, contact };
+
+        if (colA.isTrigger || colB.isTrigger)
+            m_triggerResults.push_back(result);
+        else
+            m_results.push_back(result);
+    }
+}
+
+NarrowSphere NarrowPhaseSystem::BuildSphere(const ColliderComponent& _c)
+{
+    return NarrowSphere{ _c.worldCenter, _c.worldRadius };
+}
+
+NarrowOBB NarrowPhaseSystem::BuildOBB(const ColliderComponent& _c)
+{
+    NarrowOBB obb;
+    obb.c = _c.worldCenter;
+    obb.u[0] = NormalizeSafe(_c.worldAxes[0], { 1.f, 0.f, 0.f });
+    obb.u[1] = NormalizeSafe(_c.worldAxes[1], { 0.f, 1.f, 0.f });
+    obb.u[2] = NormalizeSafe(_c.worldAxes[2], { 0.f, 0.f, 1.f });
+    obb.e = _c.worldHalfExtents;
+    return obb;
+}
+
+XMFLOAT3 NarrowPhaseSystem::ClosestPtPointOBB(const XMFLOAT3& _p, const NarrowOBB& _b)
+{
+    // d = vecteur du centre de la boîte vers P
+    XMFLOAT3 d = Subtract(_p, _b.c);
+
+    // On part du centre et on "avance" le long de chaque axe
+    XMFLOAT3 q = _b.c;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        // Projection de d sur l'axe i
+        float dist = Dot(d, _b.u[i]);
+
+        // Clamp à l'extent
+        const float ei = (i == 0) ? _b.e.x : (i == 1) ? _b.e.y : _b.e.z;
+        if (dist > ei) dist = ei;
+        if (dist < -ei) dist = -ei;
+
+        // Accumulation dans le repère monde
+        q.x += dist * _b.u[i].x;
+        q.y += dist * _b.u[i].y;
+        q.z += dist * _b.u[i].z;
+    }
+
+    return q;
+}
+
+SATResult NarrowPhaseSystem::ComputeSATOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b)
+{
+    float R[3][3];
+    float AbsR[3][3];
+
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            R[i][j] = Dot(_a.u[i], _b.u[j]);
+            AbsR[i][j] = fabsf(R[i][j]) + kOBBEpsilon;
+        }
+    }
+
+    XMFLOAT3 tWorld = Subtract(_b.c, _a.c);
+    float t[3] =
+    {
+        Dot(tWorld, _a.u[0]),
+        Dot(tWorld, _a.u[1]),
+        Dot(tWorld, _a.u[2])
+    };
+
+    const float eA[3] = { _a.e.x, _a.e.y, _a.e.z };
+    const float eB[3] = { _b.e.x, _b.e.y, _b.e.z };
+
+    float ra, rb, tp, pen;
+
+    float bestFacePen = FLT_MAX;
+    SeparatingAxisType bestFaceType = SeparatingAxisType::FaceA;
+    int bestFaceAxisA = -1;
+    int bestFaceAxisB = -1;
+    XMFLOAT3 bestFaceNormal = { 0,1,0 };
+
+    float bestEdgePen = FLT_MAX;
+    int bestEdgeAxisA = -1;
+    int bestEdgeAxisB = -1;
+    XMFLOAT3 bestEdgeNormal = { 0,1,0 };
+
+    // Axes de face de A
+    for (int i = 0; i < 3; ++i)
+    {
+        ra = eA[i];
+        rb = eB[0] * AbsR[i][0] + eB[1] * AbsR[i][1] + eB[2] * AbsR[i][2];
+        pen = (ra + rb) - fabsf(t[i]);
+
+        if (pen < 0.f)
+            return SATResult{};
+
+        if (pen < bestFacePen)
+        {
+            bestFacePen = pen;
+            bestFaceType = SeparatingAxisType::FaceA;
+            bestFaceAxisA = i;
+            bestFaceAxisB = -1;
+
+            float sign = (t[i] >= 0.f) ? -1.f : 1.f;
+            bestFaceNormal = Mul(_a.u[i], sign); // de B vers A
+        }
+    }
+
+    // Axes de face de B
+    for (int i = 0; i < 3; ++i)
+    {
+        ra = eA[0] * AbsR[0][i] + eA[1] * AbsR[1][i] + eA[2] * AbsR[2][i];
+        rb = eB[i];
+        tp = t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i];
+        pen = (ra + rb) - fabsf(tp);
+
+        if (pen < 0.f)
+            return SATResult{};
+
+        if (pen < bestFacePen)
+        {
+            bestFacePen = pen;
+            bestFaceType = SeparatingAxisType::FaceB;
+            bestFaceAxisA = -1;
+            bestFaceAxisB = i;
+
+            float sign = (tp >= 0.f) ? -1.f : 1.f;
+            bestFaceNormal = Mul(_b.u[i], sign); // de B vers A
+        }
+    }
+
+    // Axes croisés edge-edge
+    for (int k = 0; k < 9; ++k)
+    {
+        const int i = kEdgeAxisA[k];
+        const int j = kEdgeAxisB[k];
+
+        XMFLOAT3 axis = Cross(_a.u[i], _b.u[j]);
+        float axisLenSq = LengthSq(axis);
+
+        if (axisLenSq < 1e-10f)
+            continue;
+
+        switch (k)
+        {
+        case 0:
+            ra = eA[1] * AbsR[2][0] + eA[2] * AbsR[1][0];
+            rb = eB[1] * AbsR[0][2] + eB[2] * AbsR[0][1];
+            tp = t[2] * R[1][0] - t[1] * R[2][0];
+            break;
+        case 1:
+            ra = eA[1] * AbsR[2][1] + eA[2] * AbsR[1][1];
+            rb = eB[0] * AbsR[0][2] + eB[2] * AbsR[0][0];
+            tp = t[2] * R[1][1] - t[1] * R[2][1];
+            break;
+        case 2:
+            ra = eA[1] * AbsR[2][2] + eA[2] * AbsR[1][2];
+            rb = eB[0] * AbsR[0][1] + eB[1] * AbsR[0][0];
+            tp = t[2] * R[1][2] - t[1] * R[2][2];
+            break;
+        case 3:
+            ra = eA[0] * AbsR[2][0] + eA[2] * AbsR[0][0];
+            rb = eB[1] * AbsR[1][2] + eB[2] * AbsR[1][1];
+            tp = t[0] * R[2][0] - t[2] * R[0][0];
+            break;
+        case 4:
+            ra = eA[0] * AbsR[2][1] + eA[2] * AbsR[0][1];
+            rb = eB[0] * AbsR[1][2] + eB[2] * AbsR[1][0];
+            tp = t[0] * R[2][1] - t[2] * R[0][1];
+            break;
+        case 5:
+            ra = eA[0] * AbsR[2][2] + eA[2] * AbsR[0][2];
+            rb = eB[0] * AbsR[1][1] + eB[1] * AbsR[1][0];
+            tp = t[0] * R[2][2] - t[2] * R[0][2];
+            break;
+        case 6:
+            ra = eA[0] * AbsR[1][0] + eA[1] * AbsR[0][0];
+            rb = eB[1] * AbsR[2][2] + eB[2] * AbsR[2][1];
+            tp = t[1] * R[0][0] - t[0] * R[1][0];
+            break;
+        case 7:
+            ra = eA[0] * AbsR[1][1] + eA[1] * AbsR[0][1];
+            rb = eB[0] * AbsR[2][2] + eB[2] * AbsR[2][0];
+            tp = t[1] * R[0][1] - t[0] * R[1][1];
+            break;
+        default:
+            ra = eA[0] * AbsR[1][2] + eA[1] * AbsR[0][2];
+            rb = eB[0] * AbsR[2][1] + eB[1] * AbsR[2][0];
+            tp = t[1] * R[0][2] - t[0] * R[1][2];
+            break;
+        }
+
+        pen = (ra + rb) - fabsf(tp);
+
+        if (pen < 0.f)
+            return SATResult{};
+
+        if (pen < bestEdgePen)
+        {
+            bestEdgePen = pen;
+            bestEdgeAxisA = i;
+            bestEdgeAxisB = j;
+
+            XMFLOAT3 n = NormalizeSafe(axis, _a.u[0]);
+            if (Dot(n, Subtract(_a.c, _b.c)) < 0.f)
+                n = Inverse(n);
+
+            bestEdgeNormal = n; // de B vers A
+        }
+    }
+
+    SATResult result;
+    result.hit = true;
+
+    result.bestFaceType = bestFaceType;
+    result.bestFaceAxisA = bestFaceAxisA;
+    result.bestFaceAxisB = bestFaceAxisB;
+    result.bestFaceNormal = bestFaceNormal;
+    result.bestFacePenetration = bestFacePen;
+
+    // Préférence forte pour les faces.
+    // EdgeEdge n’est pris que s’il est réellement meilleur.
+    if (bestEdgeAxisA != -1 && bestEdgePen < bestFacePen - kEdgePreferenceEpsilon)
+    {
+        result.axisType = SeparatingAxisType::EdgeEdge;
+        result.axisIndexA = bestEdgeAxisA;
+        result.axisIndexB = bestEdgeAxisB;
+        result.normal = bestEdgeNormal;
+        result.penetration = bestEdgePen;
+    }
+    else
+    {
+        result.axisType = bestFaceType;
+        result.axisIndexA = bestFaceAxisA;
+        result.axisIndexB = bestFaceAxisB;
+        result.normal = bestFaceNormal;
+        result.penetration = bestFacePen;
+    }
+
+    return result;
+}
+
+ContactInfo NarrowPhaseSystem::BuildFaceFaceManifold(const NarrowOBB& referenceBox, const NarrowOBB& incidentBox, int referenceAxis, const XMFLOAT3& normalBtoA, float penetration)
+{
+    ContactInfo manifold;
+    manifold.hit = true;
+    manifold.normal = normalBtoA;
+
+    // Normale de la face de référence orientée vers la boîte incidente
+    XMFLOAT3 refNormalOut = Inverse(normalBtoA);
+
+    // Signe de la face de référence dans la box de référence
+    float refSign = (Dot(refNormalOut, referenceBox.u[referenceAxis]) >= 0.f) ? 1.f : -1.f;
+
+    FaceQuad refFace = BuildFaceQuad(referenceBox, referenceAxis, refSign);
+
+    // Face incidente = face la plus opposée à refNormalOut
+    int incAxis = FindIncidentFaceAxis(incidentBox, refNormalOut);
+    float incSign = FindIncidentFaceSign(incidentBox, incAxis, refNormalOut);
+    FaceQuad incFace = BuildFaceQuad(incidentBox, incAxis, incSign);
+
+    Plane sidePlanes[4];
+
+    // intérieur si dot(n, p) - d <= 0
+    sidePlanes[0].n = refFace.axis1;
+    sidePlanes[0].d = Dot(sidePlanes[0].n, refFace.center) + refFace.extent1;
+
+    sidePlanes[1].n = Inverse(refFace.axis1);
+    sidePlanes[1].d = Dot(sidePlanes[1].n, refFace.center) + refFace.extent1;
+
+    sidePlanes[2].n = refFace.axis2;
+    sidePlanes[2].d = Dot(sidePlanes[2].n, refFace.center) + refFace.extent2;
+
+    sidePlanes[3].n = Inverse(refFace.axis2);
+    sidePlanes[3].d = Dot(sidePlanes[3].n, refFace.center) + refFace.extent2;
+
+    XMFLOAT3 buffer0[8];
+    XMFLOAT3 buffer1[8];
+
+    int count = 4;
+    for (int i = 0; i < 4; ++i)
+        buffer0[i] = incFace.vertices[i];
+
+    count = ClipPolygonAgainstPlane(buffer0, count, buffer1, sidePlanes[0]);
+    if (count <= 0) return ContactInfo{};
+
+    count = ClipPolygonAgainstPlane(buffer1, count, buffer0, sidePlanes[1]);
+    if (count <= 0) return ContactInfo{};
+
+    count = ClipPolygonAgainstPlane(buffer0, count, buffer1, sidePlanes[2]);
+    if (count <= 0) return ContactInfo{};
+
+    count = ClipPolygonAgainstPlane(buffer1, count, buffer0, sidePlanes[3]);
+    if (count <= 0) return ContactInfo{};
+
+    // Plan de la face de référence
+    float refPlaneD = Dot(refNormalOut, refFace.center);
+
+    manifold.hit = true;
+    manifold.normal = normalBtoA;
+
+    for (int i = 0; i < count; ++i)
+    {
+        const XMFLOAT3& p = buffer0[i];
+
+        float separation = Dot(refNormalOut, p) - refPlaneD;
+        float pointPenetration = -separation;
+
+        if (pointPenetration >= -1e-4f)
+        {
+            XMFLOAT3 projected = Subtract(p, Mul(refNormalOut, separation));
+            AddContactPointUnique(manifold, projected, Max(0.f, pointPenetration));
+        }
+    }
+
+    if (manifold.pointCount == 0)
+    {
+        float separation = Dot(refNormalOut, incFace.center) - refPlaneD;
+        float pointPenetration = -separation;
+        if (pointPenetration >= -1e-4f)
+        {
+            XMFLOAT3 projected = Subtract(incFace.center, Mul(refNormalOut, separation));
+            AddContactPointUnique(manifold, projected, Max(0.f, pointPenetration));
+        }
+    }
+
+    if (manifold.pointCount == 0)
+        return ContactInfo{};
+
+    return manifold;
+}
+
+ContactInfo NarrowPhaseSystem::BuildEdgeEdgeManifold(const NarrowOBB& _a, const NarrowOBB& _b, const SATResult& sat)
+{
+    ContactInfo manifold;
+    manifold.hit = true;
+    manifold.normal = sat.normal;
+
+    Segment edgeA = GetSupportEdge(_a, sat.axisIndexA, Inverse(sat.normal));
+    Segment edgeB = GetSupportEdge(_b, sat.axisIndexB, sat.normal);
+
+    float s = 0.f, t = 0.f;
+    XMFLOAT3 c1, c2;
+    ClosestPtSegmentSegment(edgeA.a, edgeA.b, edgeB.a, edgeB.b, s, t, c1, c2);
+
+    XMFLOAT3 contact = Mul(Add(c1, c2), 0.5f);
+
+    // Validation : on rejette les points edge-edge aberrants
+    if (!IsPointNearOBB(contact, _a, kEdgeValidationTolerance) ||
+        !IsPointNearOBB(contact, _b, kEdgeValidationTolerance))
+    {
+        return ContactInfo{};
+    }
+
+    manifold.pointCount = 1;
+    manifold.points[0].position = contact;
+    manifold.points[0].penetration = sat.penetration;
+
+    return manifold;
+}
+
+ContactInfo NarrowPhaseSystem::TestSphereSphere(const NarrowSphere& _a, const NarrowSphere& _b)
+{
+    XMFLOAT3 d = Subtract(_a.center, _b.center);
+    float dist2 = LengthSq(d);
+    float sumR = _a.radius + _b.radius;
+
+    if (dist2 > sumR * sumR)
+        return ContactInfo{};
+
+    float dist = sqrtf(dist2);
+
+    ContactInfo result;
+    result.hit = true;
+
+    if (dist > 1e-6f)
+        result.normal = { d.x / dist, d.y / dist, d.z / dist };
+    else
+        result.normal = { 0.f, 1.f, 0.f };
+
+    result.pointCount = 1;
+    result.points[0].penetration = sumR - dist;
+    result.points[0].position =
+    {
+        _b.center.x + result.normal.x * _b.radius,
+        _b.center.y + result.normal.y * _b.radius,
+        _b.center.z + result.normal.z * _b.radius
+    };
+
+    return result;
+}
+
+ContactInfo NarrowPhaseSystem::TestSphereOBB(const NarrowSphere& _s, const NarrowOBB& _b)
+{
+    XMFLOAT3 d = Subtract(_s.center, _b.c);
+
+    float local[3] =
+    {
+        Dot(d, _b.u[0]),
+        Dot(d, _b.u[1]),
+        Dot(d, _b.u[2])
+    };
+
+    float clamped[3] =
+    {
+        std::fmax(-_b.e.x, std::fmin(local[0], _b.e.x)),
+        std::fmax(-_b.e.y, std::fmin(local[1], _b.e.y)),
+        std::fmax(-_b.e.z, std::fmin(local[2], _b.e.z))
+    };
+
+    bool inside =
+        (local[0] >= -_b.e.x && local[0] <= _b.e.x) &&
+        (local[1] >= -_b.e.y && local[1] <= _b.e.y) &&
+        (local[2] >= -_b.e.z && local[2] <= _b.e.z);
+
+    XMFLOAT3 closest = _b.c;
+    closest = Add(closest, Mul(_b.u[0], clamped[0]));
+    closest = Add(closest, Mul(_b.u[1], clamped[1]));
+    closest = Add(closest, Mul(_b.u[2], clamped[2]));
+
+    ContactInfo result{};
+
+    if (!inside)
+    {
+        XMFLOAT3 v = Subtract(_s.center, closest);
+        float dist2 = LengthSq(v);
+
+        if (dist2 > _s.radius * _s.radius)
+            return ContactInfo{};
+
+        float dist = sqrtf(dist2);
+
+        result.hit = true;
+        result.pointCount = 1;
+        result.points[0].position = closest;
+        result.points[0].penetration = _s.radius - dist;
+
+        if (dist > 1e-6f)
+            result.normal = { v.x / dist, v.y / dist, v.z / dist };
+        else
+            result.normal = _b.u[1];
+
+        return result;
+    }
+
+    float distToFace[3] =
+    {
+        _b.e.x - fabsf(local[0]),
+        _b.e.y - fabsf(local[1]),
+        _b.e.z - fabsf(local[2])
+    };
+
+    int bestAxis = 0;
+    if (distToFace[1] < distToFace[bestAxis]) bestAxis = 1;
+    if (distToFace[2] < distToFace[bestAxis]) bestAxis = 2;
+
+    float sign = (local[bestAxis] >= 0.f) ? 1.f : -1.f;
+
+    result.hit = true;
+    result.normal = Mul(_b.u[bestAxis], sign);
+    result.pointCount = 1;
+
+    float faceCoord[3] = { local[0], local[1], local[2] };
+    faceCoord[bestAxis] = sign * GetComponent(_b.e, bestAxis);
+
+    result.points[0].position = _b.c;
+    result.points[0].position = Add(result.points[0].position, Mul(_b.u[0], faceCoord[0]));
+    result.points[0].position = Add(result.points[0].position, Mul(_b.u[1], faceCoord[1]));
+    result.points[0].position = Add(result.points[0].position, Mul(_b.u[2], faceCoord[2]));
+    result.points[0].penetration = _s.radius + distToFace[bestAxis];
+
+    return result;
+}
+
+ContactInfo NarrowPhaseSystem::TestOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b)
+{
+    SATResult sat = ComputeSATOBBOBB(_a, _b);
+
+    if (!sat.hit)
+        return ContactInfo{};
+
+    switch (sat.axisType)
+    {
+    case SeparatingAxisType::FaceA:
+        return BuildFaceFaceManifold(
+            _a,
+            _b,
+            sat.axisIndexA,
+            sat.normal,
+            sat.penetration);
+
+    case SeparatingAxisType::FaceB:
+    {
+        ContactInfo m = BuildFaceFaceManifold(
+            _b,
+            _a,
+            sat.axisIndexB,
+            Inverse(sat.normal),
+            sat.penetration);
+
+        m.normal = sat.normal;
+        return m;
+    }
+
+    case SeparatingAxisType::EdgeEdge:
+    {
+        ContactInfo m = BuildEdgeEdgeManifold(_a, _b, sat);
+        if (m.hit && m.pointCount > 0)
+            return m;
+
+        // Fallback propre vers le meilleur axe de face connu
+        if (sat.bestFaceType == SeparatingAxisType::FaceA)
+        {
+            return BuildFaceFaceManifold(
+                _a,
+                _b,
+                sat.bestFaceAxisA,
+                sat.bestFaceNormal,
+                sat.bestFacePenetration);
+        }
+        else
+        {
+            ContactInfo mf = BuildFaceFaceManifold(
+                _b,
+                _a,
+                sat.bestFaceAxisB,
+                Inverse(sat.bestFaceNormal),
+                sat.bestFacePenetration);
+
+            mf.normal = sat.bestFaceNormal;
+            return mf;
+        }
+    }
+
+    default:
+        return ContactInfo{};
+    }
+}
+
+ContactInfo NarrowPhaseSystem::Dispatch(ColliderComponent& _a, ColliderComponent& _b)
+{
+    ShapeType ta = _a.type;
+    ShapeType tb = _b.type;
+
+    // Sphere — Sphere
+    if (ta == ShapeType::Sphere && tb == ShapeType::Sphere)
+        return DispatchSphereSphere(_a, _b);
+
+    // Sphere — Box  (dans les deux sens)
+    if (ta == ShapeType::Sphere && tb == ShapeType::Box)
+        return DispatchSphereOBB(_a, _b);
+
+    if (ta == ShapeType::Box && tb == ShapeType::Sphere)
+    {
+        ContactInfo c = DispatchSphereOBB(_b, _a);
+        // On inverse la normale pour qu'elle pointe de B vers A
+        // (convention : normale de _b vers _a)
+        c.normal = Inverse(c.normal);
+        return c;
+    }
+
+    // Box — Box
+    if (ta == ShapeType::Box && tb == ShapeType::Box)
+        return DispatchOBBOBB(_a, _b);
+
+    // Capsule : non implémenté pour l'instant
+    return ContactInfo{};
+}
+
+ContactInfo NarrowPhaseSystem::DispatchSphereSphere(ColliderComponent& _a, ColliderComponent& _b)
+{
+    NarrowSphere a = BuildSphere(_a);
+    NarrowSphere b = BuildSphere(_b);
+    return TestSphereSphere(a, b);
+}
+
+ContactInfo NarrowPhaseSystem::DispatchSphereOBB(ColliderComponent& _sphere, ColliderComponent& _box)
+{
+    NarrowSphere s = BuildSphere(_sphere);
+    NarrowOBB b = BuildOBB(_box);
+    return TestSphereOBB(s, b);
+}
+
+ContactInfo NarrowPhaseSystem::DispatchOBBOBB(ColliderComponent& _a, ColliderComponent& _b)
+{
+    NarrowOBB a = BuildOBB(_a);
+    NarrowOBB b = BuildOBB(_b);
+    return TestOBBOBB(a, b);
 }

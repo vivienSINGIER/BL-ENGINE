@@ -3,6 +3,37 @@
 #include <algorithm>
 #include "../ECS/World.h"
 
+namespace
+{
+    inline XMFLOAT4 MulQuat(const XMFLOAT4& a, const XMFLOAT4& b)
+    {
+        return
+        {
+            a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+            a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+            a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+            a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+        };
+    }
+
+    inline XMFLOAT4 NormalizeQuatSafe(const XMFLOAT4& q)
+    {
+        float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+        if (lenSq <= 1e-12f)
+            return { 0.f, 0.f, 0.f, 1.f };
+
+        float invLen = 1.0f / sqrtf(lenSq);
+        return { q.x * invLen, q.y * invLen, q.z * invLen, q.w * invLen };
+    }
+
+    inline XMFLOAT4 GetColliderWorldRotation(const ColliderComponent& collider, TransformComponent& transform)
+    {
+        XMFLOAT4 qWorld = transform.world.GetRotation();
+        XMFLOAT4 qLocal = collider.localRotation;
+        return NormalizeQuatSafe(MulQuat(qWorld, qLocal));
+    }
+}
+
 void SpatialHashGrid::RemoveAll(uint32 _key, EntityId _e)
 {
     auto it = cells.find(_key);
@@ -136,8 +167,15 @@ void BroadPhaseSystem::OnEntityDestroyed(EntityId _e)
 
 bool BroadPhaseSystem::IsDynamicSource(EntityId _e) const
 {
+    if (world->HasComponent<ColliderComponent>(_e))
+    {
+        const ColliderComponent& c = world->GetComponent<ColliderComponent>(_e);
+        if (c.isTrigger)
+            return true;
+    }
+
     if (!world->HasComponent<RigidBodyComponent>(_e))
-        return true; // trigger sans RigidBody
+        return true;
 
     const RigidBodyComponent& r = world->GetComponent<RigidBodyComponent>(_e);
     return r.type == BodyType::Dynamic;
@@ -155,8 +193,10 @@ void BroadPhaseSystem::BuildCandidatePairs()
 
             for (EntityId src : bucket.dynamic)
             {
+                if (world->IsActive(src) == false)	continue;
                 for (EntityId tgt : bucket.all)
                 {
+                    if (world->IsActive(tgt) == false)	continue;
                     if (src == tgt) continue;
                     // Normalisation (lo, hi) pour que (A,B) et (B,A) soient identiques.
                     EntityId lo = (src < tgt) ? src : tgt;
@@ -192,11 +232,21 @@ void BroadPhaseSystem::ComputeWorldAABB(ColliderComponent& _collider, TransformC
     const XMFLOAT3& scale = _transform.world.GetScale();
 
     XMFLOAT3 center = pos;
-    if (_collider.localOffset.x != 0.0f || _collider.localOffset.y != 0.0f || _collider.localOffset.z != 0.0f)
+
+    XMFLOAT4 colliderWorldRot = GetColliderWorldRotation(_collider, _transform);
+    XMVECTOR qCollider = XMLoadFloat4(&colliderWorldRot);
+    XMMATRIX colliderRotMat = XMMatrixRotationQuaternion(qCollider);
+
+    if (_collider.localOffset.x != 0.0f ||
+        _collider.localOffset.y != 0.0f ||
+        _collider.localOffset.z != 0.0f)
     {
-        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
-        XMMATRIX rot = XMMatrixRotationQuaternion(q);
-        XMVECTOR off = XMVector3Transform(XMVectorSet(_collider.localOffset.x, _collider.localOffset.y, _collider.localOffset.z, 0.0f), rot);
+        XMVECTOR qTransform = XMLoadFloat4(&_transform.world.GetRotation());
+        XMMATRIX transformRotMat = XMMatrixRotationQuaternion(qTransform);
+        XMVECTOR off = XMVector3TransformNormal(
+            XMVectorSet(_collider.localOffset.x,
+                _collider.localOffset.y,
+                _collider.localOffset.z, 0.f), transformRotMat);
         XMFLOAT3 o;
         XMStoreFloat3(&o, off);
         center = { pos.x + o.x, pos.y + o.y, pos.z + o.z };
@@ -214,35 +264,47 @@ void BroadPhaseSystem::ComputeWorldAABB(ColliderComponent& _collider, TransformC
         _collider.aabb.max = { center.x + r, center.y + r, center.z + r };
         break;
     }
+
     case ShapeType::Box:
     {
-        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
-        XMMATRIX rot = XMMatrixRotationQuaternion(q);
-        XMFLOAT3 ax, ay, az;
-        XMStoreFloat3(&ax, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rot)));
-        XMStoreFloat3(&ay, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
-        XMStoreFloat3(&az, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rot)));
+        // Axes unitaires en world space (rotation du transform * rotation locale du collider)
+        XMStoreFloat3(&_collider.worldAxes[0], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), colliderRotMat)));
+        XMStoreFloat3(&_collider.worldAxes[1], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), colliderRotMat)));
+        XMStoreFloat3(&_collider.worldAxes[2], XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), colliderRotMat)));
 
+        // Demi-extents mis à l'échelle (lus par NarrowPhase pour le SAT)
         const XMFLOAT3& h = _collider.shape.box.halfExtents;
-        float hx = h.x * scale.x, hy = h.y * scale.y, hz = h.z * scale.z;
+        _collider.worldHalfExtents = { h.x * scale.x, h.y * scale.y, h.z * scale.z };
+
+        // AABB monde = projection de l'OBB sur les axes monde
+        const XMFLOAT3& ax = _collider.worldAxes[0];
+        const XMFLOAT3& ay = _collider.worldAxes[1];
+        const XMFLOAT3& az = _collider.worldAxes[2];
+        const float hx = _collider.worldHalfExtents.x;
+        const float hy = _collider.worldHalfExtents.y;
+        const float hz = _collider.worldHalfExtents.z;
+
         float wx = fabsf(ax.x) * hx + fabsf(ay.x) * hy + fabsf(az.x) * hz;
         float wy = fabsf(ax.y) * hx + fabsf(ay.y) * hy + fabsf(az.y) * hz;
         float wz = fabsf(ax.z) * hx + fabsf(ay.z) * hy + fabsf(az.z) * hz;
+
         _collider.worldRadius = sqrtf(wx * wx + wy * wy + wz * wz);
         _collider.aabb.min = { center.x - wx, center.y - wy, center.z - wz };
         _collider.aabb.max = { center.x + wx, center.y + wy, center.z + wz };
         break;
     }
+
     case ShapeType::Capsule:
     {
-        XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
-        XMMATRIX rot = XMMatrixRotationQuaternion(q);
         XMFLOAT3 up;
-        XMStoreFloat3(&up, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rot)));
+        XMStoreFloat3(&up, XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), colliderRotMat)));
+
         float r = _collider.shape.capsule.radius * Max(scale.x, scale.z);
         float hh = _collider.shape.capsule.halfHeight * scale.y;
+
         XMFLOAT3 top = { center.x + up.x * hh, center.y + up.y * hh, center.z + up.z * hh };
         XMFLOAT3 bot = { center.x - up.x * hh, center.y - up.y * hh, center.z - up.z * hh };
+
         _collider.worldRadius = hh + r;
         _collider.aabb.min = { Min(top.x,bot.x) - r, Min(top.y,bot.y) - r, Min(top.z,bot.z) - r };
         _collider.aabb.max = { Max(top.x,bot.x) + r, Max(top.y,bot.y) + r, Max(top.z,bot.z) + r };

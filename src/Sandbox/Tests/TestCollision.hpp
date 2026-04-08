@@ -28,6 +28,21 @@ public:
         }
     };
 
+    static void SetupBoxInertia(RigidBodyComponent& r, const XMFLOAT3& halfExtents)
+    {
+        const float m = r.mass;
+
+        const float wx = halfExtents.x * 2.0f;
+        const float wy = halfExtents.y * 2.0f;
+        const float wz = halfExtents.z * 2.0f;
+
+        const float ixx = (m / 12.0f) * (wy * wy + wz * wz);
+        const float iyy = (m / 12.0f) * (wx * wx + wz * wz);
+        const float izz = (m / 12.0f) * (wx * wx + wy * wy);
+
+        r.SetDiagonalInertiaTensor(ixx, iyy, izz);
+    }
+
     // Corps dynamique (cube) 
     static EntityId CreateDynamicBox(World* world,
         const XMFLOAT3& position,
@@ -41,7 +56,7 @@ public:
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
         t.local.SetScale({ 1.0f, 1.0f, 1.0f });
-        //t.local.AddYPR({ 0.0f, 0.0f, XM_PIDIV2 });
+		//t.local.AddYPR({ XM_PIDIV2, 0.0f, 0.0f });
 
         MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
@@ -56,6 +71,7 @@ public:
         r.type = BodyType::Dynamic;
         r.useGravity = true;
         r.allowRotation = true;
+        SetupBoxInertia(r, halfExtents);
 
         // Motion
         MotionComponent& m = world->AddComponent<MotionComponent>(e);
@@ -110,9 +126,7 @@ public:
     }
 
     // Trigger (zone de détection)
-    static EntityId CreateTrigger(World* world,
-        const XMFLOAT3& position,
-        const XMFLOAT3& halfExtents)
+    static EntityId CreateTrigger(World* world, const XMFLOAT3& position, const XMFLOAT3& halfExtents)
     {
         EntityId e = world->CreateEntity();
 
@@ -150,19 +164,18 @@ public:
         uint32 mat = RessourceManager::GetMaterialId("White");
 		uint32 otherMat = RessourceManager::GetMaterialId("Default");
 
-        CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.f, 1.f, 10.f }, { 0.5f, 0.5f, 0.5f }); // sol
+        CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.0f, 1.0f, 10.0f }, { 5.f, 0.5f, 5.f });
+        //CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 10.0f);
 
-		EntityId box1 = CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
-		CreateDynamicBox(world, { 0.5f, 1.5f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 2.0f); 
-
-		//CreateDynamicSphere(world, { 5.0f, 1.0f, 0.0f }, 1.0f, 2.0f); // sphère dynamique
+		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 1.0f);
+        CreateDynamicBox(world, { -2.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 10.0f);
 
         // -----------------------------
         // CAMERA
         // -----------------------------
         EntityId camera = world->CreateEntity();
         TransformComponent& tCamera = world->AddComponent<TransformComponent>(camera);
-        tCamera.local.SetPosition(XMFLOAT3(0.0f, 4.0f, -19.0f));
+        tCamera.local.SetPosition(XMFLOAT3(0.0f, 1.0f, -8.0f));
 
         CameraComponent& cam = world->AddComponent<CameraComponent>(camera);
         cam.camId = RessourceManager::GetCameraId("Default");
