@@ -1,4 +1,5 @@
 #include "InventoryManager.h"
+#include "../Gameplay/LevelManager.h"
 
 EntityId InventoryManager::m_itemId[3] = { 0, 0, 0 };
 EntityId InventoryManager::m_selectedItem = 0;

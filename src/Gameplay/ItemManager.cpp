@@ -1,5 +1,6 @@
 #include "ItemManager.h"
 #include "../Gameplay/Scene/MainScene.h"
+#include "../Gameplay/InventoryManager.h"
 
 Scene* ItemManager::m_scene = nullptr;
 Vector<EntityId> ItemManager::m_Items;
@@ -67,6 +68,12 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
     return e;
 }
 
+void ItemManager::RegisterItem(EntityId _item)
+{
+	if (_item == 0) return;
+	m_Items.push_back(_item);
+}
+
 void ItemManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin, int _xMax, int _yMin, int _yMax, float _cellSize, int _levelNb, int _nbPlayer)
 {
     _count += (_levelNb - 1) * _nbPlayer;
@@ -101,7 +108,21 @@ void ItemManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin,
 
 void ItemManager::DestroyItems()
 {
-    for (EntityId e : m_Items)
-        m_scene->world->DestroyEntity(e);
-    m_Items.clear();
+    EntityId* inventoryItems = InventoryManager::GetInventory();
+
+    for (EntityId item : m_Items)
+    {
+        bool inInventory = false;
+        for (int i = 0; i < InventoryManager::GetItemCount(); i++)
+        {
+            if (inventoryItems[i] == item)
+            {
+                inInventory = true;
+                break;
+            }
+        }
+        if (!inInventory)
+            m_scene->world->DestroyEntity(item);
+	}
+	m_Items.clear();
 }

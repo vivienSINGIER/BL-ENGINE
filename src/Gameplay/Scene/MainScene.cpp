@@ -9,6 +9,8 @@
 #include "../Gameplay/Script/FoodStorageScript.h"
 #include "../Gameplay/Script/PlayerHealth.hpp"
 #include "../Gameplay/GasManager.h"
+#include "../Gameplay/InventoryManager.h"
+#include "../Gameplay/ItemManager.h"
 
 void MainScene::OnInit()
 {
@@ -158,6 +160,8 @@ void MainScene::OnUpdate(float _dt)
                 {
                     std::cout << "You died! Restarting level..." << std::endl;
                     hp.Reset();
+                    InventoryManager::ResetInventory();
+                    PreserveInventory();
                     GameManager::Reset();
                     LevelManager::ResetGas();
                     LevelManager::ReloadLevel();
@@ -188,6 +192,8 @@ void MainScene::OnUpdate(float _dt)
                 if(GameManager::GetGameState() == GameState::LOSE)
                 {
                     std::cout << "You lost! Restarting level..." << std::endl;
+					InventoryManager::ResetInventory();
+                    PreserveInventory();
 					GameManager::Reset();
                     LevelManager::ReloadLevel();
                     m_skipNextFrame = true;
@@ -195,7 +201,9 @@ void MainScene::OnUpdate(float _dt)
                     return;
                 }
 
+				PreserveInventory();
                 LevelManager::LoadLevel();
+                ReRegisterInventoryItem();
 				world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
             }
         }
@@ -261,4 +269,32 @@ void MainScene::LoadRessources()
     medicMat->SetTexture("Albedo", RessourceManager::GetTexture("Medic"));
 	RessourceManager::AddMaterial("MedicMaterial", medicMat);
 
+}
+
+void MainScene::PreserveInventory()
+{
+	LevelManager::UnregisterEntity(InventoryManager::GetInventory(), InventoryManager::GetItemCount());
+
+	Scene* s = this;
+
+    for(int i = 0; i < InventoryManager::GetItemCount(); i++)
+    {
+        EntityId item = InventoryManager::GetInventory()[i];
+        if (item == 0) continue;
+        if (!s->world->HasComponent<TransformComponent>(item)) continue;
+        TransformComponent& t = s->world->GetComponent<TransformComponent>(item);
+        t.RemoveParent();
+        t.local.SetPosition(XMFLOAT3(0.0f, -100.0f, 0.0f));
+        s->world->SetInactive(item);
+	}
+}
+
+void MainScene::ReRegisterInventoryItem()
+{
+    for(int i = 0; i < InventoryManager::GetItemCount(); i++)
+    {
+		EntityId item = InventoryManager::GetInventory()[i];
+        if(item != 0)
+			ItemManager::RegisterItem(item);
+	}
 }

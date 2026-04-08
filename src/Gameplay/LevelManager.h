@@ -22,6 +22,8 @@ public:
 	static void SetPlayer(int playerIndex, EntityId playerEntity);
 
 	static bool LevelLoaded();
+	static void UnregisterEntity(EntityId* _entity, int _count);
+	
 
 private:
 	static float m_cellSize;

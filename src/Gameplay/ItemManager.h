@@ -30,6 +30,8 @@ public:
 	static ItemType PickRandomType();
     static EntityId SpawnItem(ItemType _type, float _x, float _y, float _z);
 
+    static void RegisterItem(EntityId _item);
+
 private:
     static Scene* m_scene;
     static Vector<EntityId> m_Items;

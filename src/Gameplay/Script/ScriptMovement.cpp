@@ -140,7 +140,8 @@ void Movement::ScriptMovement::Reload()
 	m_pitch = 0.0f;
 	t.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
 	t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
-
+	m_itemInHand = 0;
+	
 	for (int i = 0; i < 3; i++)
 	{
 		SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_glowStick[i]);

@@ -338,6 +338,23 @@ void LabyrintheManager::SpawnMagu(int _count)
     }
 }
 
+void LabyrintheManager::UnregisterEntity(EntityId* _entity, int _count)
+{
+    for(int i = 0; i < _count; i++)
+    {
+		if (_entity[i] == 0) continue;
+
+        for(int j = 0; j < (int)m_Entities.size(); j++)
+        {
+            if (m_Entities[j] == _entity[i])
+            {
+                m_Entities.erase(m_Entities.begin() + j);
+                break;
+            }
+		}
+	}
+}
+
 void LabyrintheManager::SetPlayer(int playerIndex, EntityId playerEntity)
 {
     if (playerIndex < 0 || playerIndex >= m_nbPlayer) return;
