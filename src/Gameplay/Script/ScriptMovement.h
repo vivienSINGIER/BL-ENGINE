@@ -10,6 +10,7 @@ public:
 	{
 		void Awake() override;
 		void Update(float dt) override;
+		void OnCollision(EntityId _otherId) override;
 		void Reload();
 	private:
 		float m_yaw;

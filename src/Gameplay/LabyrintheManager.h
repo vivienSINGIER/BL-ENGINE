@@ -26,6 +26,7 @@ public:
 	static void SpawnMagu(int _count);
 
 	static void SetLevel(int _levelNb) { m_levelNb = _levelNb; }
+
 private:
 	static float m_cellSize;
 	static float m_labySize;
@@ -43,5 +44,6 @@ private:
 	static float m_gasTimer;
 	static float m_gasDuration;
 	static EntityId m_wallsGas[4];
+	
 };
 #endif // !LABYRINTHE_MANAGER_H_DEFINED

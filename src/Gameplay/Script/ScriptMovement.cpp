@@ -1,5 +1,7 @@
 #include "ScriptMovement.h"
 #include "../Gameplay/GlowStick.h"
+#include "../Gameplay/Scene/MainScene.h"
+#include "../Gameplay/GameManager.h"
 
 void Movement::ScriptMovement::Awake()
 {
@@ -7,7 +9,7 @@ void Movement::ScriptMovement::Awake()
 	m_pitch = 0.0f;
 	InputManager::LockMouseCursor();
 	InputManager::HideMouseCursor();
-	bool cursorLocked = true;
+	m_cursorLocked = InputManager::IsMouseCursorLocked();
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -18,14 +20,13 @@ void Movement::ScriptMovement::Awake()
 
 void Movement::ScriptMovement::Update(float dt)
 {
+	m_cursorLocked = InputManager::IsMouseCursorLocked();
     TransformComponent& t = GetComponent<TransformComponent>();
+	MotionComponent& motion = GetComponent<MotionComponent>();
 
 	float mouseSensitivity = 0.01f;
 	XMFLOAT2 mouseDelta = InputManager::GetMouseDelta();
 	m_yaw += mouseDelta.x * mouseSensitivity;
-	m_pitch += mouseDelta.y * mouseSensitivity;
-
-	m_pitch = Clamp(m_pitch, -59.0f * (XM_PI / 180.0f), 89.0f * (XM_PI / 180.0f));
 
 	if (m_cursorLocked)
 	{
@@ -38,30 +39,26 @@ void Movement::ScriptMovement::Update(float dt)
 	XMFLOAT3 right = t.local.GetRight();
 
 	if (InputManager::IsKey(Z))
-		t.local.Move(XMFLOAT3(forward.x * moveSpeed * dt, forward.y * moveSpeed * dt, forward.z * moveSpeed * dt));
+		motion.AddLinearImpulse(XMFLOAT3(forward.x * moveSpeed * dt, 0.0f, forward.z * moveSpeed * dt));
 	if (InputManager::IsKey(S))
-		t.local.Move(XMFLOAT3(-forward.x * moveSpeed * dt, -forward.y * moveSpeed * dt, -forward.z * moveSpeed * dt));
+		motion.AddLinearImpulse(XMFLOAT3(-forward.x * moveSpeed * dt, 0.0f, -forward.z * moveSpeed * dt));
 	if (InputManager::IsKey(Q))
-		t.local.Move(XMFLOAT3(-right.x * moveSpeed * dt, -right.y * moveSpeed * dt, -right.z * moveSpeed * dt));
+		motion.AddLinearImpulse(XMFLOAT3(-right.x * moveSpeed * dt, 0.0f, -right.z * moveSpeed * dt));
 	if (InputManager::IsKey(D))
-		t.local.Move(XMFLOAT3(right.x * moveSpeed * dt, right.y * moveSpeed * dt, right.z * moveSpeed * dt));
+		motion.AddLinearImpulse(XMFLOAT3(right.x * moveSpeed * dt, 0.0f, right.z * moveSpeed * dt));
 	if(InputManager::IsKey(SPACE))
-		t.local.Move(XMFLOAT3(0.0f, moveSpeed * dt, 0.0f));
-	if (InputManager::IsKey(LCONTROL))
-		t.local.Move(XMFLOAT3(0.0f, -moveSpeed * dt, 0.0f));
+		motion.AddLinearImpulse(XMFLOAT3(0.0f, moveSpeed * dt, 0.0f));
 	if(InputManager::IsKeyDown(ESCAPE))
 	{
 		if(m_cursorLocked)
 		{
 			InputManager::UnlockMouseCursor();
 			InputManager::ShowMouseCursor();
-			m_cursorLocked = false;
 		}
 		else
 		{
 			InputManager::LockMouseCursor();
 			InputManager::HideMouseCursor();
-			m_cursorLocked = true;
 		}
 	}
 
@@ -76,6 +73,16 @@ void Movement::ScriptMovement::Update(float dt)
 				break;
 			}
 		}
+	}
+}
+
+void Movement::ScriptMovement::OnCollision(EntityId _otherId)
+{
+	Scene* s = SceneManager::GetSceneWithId(sceneId);
+	if (s->world->HasComponent<ItemCollectableComponent>(_otherId) && s->world->IsActive(_otherId))
+	{
+		GameManager::CollectFood();
+		s->world->SetInactive(_otherId);
 	}
 }
 

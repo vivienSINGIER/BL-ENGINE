@@ -13,6 +13,14 @@ void GlowStick::Awake()
 	l.SetStrength(0.3f);
 	l.SetPoint(1.0f, 10.0f);
 	l.SetColor(XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+	ColliderComponent& col = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<ColliderComponent>(entity);
+	col.SetBox(0.2f, 0.2f, 0.2f);
+	RigidBodyComponent& rb = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<RigidBodyComponent>(entity);
+	rb.SetMass(0.5f);
+	rb.type = BodyType::Dynamic;
+	rb.useGravity = true;
+	rb.allowRotation = false;
+	MotionComponent& motion = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<MotionComponent>(entity);
 
 	SceneManager::GetSceneWithId(sceneId)->world->SetInactive(entity);
 }

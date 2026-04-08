@@ -17,6 +17,7 @@ struct ItemData
     float scaleX, scaleY, scaleZ;
     float offsetY; // hauteur au sol
 	int weight; // poids de l'item pour le spawn
+	bool collectible;
 };
 
 class ItemManager

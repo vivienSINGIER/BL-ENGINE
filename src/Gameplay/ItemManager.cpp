@@ -1,4 +1,5 @@
 #include "ItemManager.h"
+#include "../Gameplay/Scene/MainScene.h"
 
 Scene* ItemManager::m_scene = nullptr;
 Vector<EntityId> ItemManager::m_Items;
@@ -14,8 +15,8 @@ void ItemManager::InitItemDefs()
 {
     m_ItemDefs =
     {
-        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 5 },
-        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f , 1.0f, 1.0f, 1.0f , 5 }
+        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 5 , true},
+        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f , 1.0f, 1.0f, 1.0f , 5 , false}
     };
 }
 
@@ -51,10 +52,18 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
     mr.geoId = RessourceManager::GetGeometryId(data->geometryName);
     mr.materialId = RessourceManager::GetMaterialId(data->materialName);
     ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(e);
-    PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(e);
-    phys.SetStatic();
+	col.SetBox(0.3f, 0.3f, 0.3f);
+	RigidBodyComponent& rb = m_scene->world->AddComponent<RigidBodyComponent>(e);
+	rb.SetMass(1.0f);
+	rb.type = BodyType::Dynamic;
+	rb.useGravity = true;
+	rb.allowRotation = false;
+	MotionComponent& motion = m_scene->world->AddComponent<MotionComponent>(e);
     t.local.SetPosition(XMFLOAT3(_x, _y + data->offsetY, _z));
     t.local.SetScale(XMFLOAT3(data->scaleX, data->scaleY, data->scaleZ));
+    if(data->collectible == true)
+        ItemCollectableComponent& collectable = m_scene->world->AddComponent<ItemCollectableComponent>(e);
+
     return e;
 }
 

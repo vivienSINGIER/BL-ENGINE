@@ -7,6 +7,8 @@
 #include "Network/Client.h"
 #include "Network/Packet.hpp"
 
+bool InputManager::m_locked = false;
+
 UnorderedMap<UINT8, INT32> InputManager::s_keyboardMap{
     { BACKSPACE,       VK_BACK     },
     { TAB,             VK_TAB      },
@@ -488,6 +490,8 @@ void InputManager::LockMouseCursor(uint32 _clientId)
     RECT const clipRect = { topLeft.x, topLeft.y, bottomRight.x, bottomRight.y };
     ClipCursor( &clipRect );
     s_mouseDatas[_clientId].dirty = true;
+   
+	m_locked = true;
 }
 
 void InputManager::UnlockMouseCursor(uint32 _clientId)
@@ -499,6 +503,8 @@ void InputManager::UnlockMouseCursor(uint32 _clientId)
     s_mouseDatas[_clientId].cursorLocked = false;
     ClipCursor( nullptr );
     s_mouseDatas[_clientId].dirty = true;
+
+	m_locked = false;
 }
 
 bool InputManager::IsMouseCursorLocked(uint32 _clientId)
@@ -545,6 +551,11 @@ bool InputManager::IsMouseCursorVisible(uint32 _clientId)
     RegisterClient(_clientId);
     
     return s_mouseDatas[_clientId].cursorVisible;
+}
+
+bool InputManager::IsCursorLocked()
+{
+    return m_locked;
 }
 
 #endif
