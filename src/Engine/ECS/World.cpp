@@ -319,5 +319,9 @@ void World::TryMatchQuery(QueryBase* _query, Archetype* _arch)
     }
 
     if (match)
-        _query->matched.push_back(_arch);
+    {
+        auto it = std::find(_query->matched.begin(), _query->matched.end(), _arch);
+        if (it == _query->matched.end())
+            _query->matched.push_back(_arch);
+    }
 }
