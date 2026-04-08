@@ -13,34 +13,34 @@ static constexpr int   kMaxContactPoints = 4;
 struct NarrowSphere
 {
     XMFLOAT3 center;
-    float    radius;
+    float radius;
 };
 
 struct NarrowOBB
 {
-    XMFLOAT3 c;
-    XMFLOAT3 u[3]; // axes unitaires
-    XMFLOAT3 e;
+    XMFLOAT3 c;      // centre monde
+    XMFLOAT3 u[3];   // axes unitaires monde
+    XMFLOAT3 e;      // half extents monde
 };
 
 struct ContactPoint
 {
-    XMFLOAT3 position = { 0,0,0 };
+    XMFLOAT3 position = { 0, 0, 0 };
     float penetration = 0.f;
 };
 
 struct ContactInfo
 {
     bool hit = false;
-    XMFLOAT3 normal = { 0,1,0 };   // convention : de B vers A
+    XMFLOAT3 normal = { 0, 1, 0 }; // convention : de B vers A
     int pointCount = 0;
     ContactPoint points[kMaxContactPoints];
 };
 
 struct CollisionResult
 {
-    EntityId    entityA;
-    EntityId    entityB;
+    EntityId entityA;
+    EntityId entityB;
     ContactInfo contact;
 };
 
@@ -56,28 +56,27 @@ struct SATResult
     bool hit = false;
 
     SeparatingAxisType axisType = SeparatingAxisType::FaceA;
-
     int axisIndexA = -1;
     int axisIndexB = -1;
 
-    XMFLOAT3 normal = { 0,1,0 };   // de B vers A
+    XMFLOAT3 normal = { 0, 1, 0 }; // de B vers A
     float penetration = 0.f;
 
-    // Meilleur axe de face gardé pour fallback
+    // Meilleur axe de face conservé pour fallback si EdgeEdge est invalide.
     SeparatingAxisType bestFaceType = SeparatingAxisType::FaceA;
     int bestFaceAxisA = -1;
     int bestFaceAxisB = -1;
-    XMFLOAT3 bestFaceNormal = { 0,1,0 };
+    XMFLOAT3 bestFaceNormal = { 0, 1, 0 };
     float bestFacePenetration = 0.f;
 };
 
 struct FaceQuad
 {
-    XMFLOAT3 normal = { 0,1,0 };
-    XMFLOAT3 center = { 0,0,0 };
+    XMFLOAT3 normal = { 0, 1, 0 };
+    XMFLOAT3 center = { 0, 0, 0 };
 
-    XMFLOAT3 axis1 = { 1,0,0 };
-    XMFLOAT3 axis2 = { 0,0,1 };
+    XMFLOAT3 axis1 = { 1, 0, 0 };
+    XMFLOAT3 axis2 = { 0, 0, 1 };
 
     float extent1 = 0.f;
     float extent2 = 0.f;
@@ -92,36 +91,44 @@ public:
 
     void SetBroadPhaseSystem(BroadPhaseSystem* _bp) { m_broadPhase = _bp; }
 
-    const Vector<CollisionResult>& GetResults()        const { return m_results; }
+    const Vector<CollisionResult>& GetResults() const { return m_results; }
     const Vector<CollisionResult>& GetTriggerResults() const { return m_triggerResults; }
 
 private:
-    NarrowSphere BuildSphere(const ColliderComponent& _c);
-    NarrowOBB BuildOBB(const ColliderComponent& _c);
-    XMFLOAT3 ClosestPtPointOBB(const XMFLOAT3& _p, const NarrowOBB& _b);
+    // Build narrow-phase primitives from colliders.
+    NarrowSphere BuildSphere(const ColliderComponent& _collider) const;
+    NarrowOBB BuildOBB(const ColliderComponent& _collider) const;
 
-	SATResult ComputeSATOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b);
+    // Primitive tests.
+    ContactInfo TestSphereSphere(const NarrowSphere& _a, const NarrowSphere& _b) const;
+    ContactInfo TestSphereOBB(const NarrowSphere& _sphere, const NarrowOBB& _box) const;
+    ContactInfo TestOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b) const;
 
-    ContactInfo BuildFaceFaceManifold(const NarrowOBB& referenceBox, const NarrowOBB& incidentBox, int referenceAxis, const XMFLOAT3& normalBtoA, float penetration);
-	ContactInfo BuildEdgeEdgeManifold(const NarrowOBB& _a, const NarrowOBB& _b, const SATResult& sat);
+    // OBB helpers.
+    XMFLOAT3 ClosestPtPointOBB(const XMFLOAT3& _p, const NarrowOBB& _b) const;
+    SATResult ComputeSATOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b) const;
 
-    ContactInfo TestSphereSphere(const NarrowSphere& _a, const NarrowSphere& _b);
-    ContactInfo TestSphereOBB(const NarrowSphere& _s, const NarrowOBB& _b);
-    ContactInfo TestOBBOBB(const NarrowOBB& _a, const NarrowOBB& _b);
+    ContactInfo BuildFaceFaceManifold(const NarrowOBB& _referenceBox,
+        const NarrowOBB& _incidentBox,
+        int _referenceAxis,
+        const XMFLOAT3& _normalBtoA,
+        float _penetration) const;
 
-    ContactInfo Dispatch(ColliderComponent& _a, ColliderComponent& _b);
+    ContactInfo BuildEdgeEdgeManifold(const NarrowOBB& _a,
+        const NarrowOBB& _b,
+        const SATResult& _sat) const;
 
-    ContactInfo DispatchSphereSphere(ColliderComponent& _a, ColliderComponent& _b);
-    ContactInfo DispatchSphereOBB(ColliderComponent& _sphere, ColliderComponent& _box);
-    ContactInfo DispatchOBBOBB(ColliderComponent& _a, ColliderComponent& _b);
+    // Collider dispatch.
+    ContactInfo Dispatch(ColliderComponent& _a, ColliderComponent& _b) const;
+    ContactInfo DispatchSphereSphere(ColliderComponent& _a, ColliderComponent& _b) const;
+    ContactInfo DispatchSphereOBB(ColliderComponent& _sphere, ColliderComponent& _box) const;
+    ContactInfo DispatchOBBOBB(ColliderComponent& _a, ColliderComponent& _b) const;
 
 private:
     BroadPhaseSystem* m_broadPhase = nullptr;
 
     Vector<CollisionResult> m_results;
     Vector<CollisionResult> m_triggerResults;
-
-    static constexpr float kEdgePreferenceEpsilon = 0.02f;
 };
 
 #endif

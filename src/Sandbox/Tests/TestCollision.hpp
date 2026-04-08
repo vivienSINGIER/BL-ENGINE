@@ -168,7 +168,7 @@ public:
         //CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 10.0f);
 
 		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 1.0f);
-        CreateDynamicBox(world, { -2.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 10.0f);
+        EntityId box = CreateDynamicBox(world, { -2.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 10.0f);
 
         // -----------------------------
         // CAMERA
@@ -180,6 +180,7 @@ public:
         CameraComponent& cam = world->AddComponent<CameraComponent>(camera);
         cam.camId = RessourceManager::GetCameraId("Default");
         cam.isMainCamera = true;
+
 
         world->AddScript<CameraScript>(camera);
 
