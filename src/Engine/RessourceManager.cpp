@@ -30,6 +30,22 @@ Geometry* RessourceManager::GetGeometry(String _name)
     return s_pInstance->m_vGeometries[s_pInstance->m_mGeometryIds[_name]];
 }
 
+uint32 RessourceManager::AddSprite(String _name, Sprite* _pSprite)
+{
+    assert(s_pInstance->m_mSpriteIds.contains(_name) == false && "Sprite already exists");
+    
+    s_pInstance->m_vSprites.push_back(_pSprite);
+    s_pInstance->m_mSpriteIds[_name] = s_pInstance->m_vSprites.size() - 1;
+    return s_pInstance->m_mSpriteIds[_name];
+}
+
+Sprite* RessourceManager::GetSprite(String _name)
+{
+    if (s_pInstance->m_mSpriteIds.contains(_name) == false) return nullptr;
+
+    return s_pInstance->m_vSprites[s_pInstance->m_mSpriteIds[_name]];
+}
+
 uint32 RessourceManager::AddShader(String _name, Shader* _pShader)
 {
     assert(s_pInstance->m_mShaderIds.contains(_name) == false && "Shader already exists");

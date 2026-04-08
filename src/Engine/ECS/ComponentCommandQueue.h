@@ -30,6 +30,7 @@ public:
     
     void* GetComponent(EntityId _e, ComponentId _cid);
     bool HasComponent(EntityId _e, ComponentId _cid);
+    bool IsAlive(EntityId _e);
     
 private:
     struct Command

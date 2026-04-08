@@ -2,66 +2,81 @@
 #define PHYSIC_SYSTEM_H_DEFINED
 
 #include "../ECS/ISystem.h"
+#include "../Components/RigidBodyComponent.hpp"
+#include "../Components/MotionComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/ColliderComponent.hpp"
-#include "../Components/PhysicComponent.hpp"
-#include "../ContactManager.hpp"
+#include "NarrowPhaseSystem.h"
+#include "../Core/Utils.hpp"
 
-class PhysicSystem : public System<PhysicComponent, TransformComponent>
+class PhysicSystem : public System<>
 {
 public:
-    void OnStartUpdate(float _dt) override;
-    void OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, TransformComponent& _transform) override;
-    void OnEndUpdate(float _dt) override;
-
-    void SetContactManager(ContactManager* _contactManager) { m_pContactManager = _contactManager; }
+    void Update(float _dt) override;
+    void SetNarrowPhaseSystem(NarrowPhaseSystem* _narrowPhase) { m_narrowPhase = _narrowPhase; }
 
 private:
-    struct ContactPointContext
+    struct CachedContactPoint
     {
-        XMFLOAT3 point;
-
-        XMFLOAT3 centerA;
-        XMFLOAT3 centerB;
-
-        XMFLOAT3 rA;
-        XMFLOAT3 rB;
-
-        XMFLOAT3 velocityAtPointA;
-        XMFLOAT3 velocityAtPointB;
-        XMFLOAT3 relativeVelocity;
+        XMFLOAT3 rA = { 0, 0, 0 };
+        XMFLOAT3 rB = { 0, 0, 0 };
+        XMFLOAT3 relativeVelocity = { 0, 0, 0 };
+        float normalImpulse = 0.0f;
+        float biasImpulse = 0.0f;
+        bool active = false;
     };
 
+    void ResolveVelocities(float _dt);
+    void ResolvePenetrations();
+
+    void ResolveCollisionVelocities(const CollisionResult& _collision, float _invDt);
+    void SolveNormalImpulses(const ContactInfo& _contact,
+        MotionComponent& _motionA, MotionComponent& _motionB,
+        RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+        const CachedContactPoint* _cache);
+    void SolveFrictionImpulses(const ContactInfo& _contact,
+        MotionComponent& _motionA, MotionComponent& _motionB,
+        RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+        const CachedContactPoint* _cache);
+
+    void BuildContactPointCache(const ContactInfo& _contact,
+        MotionComponent& _motionA, MotionComponent& _motionB,
+        RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+        const XMFLOAT3& _centerA, const XMFLOAT3& _centerB,
+        float _invDt,
+        CachedContactPoint* _cache);
+
+    void ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB,
+        RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+        const XMFLOAT3& _rA, const XMFLOAT3& _rB,
+        const XMFLOAT3& _normal, const XMFLOAT3& _relativeVelocityPreSolve,
+        float _normalImpulse, int _pointCount);
+
+    void WakeSleepingPair(MotionComponent& _motionA, MotionComponent& _motionB,
+        const RigidBodyComponent& _rigidA, const RigidBodyComponent& _rigidB);
+
+    MotionComponent& GetMotion(EntityId _entity);
+    RigidBodyComponent* GetRigidBody(EntityId _entity);
+    XMFLOAT3 GetBodyCenter(EntityId _entity) const;
+    float GetMaxPenetration(const ContactInfo& _contact) const;
+
+    XMFLOAT3 VelocityAtPoint(const MotionComponent& _motion, const XMFLOAT3& _r) const;
+    XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const float _tensor[9]) const;
+    float ComputeAngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _tensor[9]) const;
+
 private:
-    void ResolveAllOverlaps();
-    void ResolveAllImpulses(int _iterations = 4);
+    NarrowPhaseSystem* m_narrowPhase = nullptr;
+    MotionComponent m_nullMotion;
 
-    void ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
-    void ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB,
-        Contact& _contact, const XMFLOAT3& _point);
+    static constexpr int   kVelocityIterations = 8;
+    static constexpr int   kPositionIterations = 3;
 
-    ContactPointContext BuildContactPointContext(PhysicComponent& _physicA, PhysicComponent& _physicB, EntityId _entityA, EntityId _entityB, const XMFLOAT3& _point) const;
+    static constexpr float kLinearSnapThreshold = 0.1f;
+    static constexpr float kAngularSnapThreshold = 0.1f;
 
-    float ComputeNormalImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
-        const Contact& _contact, const ContactPointContext& _ctx, int _pointCount) const;
-
-    float ComputeTangentImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
-        const Contact& _contact, const ContactPointContext& _ctx, const XMFLOAT3& _tangent, int _pointCount) const;
-
-    XMFLOAT3 ComputeTangent(const XMFLOAT3& _relativeVelocity, const XMFLOAT3& _normal) const;
-    XMFLOAT3 ComputeAngularVelocityDelta(const XMFLOAT3& _r, const XMFLOAT3& _impulse, const XMFLOAT3& _inertiaInverse) const;
-
-    XMFLOAT3 ApplyInertiaInverse(const XMFLOAT3& _v, const XMFLOAT3& _inertiaInverse) const;
-    float ComputeAngularEffectiveMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const XMFLOAT3& _inertiaInverse) const;
-
-    XMFLOAT3 GetCenter(EntityId _e) const;
-    XMFLOAT3 GetVelocityAtPoint(const PhysicComponent& _physic, EntityId _e, const XMFLOAT3& _point) const;
-    bool isStableSupport(const PhysicComponent& _physic);
-
-    void WakeBodiesFromContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
-    void UpdateSupportContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact);
-private:
-    ContactManager* m_pContactManager = nullptr;
+    static constexpr float kRestitutionThreshold = 0.3f;
+    static constexpr float kPenetrationSlop = 0.01f;
+    static constexpr float kBaumgarteBeta = 0.3f;
 };
 
-#endif // !PHYSIC_SYSTEM_H_DEFINED
+#endif

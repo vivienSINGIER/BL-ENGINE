@@ -14,6 +14,11 @@ public:
 	static uint32 GetGeometryId(String _name) { return s_pInstance->m_mGeometryIds[_name]; };
 	static Geometry* GetGeometry(String _name);
 	static Geometry* GetGeometry(uint32 _id) { return s_pInstance->m_vGeometries[_id]; }
+	
+	static uint32 AddSprite(String _name, Sprite* _pSprite);
+	static uint32 GetSpriteId(String _name) { return s_pInstance->m_mSpriteIds[_name]; };
+	static Sprite* GetSprite(String _name);
+	static Sprite* GetSprite(uint32 _id) { return s_pInstance->m_vSprites[_id]; }
 
 	static uint32 AddMaterial(String _name, Material* pMat);
 	static uint32 GetMaterialId(String _name) { return s_pInstance->m_mMaterialIds[_name]; };
@@ -44,6 +49,7 @@ private:
 	static RessourceManager* s_pInstance;
 
 	Vector<Geometry*> m_vGeometries;
+	Vector<Sprite*> m_vSprites;
 	Vector<Shader*> m_vShaders;
 	Vector<Material*> m_vMaterials;
 	Vector<RenderFont*> m_vFonts;
@@ -51,6 +57,7 @@ private:
 	Vector<Camera*> m_vCameras;
 	
 	UnorderedMap<String, uint32> m_mGeometryIds;
+	UnorderedMap<String, uint32> m_mSpriteIds;
 	UnorderedMap<String, uint32> m_mShaderIds;
 	UnorderedMap<String, uint32> m_mMaterialIds;
 	UnorderedMap<String, uint32> m_mFontIds;

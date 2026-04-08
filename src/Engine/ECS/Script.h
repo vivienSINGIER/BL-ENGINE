@@ -39,7 +39,9 @@ struct IScript
     virtual void Destroy() {}
     
     virtual void OnSync(uint32 _clientId) {}
-    
+    virtual void OnCollision(EntityId _otherId) {}
+    virtual void OnTrigger(EntityId _otherId) {}
+
     // TODO Add OnCollide & OnTrigger methods
 
     virtual ~IScript() = default;

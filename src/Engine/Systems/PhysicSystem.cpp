@@ -1,370 +1,330 @@
 #include "PhysicSystem.h"
-#include "Utils.hpp"
-#include <cmath>
-#include <iostream>
 #include "../ECS/World.h"
 
-namespace
+void PhysicSystem::Update(float _dt)
 {
-    constexpr float kPenetrationSlop = 0.005f;
-    constexpr float kPenetrationPercent = 0.8f;
-
-    constexpr float kTangentEpsilonSq = 1e-6f;
-    constexpr float kRestitutionThreshold = 0.2f;
-    constexpr float kRestingNormalVelocityThreshold = 0.05f;
-    constexpr float kRestingTangentVelocityThreshold = 0.01f;
-
-    constexpr int kSolverIterations = 4;
-}
-
-void PhysicSystem::OnStartUpdate(float _dt)
-{
-}
-
-void PhysicSystem::OnUpdate(float _dt, EntityId _e, PhysicComponent& _physic, TransformComponent& _transform)
-{
-}
-
-void PhysicSystem::OnEndUpdate(float _dt)
-{
-    if (m_pContactManager == nullptr)
+    if (m_narrowPhase == nullptr)
         return;
 
-    ResolveAllOverlaps();
-    ResolveAllImpulses(kSolverIterations);
+    const auto& collisions = m_narrowPhase->GetResults();
+    if (collisions.empty())
+        return;
+
+    for (int i = 0; i < kVelocityIterations; ++i)
+        ResolveVelocities(_dt);
+
+    for (int i = 0; i < kPositionIterations; ++i)
+        ResolvePenetrations();
 }
 
-void PhysicSystem::ResolveAllOverlaps()
+void PhysicSystem::ResolveVelocities(float _dt)
 {
-    for (Contact& contact : m_pContactManager->contacts)
+    if (_dt <= 0.0f)
+        return;
+
+    const float invDt = 1.0f / _dt;
+    const auto& collisions = m_narrowPhase->GetResults();
+
+    for (const CollisionResult& collision : collisions)
+        ResolveCollisionVelocities(collision, invDt);
+}
+
+void PhysicSystem::ResolveCollisionVelocities(const CollisionResult& _collision, float _invDt)
+{
+    const ContactInfo& contact = _collision.contact;
+    if (!contact.hit || contact.pointCount <= 0)
+        return;
+
+    RigidBodyComponent* rigidA = GetRigidBody(_collision.entityA);
+    RigidBodyComponent* rigidB = GetRigidBody(_collision.entityB);
+    if (rigidA == nullptr || rigidB == nullptr)
+        return;
+
+    if (rigidA->massInverse + rigidB->massInverse <= 0.0f)
+        return;
+
+    MotionComponent& motionA = GetMotion(_collision.entityA);
+    MotionComponent& motionB = GetMotion(_collision.entityB);
+
+    if (motionA.isSleeping && motionB.isSleeping)
+        return;
+
+    WakeSleepingPair(motionA, motionB, *rigidA, *rigidB);
+
+    const XMFLOAT3 centerA = GetBodyCenter(_collision.entityA);
+    const XMFLOAT3 centerB = GetBodyCenter(_collision.entityB);
+
+    CachedContactPoint cache[kMaxContactPoints];
+    BuildContactPointCache(contact, motionA, motionB, *rigidA, *rigidB, centerA, centerB, _invDt, cache);
+
+    SolveNormalImpulses(contact, motionA, motionB, *rigidA, *rigidB, cache);
+    SolveFrictionImpulses(contact, motionA, motionB, *rigidA, *rigidB, cache);
+
+    motionA.linearVelocity = Snap(motionA.linearVelocity, kLinearSnapThreshold);
+    motionA.angularVelocity = Snap(motionA.angularVelocity, kAngularSnapThreshold);
+    motionB.linearVelocity = Snap(motionB.linearVelocity, kLinearSnapThreshold);
+    motionB.angularVelocity = Snap(motionB.angularVelocity, kAngularSnapThreshold);
+}
+
+void PhysicSystem::BuildContactPointCache(const ContactInfo& _contact,
+    MotionComponent& _motionA, MotionComponent& _motionB,
+    RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+    const XMFLOAT3& _centerA, const XMFLOAT3& _centerB,
+    float _invDt,
+    CachedContactPoint* _cache)
+{
+    for (int i = 0; i < _contact.pointCount; ++i)
     {
-        if (world->HasComponent<PhysicComponent>(contact.a) == false ||
-            world->HasComponent<PhysicComponent>(contact.b) == false)
-        {
+        CachedContactPoint& cached = _cache[i];
+        cached = CachedContactPoint{};
+
+        const ContactPoint& point = _contact.points[i];
+
+        cached.rA = Subtract(point.position, _centerA);
+        cached.rB = Subtract(point.position, _centerB);
+
+        const XMFLOAT3 vA = VelocityAtPoint(_motionA, cached.rA);
+        const XMFLOAT3 vB = VelocityAtPoint(_motionB, cached.rB);
+
+        // Convention : vitesse relative de A par rapport à B.
+        cached.relativeVelocity = Subtract(vA, vB);
+
+        const float vn = Dot(cached.relativeVelocity, _contact.normal);
+        if (vn >= 0.0f)
             continue;
-        }
 
-        PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
-        PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
+        float restitution = Min(_rigidA.restitution, _rigidB.restitution);
+        if (fabsf(vn) < kRestitutionThreshold)
+            restitution = 0.0f;
 
-		WakeBodiesFromContact(physicA, physicB, contact);
-        ResolveOverlap(physicA, physicB, contact);
+        const float effectiveMass =
+            _rigidA.massInverse + _rigidB.massInverse +
+            ComputeAngularMassTerm(cached.rA, _contact.normal, _rigidA.inertiaTensorWorldInverse) +
+            ComputeAngularMassTerm(cached.rB, _contact.normal, _rigidB.inertiaTensorWorldInverse);
+
+        if (effectiveMass <= 0.0f)
+            continue;
+
+        const float bias = kBaumgarteBeta * _invDt * Max(0.0f, point.penetration - kPenetrationSlop);
+
+        cached.normalImpulse = -(1.0f + restitution) * vn / effectiveMass;
+        cached.biasImpulse = bias / effectiveMass;
+        cached.active = true;
     }
 }
 
-void PhysicSystem::ResolveAllImpulses(int _iterations)
+void PhysicSystem::SolveNormalImpulses(const ContactInfo& _contact,
+    MotionComponent& _motionA, MotionComponent& _motionB,
+    RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+    const CachedContactPoint* _cache)
 {
-    for (int iteration = 0; iteration < _iterations; ++iteration)
+    for (int i = 0; i < _contact.pointCount; ++i)
     {
-        for (Contact& contact : m_pContactManager->contacts)
-        {
-            if (world->HasComponent<PhysicComponent>(contact.a) == false ||
-                world->HasComponent<PhysicComponent>(contact.b) == false)
-            {
-                continue;
-            }
+        const CachedContactPoint& cached = _cache[i];
+        if (!cached.active)
+            continue;
 
-            PhysicComponent& physicA = world->GetComponent<PhysicComponent>(contact.a);
-            PhysicComponent& physicB = world->GetComponent<PhysicComponent>(contact.b);
+        const XMFLOAT3 impulsePhysics = Mul(_contact.normal, cached.normalImpulse);
+        const XMFLOAT3 impulseBias = Mul(_contact.normal, cached.biasImpulse);
+        const XMFLOAT3 totalImpulse = Add(impulsePhysics, impulseBias);
 
-            if (physicA.isSleeping && physicB.isSleeping)
-                continue;
+        _motionA.linearVelocity = Add(_motionA.linearVelocity, Mul(totalImpulse, _rigidA.massInverse));
+        _motionB.linearVelocity = Subtract(_motionB.linearVelocity, Mul(totalImpulse, _rigidB.massInverse));
 
-            for (int i = 0; i < contact.pointCount; ++i)
-            {
-                XMFLOAT3 point = contact.points[i].position;
-                ResolveImpulseAtPoint(physicA, physicB, contact, point);
-            }
-        }
+        _motionA.angularVelocity = Add(
+            _motionA.angularVelocity,
+            ApplyInertiaInverse(Cross(cached.rA, impulsePhysics), _rigidA.inertiaTensorWorldInverse));
+
+        _motionB.angularVelocity = Subtract(
+            _motionB.angularVelocity,
+            ApplyInertiaInverse(Cross(cached.rB, impulsePhysics), _rigidB.inertiaTensorWorldInverse));
     }
 }
 
-void PhysicSystem::ResolveOverlap(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+void PhysicSystem::SolveFrictionImpulses(const ContactInfo& _contact,
+    MotionComponent& _motionA, MotionComponent& _motionB,
+    RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+    const CachedContactPoint* _cache)
 {
-    if (_contact.penetration <= 0.0f)
-        return;
-
-    float correctionDepth = Max(0.0f, (_contact.penetration - kPenetrationSlop) * kPenetrationPercent);
-    if (correctionDepth <= 0.0f)
-        return;
-
-    float moveAmountA = 0.0f;
-    float moveAmountB = 0.0f;
-
-    if (_physicB.type == BodyType::Static)
+    for (int i = 0; i < _contact.pointCount; ++i)
     {
-        moveAmountA = correctionDepth;
+        const CachedContactPoint& cached = _cache[i];
+        if (!cached.active)
+            continue;
+
+        ApplyFriction(_motionA, _motionB, _rigidA, _rigidB,
+            cached.rA, cached.rB,
+            _contact.normal,
+            cached.relativeVelocity,
+            cached.normalImpulse,
+            _contact.pointCount);
     }
-    else if (_physicA.type == BodyType::Static)
-    {
-        moveAmountB = correctionDepth;
-    }
-    else
-    {
-        float invMassA = _physicA.massInverse;
-        float invMassB = _physicB.massInverse;
-        float totalInvMass = invMassA + invMassB;
-
-        if (totalInvMass <= 0.0f)
-            return;
-
-        moveAmountA = correctionDepth * (invMassA / totalInvMass);
-        moveAmountB = correctionDepth * (invMassB / totalInvMass);
-    }
-
-    TransformComponent& transformA = world->GetComponent<TransformComponent>(_contact.a);
-    TransformComponent& transformB = world->GetComponent<TransformComponent>(_contact.b);
-
-    if (moveAmountA > 0.0f)
-        transformA.local.Move(Mul(_contact.normal, -moveAmountA));
-
-    if (moveAmountB > 0.0f)
-        transformB.local.Move(Mul(_contact.normal, moveAmountB));
 }
 
-void PhysicSystem::ResolveImpulseAtPoint(PhysicComponent& _physicA, PhysicComponent& _physicB,
-    Contact& _contact, const XMFLOAT3& _point)
+void PhysicSystem::ApplyFriction(MotionComponent& _motionA, MotionComponent& _motionB,
+    RigidBodyComponent& _rigidA, RigidBodyComponent& _rigidB,
+    const XMFLOAT3& _rA, const XMFLOAT3& _rB,
+    const XMFLOAT3& _normal, const XMFLOAT3& _relativeVelocityPreSolve,
+    float _normalImpulse, int _pointCount)
 {
-    float invMassA = _physicA.massInverse;
-    float invMassB = _physicB.massInverse;
-
-    if (invMassA + invMassB <= 0.0f) return;
-        
-    ContactPointContext ctx = BuildContactPointContext(_physicA, _physicB, _contact.a, _contact.b, _point);
-    float velocityNormal = Dot(ctx.relativeVelocity, _contact.normal);
-
-    if (velocityNormal >= 0.0f) return;
-
-    // -----------------------------
-    // Impulsion normale
-    // -----------------------------
-    float normalImpulseScalar = ComputeNormalImpulseScalar(_physicA, _physicB, _contact, ctx, _contact.pointCount);
-
-    if (normalImpulseScalar <= 0.0f) return;
-
-    XMFLOAT3 normalImpulse = Mul(_contact.normal, normalImpulseScalar);
-
-    _physicA.velocity = Subtract(_physicA.velocity, Mul(normalImpulse, invMassA));
-    _physicB.velocity = Add(_physicB.velocity, Mul(normalImpulse, invMassB));
-
-    if (_physicA.type != BodyType::Static && _physicA.rotation)
-    {
-        XMFLOAT3 deltaAngularA = ComputeAngularVelocityDelta(ctx.rA, normalImpulse, _physicA.inertieInverse);
-        _physicA.angularVelocity = Subtract(_physicA.angularVelocity, deltaAngularA);
-    }
-
-    if (_physicB.type != BodyType::Static && _physicB.rotation)
-    {
-        XMFLOAT3 deltaAngularB = ComputeAngularVelocityDelta(ctx.rB, normalImpulse, _physicB.inertieInverse);
-        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
-    }
-
-    // -----------------------------
-    // Recalcul au point après normale
-    // -----------------------------
-    ctx = BuildContactPointContext(_physicA, _physicB, _contact.a, _contact.b, _point);
-
-    float postNormalVelocity = Dot(ctx.relativeVelocity, _contact.normal);
-    XMFLOAT3 tangent = ComputeTangent(ctx.relativeVelocity, _contact.normal);
-
-    if (Dot(tangent, tangent) < kTangentEpsilonSq)
+    XMFLOAT3 tangentVelocity = Subtract(_relativeVelocityPreSolve, Mul(_normal, Dot(_relativeVelocityPreSolve, _normal)));
+    const float tangentSpeed = sqrtf(LengthSq(tangentVelocity));
+    if (tangentSpeed < 0.01f)
         return;
 
-    tangent = Normalize(tangent);
-    float velocityTangent = Dot(ctx.relativeVelocity, tangent);
+    const XMFLOAT3 tangent = Mul(tangentVelocity, 1.0f / tangentSpeed);
 
-    // Contact quasi au repos : on ignore les micro-frictions parasites
-    if (abs(velocityTangent) < 0.05f)
-        return;
-    if (abs(postNormalVelocity) < kRestingNormalVelocityThreshold && abs(velocityTangent) < kRestingTangentVelocityThreshold)
+    const XMFLOAT3 vA = VelocityAtPoint(_motionA, _rA);
+    const XMFLOAT3 vB = VelocityAtPoint(_motionB, _rB);
+    const XMFLOAT3 relativeVelocityPost = Subtract(vA, vB);
+    const float vt = Dot(relativeVelocityPost, tangent);
+
+    const float effectiveMass =
+        _rigidA.massInverse + _rigidB.massInverse +
+        ComputeAngularMassTerm(_rA, tangent, _rigidA.inertiaTensorWorldInverse) +
+        ComputeAngularMassTerm(_rB, tangent, _rigidB.inertiaTensorWorldInverse);
+
+    if (effectiveMass <= 0.0f)
         return;
 
-    // -----------------------------
-    // Impulsion tangentielle
-    // -----------------------------
-    float tangentImpulseScalar = ComputeTangentImpulseScalar(_physicA, _physicB, _contact, ctx, tangent, _contact.pointCount);
-    if (tangentImpulseScalar == 0.0f)
-        return;
+    const float jt = -vt / effectiveMass;
 
-    float staticFriction = 0.5f * (_physicA.staticFriction + _physicB.staticFriction);
-    float dynamicFriction = 0.5f * (_physicA.dynamicFriction + _physicB.dynamicFriction);
+    const float muS = sqrtf(_rigidA.staticFriction * _rigidB.staticFriction);
+    const float muD = sqrtf(_rigidA.dynamicFriction * _rigidB.dynamicFriction);
+
+    const float pointScale = 1.0f / Max(1, _pointCount);
+    const float maxStaticFriction = muS * _normalImpulse * pointScale;
+    const float maxDynamicFriction = muD * _normalImpulse * pointScale;
 
     XMFLOAT3 frictionImpulse;
-
-    if (abs(tangentImpulseScalar) < normalImpulseScalar * staticFriction)
+    if (fabsf(jt) <= maxStaticFriction)
     {
-        // friction statique
-        frictionImpulse = Mul(tangent, tangentImpulseScalar);
+        frictionImpulse = Mul(tangent, jt);
     }
     else
     {
-        // friction dynamique
-        frictionImpulse = Mul(tangent, -normalImpulseScalar * dynamicFriction);
+        const float sign = (jt < 0.0f) ? -1.0f : 1.0f;
+        frictionImpulse = Mul(tangent, sign * maxDynamicFriction);
     }
 
-    _physicA.velocity = Subtract(_physicA.velocity, Mul(frictionImpulse, invMassA));
-    _physicB.velocity = Add(_physicB.velocity, Mul(frictionImpulse, invMassB));
+    _motionA.linearVelocity = Add(_motionA.linearVelocity, Mul(frictionImpulse, _rigidA.massInverse));
+    _motionA.angularVelocity = Add(
+        _motionA.angularVelocity,
+        ApplyInertiaInverse(Cross(_rA, frictionImpulse), _rigidA.inertiaTensorWorldInverse));
 
-    if (_physicA.type != BodyType::Static && _physicA.rotation)
+    _motionB.linearVelocity = Subtract(_motionB.linearVelocity, Mul(frictionImpulse, _rigidB.massInverse));
+    _motionB.angularVelocity = Subtract(
+        _motionB.angularVelocity,
+        ApplyInertiaInverse(Cross(_rB, frictionImpulse), _rigidB.inertiaTensorWorldInverse));
+}
+
+void PhysicSystem::ResolvePenetrations()
+{
+    const auto& collisions = m_narrowPhase->GetResults();
+
+    for (const CollisionResult& collision : collisions)
     {
-        XMFLOAT3 deltaAngularA = ComputeAngularVelocityDelta(ctx.rA, frictionImpulse, _physicA.inertieInverse);
-        _physicA.angularVelocity = Subtract(_physicA.angularVelocity, deltaAngularA);
-    }
+        const ContactInfo& contact = collision.contact;
+        if (!contact.hit || contact.pointCount <= 0)
+            continue;
 
-    if (_physicB.type != BodyType::Static && _physicB.rotation)
+        RigidBodyComponent* rigidA = GetRigidBody(collision.entityA);
+        RigidBodyComponent* rigidB = GetRigidBody(collision.entityB);
+        if (rigidA == nullptr || rigidB == nullptr)
+            continue;
+
+        const float penetration = GetMaxPenetration(contact);
+        const float correction = Max(0.0f, penetration - kPenetrationSlop) * kBaumgarteBeta;
+        if (correction <= 0.0f)
+            continue;
+
+        const float totalInvMass = rigidA->massInverse + rigidB->massInverse;
+        if (totalInvMass <= 0.0f)
+            continue;
+
+        const float moveA = correction * (rigidA->massInverse / totalInvMass);
+        const float moveB = correction * (rigidB->massInverse / totalInvMass);
+
+        TransformComponent& transformA = world->GetComponent<TransformComponent>(collision.entityA);
+        TransformComponent& transformB = world->GetComponent<TransformComponent>(collision.entityB);
+
+        // normal = de B vers A
+        if (rigidA->type == BodyType::Dynamic)
+            transformA.local.Move(Mul(contact.normal, moveA));
+
+        if (rigidB->type == BodyType::Dynamic)
+            transformB.local.Move(Mul(contact.normal, -moveB));
+    }
+}
+
+void PhysicSystem::WakeSleepingPair(MotionComponent& _motionA, MotionComponent& _motionB,
+    const RigidBodyComponent& _rigidA, const RigidBodyComponent& _rigidB)
+{
+    if (_rigidA.type == BodyType::Dynamic && _motionA.isSleeping &&
+        _rigidB.type == BodyType::Dynamic && !_motionB.isSleeping)
     {
-        XMFLOAT3 deltaAngularB = ComputeAngularVelocityDelta(ctx.rB, frictionImpulse, _physicB.inertieInverse);
-        _physicB.angularVelocity = Add(_physicB.angularVelocity, deltaAngularB);
+        _motionA.WakeUp();
+    }
+
+    if (_rigidB.type == BodyType::Dynamic && _motionB.isSleeping &&
+        _rigidA.type == BodyType::Dynamic && !_motionA.isSleeping)
+    {
+        _motionB.WakeUp();
     }
 }
 
-PhysicSystem::ContactPointContext PhysicSystem::BuildContactPointContext(PhysicComponent& _physicA, PhysicComponent& _physicB,
-    EntityId _entityA, EntityId _entityB, const XMFLOAT3& _point) const
+XMFLOAT3 PhysicSystem::VelocityAtPoint(const MotionComponent& _motion, const XMFLOAT3& _r) const
 {
-    ContactPointContext ctx;
-    ctx.point = _point;
-
-    ctx.centerA = GetCenter(_entityA);
-    ctx.centerB = GetCenter(_entityB);
-
-    ctx.rA = Subtract(_point, ctx.centerA);
-    ctx.rB = Subtract(_point, ctx.centerB);
-
-    ctx.velocityAtPointA = Add(_physicA.velocity, Cross(_physicA.angularVelocity, ctx.rA));
-    ctx.velocityAtPointB = Add(_physicB.velocity, Cross(_physicB.angularVelocity, ctx.rB));
-
-    ctx.relativeVelocity = Subtract(ctx.velocityAtPointB, ctx.velocityAtPointA);
-
-    return ctx;
+    return Add(_motion.linearVelocity, Cross(_motion.angularVelocity, _r));
 }
 
-float PhysicSystem::ComputeNormalImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
-    const Contact& _contact, const ContactPointContext& _ctx, int _pointCount) const
-{
-    float velocityNormal = Dot(_ctx.relativeVelocity, _contact.normal);
-
-    float restitution = Min(_physicA.restitution, _physicB.restitution);
-    if (abs(velocityNormal) < kRestitutionThreshold)
-        restitution = 0.0f;
-
-    float invMassA = _physicA.massInverse;
-    float invMassB = _physicB.massInverse;
-
-    float normalMass =
-        invMassA +
-        invMassB +
-        ComputeAngularEffectiveMassTerm(_ctx.rA, _contact.normal, _physicA.inertieInverse) +
-        ComputeAngularEffectiveMassTerm(_ctx.rB, _contact.normal, _physicB.inertieInverse);
-
-    if (normalMass <= 0.0f)
-        return 0.0f;
-
-    float impulse = -(1.0f + restitution) * velocityNormal / normalMass;
-    impulse /= (float)_pointCount;
-
-    return impulse;
-}
-
-float PhysicSystem::ComputeTangentImpulseScalar(PhysicComponent& _physicA, PhysicComponent& _physicB,
-    const Contact& _contact, const ContactPointContext& _ctx, const XMFLOAT3& _tangent, int _pointCount) const
-{
-    float velocityTangent = Dot(_ctx.relativeVelocity, _tangent);
-
-    float invMassA = _physicA.massInverse;
-    float invMassB = _physicB.massInverse;
-
-    float tangentMass =
-        invMassA +
-        invMassB +
-        ComputeAngularEffectiveMassTerm(_ctx.rA, _tangent, _physicA.inertieInverse) +
-        ComputeAngularEffectiveMassTerm(_ctx.rB, _tangent, _physicB.inertieInverse);
-
-    if (tangentMass <= 0.0f)
-        return 0.0f;
-
-    float impulse = -velocityTangent / tangentMass;
-    impulse /= (float)_pointCount;
-
-    return impulse;
-}
-
-XMFLOAT3 PhysicSystem::ComputeTangent(const XMFLOAT3& _relativeVelocity, const XMFLOAT3& _normal) const
-{
-    return Subtract(_relativeVelocity, Mul(_normal, Dot(_relativeVelocity, _normal)));
-}
-
-XMFLOAT3 PhysicSystem::ComputeAngularVelocityDelta(const XMFLOAT3& _r, const XMFLOAT3& _impulse, const XMFLOAT3& _inertiaInverse) const
-{
-    XMFLOAT3 angularImpulse = Cross(_r, _impulse);
-    return ApplyInertiaInverse(angularImpulse, _inertiaInverse);
-}
-
-XMFLOAT3 PhysicSystem::ApplyInertiaInverse(const XMFLOAT3& _v, const XMFLOAT3& _inertiaInverse) const
+XMFLOAT3 PhysicSystem::ApplyInertiaInverse(const XMFLOAT3& _v, const float _tensor[9]) const
 {
     return
     {
-        _v.x * _inertiaInverse.x,
-        _v.y * _inertiaInverse.y,
-        _v.z * _inertiaInverse.z
+        _tensor[0] * _v.x + _tensor[1] * _v.y + _tensor[2] * _v.z,
+        _tensor[3] * _v.x + _tensor[4] * _v.y + _tensor[5] * _v.z,
+        _tensor[6] * _v.x + _tensor[7] * _v.y + _tensor[8] * _v.z
     };
 }
 
-float PhysicSystem::ComputeAngularEffectiveMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const XMFLOAT3& _inertiaInverse) const
+float PhysicSystem::ComputeAngularMassTerm(const XMFLOAT3& _r, const XMFLOAT3& _axis, const float _tensor[9]) const
 {
-    XMFLOAT3 rxn = Cross(_r, _axis);
-    XMFLOAT3 i_rxn = ApplyInertiaInverse(rxn, _inertiaInverse);
-    XMFLOAT3 crossTerm = Cross(i_rxn, _r);
-    return Dot(crossTerm, _axis);
+    const XMFLOAT3 crossValue = Cross(_r, _axis);
+    return Dot(Cross(ApplyInertiaInverse(crossValue, _tensor), _r), _axis);
 }
 
-XMFLOAT3 PhysicSystem::GetCenter(EntityId _e) const
+MotionComponent& PhysicSystem::GetMotion(EntityId _entity)
 {
-    TransformComponent& transform = world->GetComponent<TransformComponent>(_e);
-    return transform.local.GetPosition();
+    if (world->HasComponent<MotionComponent>(_entity))
+        return world->GetComponent<MotionComponent>(_entity);
+
+    m_nullMotion = MotionComponent{};
+    m_nullMotion.isSleeping = true;
+    return m_nullMotion;
 }
 
-XMFLOAT3 PhysicSystem::GetVelocityAtPoint(const PhysicComponent& _physic, EntityId _e, const XMFLOAT3& _point) const
+RigidBodyComponent* PhysicSystem::GetRigidBody(EntityId _entity)
 {
-    XMFLOAT3 center = GetCenter(_e);
-    XMFLOAT3 r = Subtract(_point, center);
-    XMFLOAT3 angularContribution = Cross(_physic.angularVelocity, r);
-    return Add(_physic.velocity, angularContribution);
+    if (!world->HasComponent<RigidBodyComponent>(_entity))
+        return nullptr;
+
+    return &world->GetComponent<RigidBodyComponent>(_entity);
 }
 
-bool PhysicSystem::isStableSupport(const PhysicComponent& _physic)
+XMFLOAT3 PhysicSystem::GetBodyCenter(EntityId _entity) const
 {
-    if (_physic.type == BodyType::Static) return true;
-    if (_physic.isSleeping) return true;
-    if (_physic.hasSupportContact == false) return false;
+    if (world->HasComponent<ColliderComponent>(_entity))
+        return world->GetComponent<ColliderComponent>(_entity).worldCenter;
 
-    return false;
+    return world->GetComponent<TransformComponent>(_entity).world.GetPosition();
 }
 
-void PhysicSystem::WakeBodiesFromContact(PhysicComponent& _physicA, PhysicComponent& _physicB, Contact& _contact)
+float PhysicSystem::GetMaxPenetration(const ContactInfo& _contact) const
 {
-    // Gestion support
-    if (_contact.normal.y < -0.5f)
-    {
-        _physicA.hasSupportContact = true;
-        _physicA.supportNormal = Inverse(_contact.normal);
-    }
+    float maxPenetration = 0.0f;
+    for (int i = 0; i < _contact.pointCount; ++i)
+        maxPenetration = Max(maxPenetration, _contact.points[i].penetration);
 
-    if (_contact.normal.y > 0.5f)
-    {
-        _physicB.hasSupportContact = true;
-        _physicB.supportNormal = _contact.normal;
-    }
-
-    // Réveil uniquement sur impact significatif
-    XMFLOAT3 relativeVelocity = Subtract(_physicB.velocity, _physicA.velocity);
-    float velocityNormal = Dot(relativeVelocity, _contact.normal);
-
-    // si velocityNormal < 0 -> ils se rapprochent
-    float wakeImpactThreshold = 0.3f;
-
-    if (velocityNormal < -wakeImpactThreshold)
-    {
-        _physicA.WakeUp();
-        _physicB.WakeUp();
-    }
+    return maxPenetration;
 }
