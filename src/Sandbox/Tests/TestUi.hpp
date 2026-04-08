@@ -12,10 +12,10 @@ public:
     {
         void Update(float _dt) override
         {
-            if (HasComponent<UiImageComponent>() == false)
+            if (HasComponent<UiButtonComponent>() == false)
                 return;
             
-            UiImageComponent& t = GetComponent<UiImageComponent>();
+            UiButtonComponent& t = GetComponent<UiButtonComponent>();
 
             if (InputManager::IsKey(Z))
                 t.transform.Move(XMFLOAT2(0.0f, 100.0f * _dt));
@@ -43,6 +43,7 @@ public:
         bool isHost = args.find("--host") != String::npos;
 
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
+        Device* pDevice = EngineManager::GetDevice();
         ComponentRegistry::RegisterScript<TestScript>();
         
         RessourceManager::AddGeometry("Cube", GeometryFactory::BuildCube(EngineManager::GetDevice()));
@@ -52,19 +53,29 @@ public:
         
         RessourceManager::AddCamera("Default");
         
-        RessourceManager::AddSprite("Square", SpriteFactory::BuildRectangle(EngineManager::GetDevice(), 30, 30));
+        RessourceManager::AddSprite("Square", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 30, 30, 5));
         uint32 uiShaderId = RessourceManager::AddUiShader("UiDefault", ShaderFactory::CreateUIBasic(EngineManager::GetDevice()));
+
+        Texture* splashscreen = pDevice->CreateTexture(RES("/Textures/Splashscreen.dds"));
+        RessourceManager::AddTexture("Splashscreen", splashscreen);
         UiMaterial* uiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
         RessourceManager::AddUiMaterial("UiDefault", uiMaterial);
+        uiMaterial->SetTexture("Image", RessourceManager::GetTexture("Splashscreen"));
+
+        UiMaterial* uiMaterial2 = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+        RessourceManager::AddUiMaterial("UiRed", uiMaterial2);
+        uiMaterial2->SetFloat4("Color", {1.0f, 0.0f, 0.0f, 1.0f});
 
         EngineManager::GetInstance().HostServer();
     
         Scene* scene = SceneManager::SetCurrentScene("Default");
         
         EntityId e = scene->world->CreateEntity();
-        UiImageComponent& img = scene->world->AddComponent<UiImageComponent>(e);
-        img.materialId = RessourceManager::GetUiMaterialId("UiDefault");
-        img.spriteId = RessourceManager::GetSpriteId("Square");
+        UiButtonComponent& b = scene->world->AddComponent<UiButtonComponent>(e);
+        b.spriteId = RessourceManager::GetSpriteId("Square");
+        b.states[UiButtonComponent::ButtonStateType::IDLE].materialId = RessourceManager::GetUiMaterialId("UiDefault");
+        b.states[UiButtonComponent::ButtonStateType::HOVERED].materialId = RessourceManager::GetUiMaterialId("UiRed");
+        
         scene->world->AddScript<TestScript>(e);
         
         EntityId e1 = scene->world->CreateEntity();

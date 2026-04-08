@@ -23,6 +23,7 @@
 #include "Components/NetworkComponent.hpp"
 #include "Components/OwnerComponent.hpp"
 #include "Components/UiImageComponent.hpp"
+#include "Components/UiButtonComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"
@@ -32,5 +33,6 @@
 #include "Systems/LightSystem.h"
 #include "Systems/ReceiveSystem.h"
 #include "Systems/SendSystem.h"
+#include "Systems/ButtonSystem.h"
 
 #endif
