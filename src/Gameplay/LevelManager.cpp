@@ -9,6 +9,7 @@ int   LevelManager::m_levelNb = 0;
 int   LevelManager::m_nbPlayer = 0;
 float LevelManager::m_lightPosXStart = 0.0f;
 float LevelManager::m_lightTravelDistance = 0.0f;
+bool  LevelManager::m_levelLoaded = false;
 
 void LevelManager::Init(int _nbPlayer)
 {
@@ -22,7 +23,7 @@ void LevelManager::Init(int _nbPlayer)
 }
 
 void LevelManager::LoadLevel()
-{
+{ 
 	m_levelNb++;
 	m_levelSize = 21 + ((m_levelNb - 1) * 2 * m_nbPlayer);
 
@@ -48,6 +49,7 @@ void LevelManager::ReloadLevel()
 	m_lightTravelDistance = m_levelSize * m_cellSize + 10.0f;
 
 	ReloadLabyrinthe(m_levelSize, m_levelSize);
+	LabyrintheManager::SetLevelNb(m_levelNb);
 	std::cout << "Level " << m_levelNb << " loaded with " << m_nbPlayer << " player(s) " << "LevelSize " << m_levelSize << std::endl;
 }
 
@@ -91,4 +93,9 @@ void LevelManager::ResetGas()
 void LevelManager::SetPlayer(int playerIndex, EntityId playerEntity)
 {
 	LabyrintheManager::SetPlayer(playerIndex, playerEntity);
+}
+
+bool LevelManager::LevelLoaded()
+{
+	return m_levelLoaded;
 }

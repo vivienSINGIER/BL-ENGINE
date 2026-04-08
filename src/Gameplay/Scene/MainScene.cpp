@@ -5,6 +5,10 @@
 #include "../Gameplay/GlowStick.h"
 #include "../Gameplay/GameManager.h"
 #include "../Gameplay/Script/Magu.h"
+#include "../Gameplay/Script/CamPitchScript.h"
+#include "../Gameplay/Script/FoodStorageScript.h"
+#include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/GasManager.h"
 
 void MainScene::OnInit()
 {
@@ -21,20 +25,36 @@ void MainScene::OnInit()
 	ComponentRegistry::RegisterScript<Movement::ScriptMovement>();
 	ComponentRegistry::RegisterScript<GlowStick>();
     ComponentRegistry::RegisterScript<Magu>();
+	ComponentRegistry::RegisterScript<CamPitchScript>();
+	ComponentRegistry::RegisterScript<FoodStorageScript>();
 
-	m_camera = world->CreateEntity();
-	TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
-	t.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
-	t.world.LookTo(XMFLOAT3(-1.0f,-1.0f,-1.0f));
-	CameraComponent& cam = world->AddComponent<CameraComponent>(m_camera);
-	cam.camId = RessourceManager::GetCameraId("Default");
-	cam.isMainCamera = true;
-	world->AddScript<Movement::ScriptMovement>(m_camera);
-	PhysicComponent& phys = world->AddComponent<PhysicComponent>(m_camera);
-	ColliderComponent& col = world->AddComponent<ColliderComponent>(m_camera);
-	phys.SetMass(1.0f);
-	phys.ToggleGravity();
-	m_player[0] = m_camera;
+	ComponentRegistry::RegisterComponent<ItemCollectableComponent>();
+	ComponentRegistry::RegisterComponent<PlayerHealthComponent>();
+
+	m_playerCube = world->CreateEntity();
+	m_player[0] = m_playerCube;
+	TransformComponent& pt = world->AddComponent<TransformComponent>(m_playerCube);
+	pt.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
+	pt.world.LookTo(XMFLOAT3(-1.0f, -1.0f, -1.0f));
+	ColliderComponent& col = world->AddComponent<ColliderComponent>(m_playerCube);
+	RigidBodyComponent& rbP = world->AddComponent<RigidBodyComponent>(m_playerCube);
+	rbP.SetMass(1000.0f);
+	rbP.allowRotation = false;
+	rbP.useGravity = true;
+	MotionComponent& motion = world->AddComponent<MotionComponent>(m_playerCube);
+	world->AddScript<Movement::ScriptMovement>(m_playerCube);
+	PlayerHealthComponent& health = world->AddComponent<PlayerHealthComponent>(m_playerCube);
+	health.maxHealth = 100.0f;
+	health.Reset();
+
+    m_camera = world->CreateEntity();
+    TransformComponent& t = world->AddComponent<TransformComponent>(m_camera);
+    t.local.SetPosition(XMFLOAT3(0.0f, 0.5f, 0.0f));
+    CameraComponent& cam = world->AddComponent<CameraComponent>(m_camera);
+    cam.camId = RessourceManager::GetCameraId("Default");
+    cam.isMainCamera = true;
+	t.SetParent(m_playerCube);
+	world->AddScript<CamPitchScript>(m_camera);
 
 	m_light = world->CreateEntity();
 	TransformComponent& lt = world->AddComponent<TransformComponent>(m_light);
@@ -49,9 +69,17 @@ void MainScene::OnInit()
 
 void MainScene::OnUpdate(float _dt)
 {
+    if(m_skipNextFrame)
+    {
+        m_skipNextFrame = false;
+		std::cout << "Skipping frame to avoid input issues after level reload." << std::endl;
+        return;
+	}
+
     TransformComponent& camT = world->GetComponent<TransformComponent>(m_camera);
     TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
 	LightComponent& l = world->GetComponent<LightComponent>(m_light);
+
 
 	if(InputManager::IsKeyDown(H))
 	{
@@ -61,6 +89,7 @@ void MainScene::OnUpdate(float _dt)
     {
         GameManager::CollectFood();
     }
+
 
     if (m_started == true)
     {
@@ -120,6 +149,28 @@ void MainScene::OnUpdate(float _dt)
                 LevelManager::OpenRandomDoor();
             }
 
+			GasManager::Update(_dt, m_timer, m_nightDuration, this, m_player, 1);
+
+            if (world->HasComponent<PlayerHealthComponent>(m_playerCube))
+            {
+                PlayerHealthComponent& hp = world->GetComponent<PlayerHealthComponent>(m_playerCube);
+                if (hp.isDead)
+                {
+                    std::cout << "You died! Restarting level..." << std::endl;
+                    hp.Reset();
+                    GameManager::Reset();
+                    LevelManager::ResetGas();
+                    LevelManager::ReloadLevel();
+					m_skipNextFrame = true;
+                    world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+                    m_timer = 0.0f;
+                    m_isDay = true;
+                    m_isNight = false;
+                    m_gasStarted = false;
+                    return;
+                }
+            }
+
             if (m_timer >= m_nightDuration)
             {
                 
@@ -139,12 +190,13 @@ void MainScene::OnUpdate(float _dt)
                     std::cout << "You lost! Restarting level..." << std::endl;
 					GameManager::Reset();
                     LevelManager::ReloadLevel();
-                    world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
+                    m_skipNextFrame = true;
+                    world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
                     return;
                 }
 
                 LevelManager::LoadLevel();
-				world->GetScript<Movement::ScriptMovement>(m_camera).Reload();
+				world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
             }
         }
     }
@@ -154,7 +206,9 @@ void MainScene::OnStart()
 {
 	LevelManager::Init(1);
 	GameManager::Init(1);
-    LevelManager::SetPlayer(0, m_camera);
+    LevelManager::SetPlayer(0, m_playerCube);
+
+	m_skipNextFrame = true;
 }
 
 void MainScene::OnEnd()

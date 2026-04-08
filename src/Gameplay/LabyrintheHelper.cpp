@@ -86,6 +86,8 @@ void LabyrintheHelper::Lobby(Vector<Vector<char>>& _grid, int _xMin, int _xMax, 
     _grid[_xMax][(_yMin + _yMax) / 2] = 'D'; // bas
     _grid[(_xMin + _xMax) / 2][_yMin] = 'D'; // gauche
     _grid[(_xMin + _xMax) / 2][_yMax] = 'D'; // droite
+
+	_grid[(_xMin + _xMax) / 2][(_yMin + _yMax) / 2] = 'F'; 
 }
 
 void LabyrintheHelper::BetweenDivisionH(Vector<Vector<char>>& _grid, int _x, int _y, int _width)
@@ -150,6 +152,7 @@ void LabyrintheHelper::printGrid(Vector<Vector<char>>& _grid)
             else if (c == '?') std::cout << "??"; // visible !
             else if (c == 'D') std::cout << "DD";
             else if (c == 'I') std::cout << "II";
+			else if (c == 'F') std::cout << "FF";
             else               std::cout << "  ";
         }
         std::cout << '\n';

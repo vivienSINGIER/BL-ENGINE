@@ -110,6 +110,7 @@ public:
     static void HideMouseCursor(uint32 _clientId = 0);
     static bool IsMouseCursorVisible(uint32 _clientId = 0);
 
+    static bool IsCursorLocked();
 
 private:
     static UnorderedMap<UINT8, INT32> s_keyboardMap;
@@ -125,6 +126,8 @@ private:
     inline static HWND s_pHWND = nullptr;
     
     static void RegisterClient(uint32 _clientId);
+
+    static bool m_locked;
 };
 
 

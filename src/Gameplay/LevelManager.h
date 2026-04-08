@@ -21,6 +21,8 @@ public:
 	static void ResetGas();
 	static void SetPlayer(int playerIndex, EntityId playerEntity);
 
+	static bool LevelLoaded();
+
 private:
 	static float m_cellSize;
 	static Scene* m_scene;
@@ -29,7 +31,7 @@ private:
 	static int m_nbPlayer;
 	static float m_lightPosXStart;
 	static float m_lightTravelDistance;
-
+	static bool m_levelLoaded;
 };
 
 #endif // !LEVEL_MANAGER_H_DEFINED

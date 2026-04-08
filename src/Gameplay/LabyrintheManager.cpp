@@ -4,6 +4,8 @@
 #include <iostream>
 #include "../Gameplay/Script/Magu.h"
 #include "GlowStickManager.h"
+#include "../Gameplay/Script/FoodStorageScript.h"
+#include "../Gameplay/GasManager.h"
 
 float LabyrintheManager::m_cellSize = 0;
 Scene* LabyrintheManager::m_scene = nullptr;
@@ -113,6 +115,9 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
                 mr.materialId = RessourceManager::GetMaterialId("WallMaterial");
                 tWall.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
                 tWall.local.SetScale(XMFLOAT3((float)lenX * m_cellSize, wallHeight, (float)lenY * m_cellSize));
+				ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(e);
+				RigidBodyComponent& rbW = m_scene->world->AddComponent<RigidBodyComponent>(e);
+				rbW.SetStatic();
             }
 
             if (_grid[x][y] == 'D')
@@ -129,10 +134,25 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
                 float cy = y * m_cellSize - offsetY * m_cellSize;
                 tDoor.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
                 ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(doorEntity);
-                PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(doorEntity);
-                phys.SetStatic();
+				RigidBodyComponent& rbD = m_scene->world->AddComponent<RigidBodyComponent>(doorEntity);
+				rbD.SetStatic();
                 doorCount++;
+                OpenDoor(doorCount - 1);
             }
+            if(_grid[x][y] == 'F')
+            {
+				EntityId foodStorage = m_scene->world->CreateEntity();
+				m_Entities.push_back(foodStorage);
+				TransformComponent& tFood = m_scene->world->AddComponent<TransformComponent>(foodStorage);
+				MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(foodStorage);
+				mr.geoId = RessourceManager::GetGeometryId("Cube");
+				mr.materialId = RessourceManager::GetMaterialId("DoorMaterial");
+				tFood.local.SetPosition(XMFLOAT3(x* m_cellSize - offsetX * m_cellSize, 0.0f, y* m_cellSize - offsetY * m_cellSize));
+				ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(foodStorage);
+				col.SetBox(0.5f, 0.5f, 0.5f);
+				col.isTrigger = true;
+				m_scene->world->AddScript<FoodStorageScript>(foodStorage);
+			}
         }
     }
 
@@ -142,11 +162,15 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
     MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(ground);
     mr.geoId = RessourceManager::GetGeometryId("Cube");
     mr.materialId = RessourceManager::GetMaterialId("GroundMaterial");
-    tGround.local.SetPosition(XMFLOAT3(0.0f, -0.5f, 0.0f));
-    tGround.local.SetScale(XMFLOAT3(gridW * m_cellSize, 1.0f, gridH * m_cellSize));
+    tGround.local.SetPosition(XMFLOAT3(0.0f, -1.0f, 0.0f));
+    tGround.local.SetScale(XMFLOAT3(gridW * m_cellSize, 2.0f, gridH * m_cellSize));
     ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(ground);
-    PhysicComponent& phys = m_scene->world->AddComponent<PhysicComponent>(ground);
-    phys.SetStatic();
+    col.SetBox(0.5f, 0.5f, 0.5f);
+	RigidBodyComponent& rbG = m_scene->world->AddComponent<RigidBodyComponent>(ground);
+	rbG.SetStatic();
+	rbG.dynamicFriction = 18.0f;
+	rbG.staticFriction = 20.0f;
+
 }
 
 void LabyrintheManager::Init(int _cellSize, Scene* _scene, int _nbPlayer)
@@ -229,6 +253,8 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
 
     LabyrintheHelper::bfs_check(grid);
     LabyrintheHelper::printGrid(grid);
+
+	GasManager::SetGasWalls(m_gasWallStartX, m_gasWallTargetX);
 }
 
 void LabyrintheManager::DestroyLabyrinthe()

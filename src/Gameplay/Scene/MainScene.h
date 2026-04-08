@@ -3,6 +3,8 @@
 
 #include "../Engine/Engine.h"
 
+struct ItemCollectableComponent {};
+
 class MainScene : public Scene
 {
 public:
@@ -14,9 +16,12 @@ public:
 
 private:
 	EntityId m_camera;
+	EntityId m_playerCube;
 	EntityId m_test;
 	EntityId m_laby;
 	EntityId m_light;
+
+	float m_pitch;
 
 	EntityId m_player[4];
 
@@ -40,6 +45,7 @@ private:
 
 	int m_levelSize;
 
+	bool m_skipNextFrame = false;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED

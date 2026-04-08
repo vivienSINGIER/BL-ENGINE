@@ -42,8 +42,6 @@ struct IScript
     virtual void OnCollision(EntityId _otherId) {}
     virtual void OnTrigger(EntityId _otherId) {}
 
-    // TODO Add OnCollide & OnTrigger methods
-
     virtual ~IScript() = default;
 
     template<typename T> T&     AddComponent();
