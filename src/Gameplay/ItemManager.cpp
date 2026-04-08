@@ -16,23 +16,25 @@ void ItemManager::InitItemDefs()
 {
     m_ItemDefs =
     {
-        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 10 , true},
-        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f , 1.0f, 1.0f, 1.0f , 0 , false}
+        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 0.70f, 0.0f, true },
+        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 0.00f, 1.0f , false}
     };
 }
 
 ItemType ItemManager::PickRandomType()
 {
-    int total = 0;
+    float total = 0.0f;
     for (auto& d : m_ItemDefs)
-        total += d.weight;
+        total += d.bonusWeight;
 
-    int roll = rand() % total;
+    if (total <= 0.0f)
+        return m_ItemDefs[0].type;
 
-    int cumul = 0;
+    float roll = (rand() / (float)RAND_MAX) * total;
+    float cumul = 0.0f;
     for (auto& d : m_ItemDefs)
     {
-        cumul += d.weight;
+        cumul += d.bonusWeight;
         if (roll < cumul)
             return d.type;
     }
@@ -62,8 +64,11 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
 	MotionComponent& motion = m_scene->world->AddComponent<MotionComponent>(e);
     t.local.SetPosition(XMFLOAT3(_x, _y + data->offsetY, _z));
     t.local.SetScale(XMFLOAT3(data->scaleX, data->scaleY, data->scaleZ));
-    if(data->collectible == true)
-        ItemCollectableComponent& collectable = m_scene->world->AddComponent<ItemCollectableComponent>(e);
+    ItemCollectableComponent& collectable = m_scene->world->AddComponent<ItemCollectableComponent>(e);
+    if(data->isFood)
+		m_scene->world->AddComponent<ItemFoodComponent>(e);
+    if(data->type == ItemType::Medic)
+		m_scene->world->AddComponent<ItemMedicComponent>(e);
 
     return e;
 }
@@ -81,28 +86,37 @@ void ItemManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin,
     std::vector<std::pair<int, int>> emptyCells;
     for (int x = 0; x < (int)_grid.size(); x++)
         for (int y = 0; y < (int)_grid[0].size(); y++)
-            if (_grid[x][y] == ' ' && !(x >= _xMin && x <= _xMax && y >= _yMin && y <= _yMax))
+            if (_grid[x][y] == ' ' &&
+                !(x >= _xMin && x <= _xMax && y >= _yMin && y <= _yMax))
                 emptyCells.push_back({ x, y });
 
-    for (int i = emptyCells.size() - 1; i > 0; i--)
+    for (int i = (int)emptyCells.size() - 1; i > 0; i--)
         std::swap(emptyCells[i], emptyCells[rand() % (i + 1)]);
 
-    float offsetX = _grid.size() * 0.5f * _cellSize - _cellSize / 2;
-    float offsetY = _grid[0].size() * 0.5f * _cellSize - _cellSize / 2;
-
-    int placed = 0;
-    for (const auto& cell : emptyCells)
+    std::vector<ItemType> toSpawn;
+    for (auto& d : m_ItemDefs)
     {
-        if (placed >= _count) break;
+        int guaranteed = (int)(_count * d.guaranteedPercent);
+        for (int i = 0; i < guaranteed; i++)
+            toSpawn.push_back(d.type);
+    }
 
-        ItemType type = PickRandomType();
+    int remaining = _count - (int)toSpawn.size();
+    for (int i = 0; i < remaining; i++)
+        toSpawn.push_back(PickRandomType());
 
-        float wx = cell.first * _cellSize - offsetX;
-        float wz = cell.second * _cellSize - offsetY;
-        SpawnItem(type, wx, 0.0f, wz);
+    for (int i = (int)toSpawn.size() - 1; i > 0; i--)
+        std::swap(toSpawn[i], toSpawn[rand() % (i + 1)]);
 
-        _grid[cell.first][cell.second] = 'I';
-        placed++;
+    float offsetX = _grid.size() * 0.5f * _cellSize - _cellSize / 2.0f;
+    float offsetY = _grid[0].size() * 0.5f * _cellSize - _cellSize / 2.0f;
+
+    for (int placed = 0; placed < (int)toSpawn.size() && placed < (int)emptyCells.size(); placed++)
+    {
+        float wx = emptyCells[placed].first * _cellSize - offsetX;
+        float wz = emptyCells[placed].second * _cellSize - offsetY;
+        SpawnItem(toSpawn[placed], wx, 0.0f, wz);
+        _grid[emptyCells[placed].first][emptyCells[placed].second] = 'I';
     }
 }
 

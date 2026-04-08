@@ -4,6 +4,8 @@
 #include "../Engine/Engine.h"
 
 struct ItemCollectableComponent {};
+struct ItemFoodComponent {};
+struct ItemMedicComponent {};
 
 class MainScene : public Scene
 {

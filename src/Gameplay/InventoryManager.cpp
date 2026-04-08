@@ -29,6 +29,8 @@ void InventoryManager::RemoveItem(EntityId _item)
 		if (m_itemId[i] == _item)
 		{
 			m_itemId[i] = 0;
+			if(m_selectedItem == _item)
+				m_selectedItem = 0;
 			return;
 		}
 	}
@@ -77,33 +79,32 @@ void InventoryManager::Update(float dt)
 
 void InventoryManager::ThrowSelectedItem(float _strength)
 {
-	Scene* scene = SceneManager::GetCurrentScene();
-	float throwSpeed = _strength;
-	if (m_selectedItem != 0)
-	{
-		RemoveItem(m_selectedItem);
-		TransformComponent& t = scene->world->GetComponent<TransformComponent>(m_selectedItem);
-		TransformComponent& playerT = scene->world->GetComponent<TransformComponent>(m_ownerId);
-		RigidBodyComponent& rb = scene->world->GetComponent<RigidBodyComponent>(m_selectedItem);
-		MotionComponent& motion = scene->world->GetComponent<MotionComponent>(m_selectedItem);
+    Scene* scene = SceneManager::GetCurrentScene();
+    if (m_selectedItem == 0) return;
 
-		XMFLOAT3 forward = playerT.world.GetForward();
-		XMFLOAT3 pos = playerT.world.GetPosition();
-		pos.x += forward.x * 2.0f;
-		pos.y += forward.y * 2.0f;
-		pos.z += forward.z * 2.0f;
-		t.RemoveParent();
-		t.local.SetPosition(pos);
-		rb.useGravity = true;
+    EntityId itemToThrow = m_selectedItem;
+    RemoveItem(itemToThrow);
 
-		motion.linearVelocity = { 0.0f, 0.0f, 0.0f };
-		motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
-		motion.force = { 0.0f, 0.0f, 0.0f };
-		motion.torque = { 0.0f, 0.0f, 0.0f };
-		motion.isSleeping = false;
-		motion.sleepTimer = 0.0f;
+    TransformComponent& t = scene->world->GetComponent<TransformComponent>(itemToThrow);
+    TransformComponent& playerT = scene->world->GetComponent<TransformComponent>(m_ownerId);
+    RigidBodyComponent& rb = scene->world->GetComponent<RigidBodyComponent>(itemToThrow);
+    MotionComponent& motion = scene->world->GetComponent<MotionComponent>(itemToThrow);
 
-		motion.AddLinearImpulse(XMFLOAT3(forward.x * throwSpeed , forward.y * throwSpeed, forward.z * throwSpeed));
-		m_selectedItem = 0;
-	}
+    XMFLOAT3 forward = playerT.world.GetForward();
+    XMFLOAT3 pos = playerT.world.GetPosition();
+    pos.x += forward.x * 2.0f;
+    pos.y += forward.y * 2.0f;
+    pos.z += forward.z * 2.0f;
+    t.RemoveParent();
+    t.local.SetPosition(pos);
+    rb.useGravity = true;
+
+    motion.linearVelocity = { 0.0f, 0.0f, 0.0f };
+    motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
+    motion.force = { 0.0f, 0.0f, 0.0f };
+    motion.torque = { 0.0f, 0.0f, 0.0f };
+    motion.isSleeping = false;
+    motion.sleepTimer = 0.0f;
+
+    motion.AddLinearImpulse(XMFLOAT3(forward.x * _strength, forward.y * _strength, forward.z * _strength));
 }

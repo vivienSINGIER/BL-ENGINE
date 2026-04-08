@@ -15,9 +15,10 @@ struct ItemData
     std::string geometryName;
     std::string materialName;
     float scaleX, scaleY, scaleZ;
-    float offsetY; // hauteur au sol
-	int weight; // poids de l'item pour le spawn
-	bool collectible;
+    float offsetY;
+    float guaranteedPercent;
+    float bonusWeight;
+	bool isFood;
 };
 
 class ItemManager

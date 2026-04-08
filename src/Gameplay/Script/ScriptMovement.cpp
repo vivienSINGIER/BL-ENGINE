@@ -2,6 +2,7 @@
 #include "../Gameplay/GlowStick.h"
 #include "../Gameplay/Scene/MainScene.h"
 #include "../Gameplay/InventoryManager.h"
+#include "../Gameplay/Script/PlayerHealth.hpp"
 
 void Movement::ScriptMovement::Awake()
 {
@@ -100,6 +101,26 @@ void Movement::ScriptMovement::Update(float dt)
 	if (InputManager::IsKeyDown(_3))
 	{
 		m_itemInHand = InventoryManager::TakeItem(2);
+	}
+	if (InputManager::IsKeyDown(E))
+	{
+		if(m_itemInHand != 0)
+		{
+			if (SceneManager::GetSceneWithId(sceneId)->world->HasComponent<ItemMedicComponent>(m_itemInHand))
+			{
+				PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
+				hp.Heal(30.0f);
+				SceneManager::GetSceneWithId(sceneId)->world->DestroyEntity(m_itemInHand);
+				InventoryManager::RemoveItem(m_itemInHand);
+				m_itemInHand = 0;
+			}
+		}
+	}
+
+	if(InputManager::IsKeyDown(R))
+	{
+		PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
+		hp.TakeDamage(30.0f);
 	}
 
 	if(m_itemInHand != 0 && InputManager::IsMouseButtonPressed(InputMouse::LEFT_MOUSE))

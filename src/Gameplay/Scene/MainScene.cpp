@@ -32,6 +32,8 @@ void MainScene::OnInit()
 
 	ComponentRegistry::RegisterComponent<ItemCollectableComponent>();
 	ComponentRegistry::RegisterComponent<PlayerHealthComponent>();
+	ComponentRegistry::RegisterComponent<ItemFoodComponent>();
+	ComponentRegistry::RegisterComponent<ItemMedicComponent>();
 
 	m_playerCube = world->CreateEntity();
 	m_player[0] = m_playerCube;
