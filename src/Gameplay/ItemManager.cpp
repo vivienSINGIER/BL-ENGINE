@@ -15,8 +15,8 @@ void ItemManager::InitItemDefs()
 {
     m_ItemDefs =
     {
-        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 5 , true},
-        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f , 1.0f, 1.0f, 1.0f , 5 , false}
+        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 10 , true},
+        { ItemType::Medic, "Medic", "MedicMaterial", 1.0f , 1.0f, 1.0f, 1.0f , 0 , false}
     };
 }
 

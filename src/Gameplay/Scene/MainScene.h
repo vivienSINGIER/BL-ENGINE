@@ -45,6 +45,7 @@ private:
 
 	int m_levelSize;
 
+	bool m_skipNextFrame = false;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED

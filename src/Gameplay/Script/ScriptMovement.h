@@ -17,6 +17,10 @@ public:
 		float m_pitch;
 		bool m_cursorLocked;
 		EntityId m_glowStick[3];
+		EntityId m_itemInHand = 0;
+		float m_throwStrength = 10.0f;
+		bool m_isGrounded = false;
+		bool m_jumpConsumed = false;
 	};
 };
 

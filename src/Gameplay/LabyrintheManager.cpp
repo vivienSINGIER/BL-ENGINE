@@ -4,6 +4,8 @@
 #include <iostream>
 #include "../Gameplay/Script/Magu.h"
 #include "GlowStickManager.h"
+#include "../Gameplay/Script/FoodStorageScript.h"
+#include "../Gameplay/GasManager.h"
 
 float LabyrintheManager::m_cellSize = 0;
 Scene* LabyrintheManager::m_scene = nullptr;
@@ -135,8 +137,22 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
 				RigidBodyComponent& rbD = m_scene->world->AddComponent<RigidBodyComponent>(doorEntity);
 				rbD.SetStatic();
                 doorCount++;
-				OpenDoor(doorCount - 1);
+                OpenDoor(doorCount - 1);
             }
+            if(_grid[x][y] == 'F')
+            {
+				EntityId foodStorage = m_scene->world->CreateEntity();
+				m_Entities.push_back(foodStorage);
+				TransformComponent& tFood = m_scene->world->AddComponent<TransformComponent>(foodStorage);
+				MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(foodStorage);
+				mr.geoId = RessourceManager::GetGeometryId("Cube");
+				mr.materialId = RessourceManager::GetMaterialId("DoorMaterial");
+				tFood.local.SetPosition(XMFLOAT3(x* m_cellSize - offsetX * m_cellSize, 0.0f, y* m_cellSize - offsetY * m_cellSize));
+				ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(foodStorage);
+				col.SetBox(0.5f, 0.5f, 0.5f);
+				col.isTrigger = true;
+				m_scene->world->AddScript<FoodStorageScript>(foodStorage);
+			}
         }
     }
 
@@ -238,6 +254,7 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
     LabyrintheHelper::bfs_check(grid);
     LabyrintheHelper::printGrid(grid);
 
+	GasManager::SetGasWalls(m_gasWallStartX, m_gasWallTargetX);
 }
 
 void LabyrintheManager::DestroyLabyrinthe()

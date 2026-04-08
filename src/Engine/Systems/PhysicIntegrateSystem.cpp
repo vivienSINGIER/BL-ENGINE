@@ -174,7 +174,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     // F_drag = -dragCoefficient * |v| * v
     if (_rigid.dragCoefficient > 0.0f)
     {
-		float speed = NormSquared(_motion.linearVelocity);
+		float speed = sqrt(NormSquared(_motion.linearVelocity));
 
         if (speed > 0.1f)
         {

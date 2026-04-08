@@ -1,9 +1,11 @@
 #include "CamPitchScript.h"
+#include "../Gameplay/InventoryManager.h"
 
 void CamPitchScript::Awake()
 {
 	m_pitch = 0.0f;
 	m_cursorLocked = InputManager::IsMouseCursorLocked();
+	InventoryManager::Init(entity);
 }
 
 void CamPitchScript::Update(float dt)
