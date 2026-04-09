@@ -110,6 +110,22 @@ RenderFont* RessourceManager::GetFont(String _name)
     return s_pInstance->m_vFonts[s_pInstance->m_mFontIds[_name]];
 }
 
+uint32 RessourceManager::AddText(String _name, Text* _pText)
+{
+    assert(s_pInstance->m_mTextIds.contains(_name) == false && "Text already exists");
+    
+    s_pInstance->m_vTexts.push_back(_pText);
+    s_pInstance->m_mTextIds[_name] = s_pInstance->m_vTexts.size() - 1;
+    return s_pInstance->m_mTextIds[_name];
+}
+
+Text* RessourceManager::GetText(String _name)
+{
+    if (s_pInstance->m_mTextIds.contains(_name) == false) return nullptr;
+
+    return s_pInstance->m_vTexts[s_pInstance->m_mTextIds[_name]];
+}
+
 uint32 RessourceManager::AddTexture(String _name, Texture* _pTexture)
 {
     assert(s_pInstance->m_mTextureIds.contains(_name) == false && "Texture already exists");

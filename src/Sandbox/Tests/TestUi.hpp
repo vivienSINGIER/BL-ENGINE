@@ -12,10 +12,10 @@ public:
     {
         void Update(float _dt) override
         {
-            if (HasComponent<UiButtonComponent>() == false)
+            if (HasComponent<TextComponent>() == false)
                 return;
             
-            UiButtonComponent& t = GetComponent<UiButtonComponent>();
+            TextComponent& t = GetComponent<TextComponent>();
 
             if (InputManager::IsKey(Z))
                 t.transform.Move(XMFLOAT2(0.0f, 100.0f * _dt));
@@ -69,21 +69,20 @@ public:
         UiMaterial* uiMaterial3 = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
         RessourceManager::AddUiMaterial("UiGreen", uiMaterial3);
         uiMaterial3->SetFloat4("Color", {0.0f, 1.0f, 0.0f, 1.0f});
+        
+        RenderFont* font = pDevice->CreateRenderFont(RES("/Font/Valentine.ttf"), 150.0f);
+        RessourceManager::AddFont("Valentine", font);
+        Text* text = pDevice->CreateText(font);
+        text->SetString("Test");
+        RessourceManager::AddText("Label", text);
 
         EngineManager::GetInstance().HostServer();
     
         Scene* scene = SceneManager::SetCurrentScene("Default");
         
         EntityId e = scene->world->CreateEntity();
-        UiButtonComponent& b = scene->world->AddComponent<UiButtonComponent>(e);
-        b.spriteId = RessourceManager::GetSpriteId("Square");
-        b.states[UiButtonComponent::ButtonStateType::IDLE].materialId = RessourceManager::GetUiMaterialId("UiDefault");
-        
-        b.states[UiButtonComponent::ButtonStateType::HOVERED].materialId = RessourceManager::GetUiMaterialId("UiRed");
-        b.states[UiButtonComponent::ButtonStateType::HOVERED].stateScale = XMFLOAT2(1.1f, 1.1f);
-        
-        b.states[UiButtonComponent::ButtonStateType::PRESSED].materialId = RessourceManager::GetUiMaterialId("UiGreen");
-        b.states[UiButtonComponent::ButtonStateType::PRESSED].statePos = XMFLOAT2(0.0f, -10.0f);
+        TextComponent& t = scene->world->AddComponent<TextComponent>(e);
+        t.textId = RessourceManager::GetTextId("Label");
         
         scene->world->AddScript<TestScript>(e);
         

@@ -10,6 +10,8 @@ public:
 	RessourceManager();
 	~RessourceManager();
 
+	// TODO RAW DATA STORAGE
+	
 	static uint32 AddGeometry(String _name, Geometry* _pGeo);
 	static uint32 GetGeometryId(String _name) { return s_pInstance->m_mGeometryIds[_name]; };
 	static Geometry* GetGeometry(String _name);
@@ -44,6 +46,11 @@ public:
 	static uint32 GetFontId(String _name) { return s_pInstance->m_mFontIds[_name]; };
 	static RenderFont* GetFont(String _name);
 	static RenderFont* GetFont(uint32 _id) { return s_pInstance->m_vFonts[_id]; }
+	
+	static uint32 AddText(String _name, Text* _pText);
+	static uint32 GetTextId(String _name) { return s_pInstance->m_mTextIds[_name]; };
+	static Text* GetText(String _name);
+	static Text* GetText(uint32 _id) { return s_pInstance->m_vTexts[_id]; }
 
 	static uint32 AddTexture(String _name, Texture* _pTexture);
 	static uint32 GetTextureId(String _name) { return s_pInstance->m_mTextureIds[_name]; };
@@ -65,6 +72,7 @@ private:
 	Vector<Material*> m_vMaterials;
 	Vector<UiMaterial*> m_vUiMaterials;
 	Vector<RenderFont*> m_vFonts;
+	Vector<Text*> m_vTexts;
 	Vector<Texture*> m_vTextures;
 	Vector<Camera*> m_vCameras;
 	
@@ -75,6 +83,7 @@ private:
 	UnorderedMap<String, uint32> m_mMaterialIds;
 	UnorderedMap<String, uint32> m_mUiMaterialIds;
 	UnorderedMap<String, uint32> m_mFontIds;
+	UnorderedMap<String, uint32> m_mTextIds;
 	UnorderedMap<String, uint32> m_mTextureIds;
 	UnorderedMap<String, uint32> m_mCameraIds;
 };
