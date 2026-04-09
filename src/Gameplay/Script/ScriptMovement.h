@@ -12,6 +12,8 @@ public:
 		void Update(float dt) override;
 		void OnCollision(EntityId _otherId) override;
 		void Reload();
+
+		EntityId GetHealthText() const { return m_healthText; }
 	private:
 		float m_yaw;
 		float m_pitch;
@@ -21,6 +23,8 @@ public:
 		float m_throwStrength = 10.0f;
 		bool m_isGrounded = false;
 		bool m_jumpConsumed = false;
+
+		EntityId m_healthText;
 	};
 };
 

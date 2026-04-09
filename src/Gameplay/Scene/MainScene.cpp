@@ -7,7 +7,7 @@
 #include "../Gameplay/Script/Magu.h"
 #include "../Gameplay/Script/CamPitchScript.h"
 #include "../Gameplay/Script/FoodStorageScript.h"
-#include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/PlayerHealth.hpp"
 #include "../Gameplay/GasManager.h"
 #include "../Gameplay/InventoryManager.h"
 #include "../Gameplay/ItemManager.h"
@@ -123,6 +123,8 @@ void MainScene::OnUpdate(float _dt)
 
     if (m_started == true)
     {
+        EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+        world->SetActive(healthText);
         if (m_isDay == true)
         {
 			world->SetInactive(m_nightText);
@@ -157,7 +159,6 @@ void MainScene::OnUpdate(float _dt)
 				LevelManager::OpenDoor(i);
             
 			lt.local.SetPosition(XMFLOAT3(m_lightPos.x, m_lightPos.y, 0.0f));
-
 
             if(m_timer >= m_dayDuration)
             {
@@ -217,6 +218,8 @@ void MainScene::OnUpdate(float _dt)
                     m_isDay = true;
                     m_isNight = false;
                     m_gasStarted = false;
+                    EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+                    world->SetInactive(healthText);
                     return;
                 }
             }
@@ -246,6 +249,8 @@ void MainScene::OnUpdate(float _dt)
                     world->SetActive(m_splashScreen);
                     m_skipNextFrame = true;
                     world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+                    EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+                    world->SetInactive(healthText);
                     return;
                 }
 
@@ -347,13 +352,17 @@ void MainScene::LoadRessources()
 	text2->SetString("NightText");
 	RessourceManager::AddText("NightLabel", text2);
 
+	Text* text3 = EngineManager::GetDevice()->CreateText(font);
+	text3->SetString("HealthText");
+	RessourceManager::AddText("HealthLabel", text3);
+
     RessourceManager::AddSprite("Sprite", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 100, 100, 5));
 
     Texture* waterBottleTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/waterbottleui.dds");
     RessourceManager::AddTexture("WaterBottleUI", waterBottleTextureUi);
     UiMaterial* wateruiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
     RessourceManager::AddUiMaterial("WaterBottleUiMat", wateruiMaterial);
-    uiMaterial->SetTexture("Image", RessourceManager::GetTexture("WaterBottleUI"));
+    wateruiMaterial->SetTexture("Image", RessourceManager::GetTexture("WaterBottleUI"));
 
     Texture* medicTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/medicui.dds");
     RessourceManager::AddTexture("MedicUi", medicTextureUi);

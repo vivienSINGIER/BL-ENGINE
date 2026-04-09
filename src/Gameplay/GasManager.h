@@ -2,7 +2,7 @@
 #define GAS_MANAGER_H_DEFINED
 
 #include "../Engine/Engine.h"
-#include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/PlayerHealth.hpp"
 
 class GasManager
 {

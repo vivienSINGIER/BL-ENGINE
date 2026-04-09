@@ -32,5 +32,6 @@ struct PlayerHealthComponent
     }
 
     float GetPercent() const { return health / maxHealth; }
+    int GetHealth() const { return static_cast<int>(health); }
 };
 #endif // !PLAYER_HEALTH_HPP_DEFINED
