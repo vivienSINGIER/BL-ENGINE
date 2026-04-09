@@ -31,6 +31,10 @@ private:
 	EntityId m_laby;
 	EntityId m_light;
 
+	EntityId m_splashScreen;
+	EntityId m_dayText;
+	EntityId m_nightText;
+
 	float m_pitch;
 
 	EntityId m_player[4];
@@ -46,7 +50,9 @@ private:
 	bool m_gasStarted;
 	float m_timer;
 	float m_dayDuration;
+	float m_dayDecrement;
 	float m_nightDuration;
+	float m_nightDecrement;
 	XMFLOAT3 m_dayColorStart;
 	
 	bool m_started;
@@ -57,6 +63,8 @@ private:
 	int m_levelSize;
 
 	bool m_skipNextFrame = false;
+	float m_reloadTimer = 0.0f;
+	float m_reloadDelay = 2.0f;
 };
 
 #endif // !MAIN_SCENE_H_DEFINED

@@ -1,5 +1,6 @@
 #include "InventoryManager.h"
 #include "../Gameplay/LevelManager.h"
+#include "../Gameplay/UiInventory.h"
 
 EntityId InventoryManager::m_itemId[3] = { 0, 0, 0 };
 EntityId InventoryManager::m_selectedItem = 0;
@@ -8,14 +9,17 @@ EntityId InventoryManager::m_ownerId = 0;
 void InventoryManager::Init(EntityId _ownerId)
 {
 	m_ownerId = _ownerId;
+	UiInventory::Init(SceneManager::GetSceneWithName("MainScene"));
 }
 
 void InventoryManager::AddItem(EntityId _item)
 {
+	ItemCollectableComponent& itemComp = SceneManager::GetCurrentScene()->world->GetComponent<ItemCollectableComponent>(_item);
 	for (int i = 0; i < 3; i++)
 	{
 		if (m_itemId[i] == 0)
 		{
+			UiInventory::AddItemToInventory(i, itemComp.type);
 			m_itemId[i] = _item;
 			return;
 		}
@@ -28,6 +32,7 @@ void InventoryManager::RemoveItem(EntityId _item)
 	{
 		if (m_itemId[i] == _item)
 		{
+			UiInventory::RemoveItemFromInventory(i);
 			m_itemId[i] = 0;
 			if(m_selectedItem == _item)
 				m_selectedItem = 0;

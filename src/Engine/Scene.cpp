@@ -25,9 +25,8 @@ void Scene::Init(String const& _name, uint32 _id)
 
 void Scene::Update(float _dt)
 {
-    world->Update(_dt);
-
     OnUpdate(_dt);
+    world->Update(_dt);
 }
 
 #endif

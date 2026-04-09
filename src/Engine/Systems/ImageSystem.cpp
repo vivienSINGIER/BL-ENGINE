@@ -3,6 +3,11 @@
 #include "EngineManager.h"
 #include "RessourceManager.h"
 
+void ImageSystem::OnStartUpdate(float _dt)
+{
+    int o = 0;
+}
+
 void ImageSystem::OnUpdate(float _dt, EntityId _e, UiImageComponent& _image)
 {
     Sprite* sp = RessourceManager::GetSprite(_image.spriteId);
