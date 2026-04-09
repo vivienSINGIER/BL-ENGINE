@@ -3,9 +3,17 @@
 
 #include "../Engine/Engine.h"
 
-struct ItemCollectableComponent {};
-struct ItemFoodComponent {};
-struct ItemMedicComponent {};
+enum class ItemType
+{
+	Food,
+	Medic,
+	Other
+};
+
+struct ItemCollectableComponent 
+{
+	ItemType type;
+};
 
 class MainScene : public Scene
 {

@@ -1,5 +1,4 @@
 #include "ItemManager.h"
-#include "../Gameplay/Scene/MainScene.h"
 #include "../Gameplay/InventoryManager.h"
 
 Scene* ItemManager::m_scene = nullptr;
@@ -16,7 +15,7 @@ void ItemManager::InitItemDefs()
 {
     m_ItemDefs =
     {
-        { ItemType::WaterBottle, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 0.70f, 0.0f, true },
+        { ItemType::Food, "WaterBottle", "WaterBottleMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 0.70f, 0.0f, true },
         { ItemType::Medic, "Medic", "MedicMaterial", 1.0f, 1.0f, 1.0f, 1.0f, 0.00f, 1.0f , false}
     };
 }
@@ -66,9 +65,9 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
     t.local.SetScale(XMFLOAT3(data->scaleX, data->scaleY, data->scaleZ));
     ItemCollectableComponent& collectable = m_scene->world->AddComponent<ItemCollectableComponent>(e);
     if(data->isFood)
-		m_scene->world->AddComponent<ItemFoodComponent>(e);
+		collectable.type = ItemType::Food;
     if(data->type == ItemType::Medic)
-		m_scene->world->AddComponent<ItemMedicComponent>(e);
+		collectable.type = ItemType::Medic;
 
     return e;
 }

@@ -32,8 +32,6 @@ void MainScene::OnInit()
 
 	ComponentRegistry::RegisterComponent<ItemCollectableComponent>();
 	ComponentRegistry::RegisterComponent<PlayerHealthComponent>();
-	ComponentRegistry::RegisterComponent<ItemFoodComponent>();
-	ComponentRegistry::RegisterComponent<ItemMedicComponent>();
 
 	m_playerCube = world->CreateEntity();
 	m_player[0] = m_playerCube;
@@ -213,8 +211,8 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-	LevelManager::Init(1);
-	GameManager::Init(1);
+	LevelManager::Init(4);
+	GameManager::Init(4);
     LevelManager::SetPlayer(0, m_playerCube);
 
 	m_skipNextFrame = true;

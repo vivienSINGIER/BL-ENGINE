@@ -2,12 +2,7 @@
 #define ITEM_MANAGER_H_DEFINED
 
 #include "../Engine/Engine.h"
-
-enum class ItemType
-{
-    WaterBottle,
-    Medic
-};
+#include "../Gameplay/Scene/MainScene.h"
 
 struct ItemData
 {

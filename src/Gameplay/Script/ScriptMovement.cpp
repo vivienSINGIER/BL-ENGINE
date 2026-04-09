@@ -107,7 +107,8 @@ void Movement::ScriptMovement::Update(float dt)
 	{
 		if(m_itemInHand != 0)
 		{
-			if (SceneManager::GetSceneWithId(sceneId)->world->HasComponent<ItemMedicComponent>(m_itemInHand))
+			ItemCollectableComponent& item = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<ItemCollectableComponent>(m_itemInHand);
+			if (item.type == ItemType::Medic)
 			{
 				PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
 				hp.Heal(30.0f);
