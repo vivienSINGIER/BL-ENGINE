@@ -66,7 +66,7 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
         TransformComponent& tGas = m_scene->world->AddComponent<TransformComponent>(gasWall);
         MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(gasWall);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
-        mr.materialId = RessourceManager::GetMaterialId("DoorMaterial");
+        mr.materialId = RessourceManager::GetMaterialId("GasMaterial");
         tGas.local.SetPosition(startPos[i]);
         tGas.local.SetScale(gasScale[i]);
         m_scene->world->SetInactive(gasWall);
@@ -248,7 +248,7 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
 
     LabyrintheHelper::Lobby(grid, rxMin, rxMax, ryMin, ryMax);
     Laby3d(grid);
-	ItemManager::SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
+	ItemManager::SpawnItems(grid, 15, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
 	SpawnMagu(1 + m_levelNb / 2);
 
     LabyrintheHelper::bfs_check(grid);
@@ -338,6 +338,23 @@ void LabyrintheManager::SpawnMagu(int _count)
         m_Entities.push_back(e);
         m_scene->world->AddScript<Magu>(e).SetSizeLabyrinthe(m_labySize);
     }
+}
+
+void LabyrintheManager::UnregisterEntity(EntityId* _entity, int _count)
+{
+    for(int i = 0; i < _count; i++)
+    {
+		if (_entity[i] == 0) continue;
+
+        for(int j = 0; j < (int)m_Entities.size(); j++)
+        {
+            if (m_Entities[j] == _entity[i])
+            {
+                m_Entities.erase(m_Entities.begin() + j);
+                break;
+            }
+		}
+	}
 }
 
 void LabyrintheManager::SetPlayer(int playerIndex, EntityId playerEntity)

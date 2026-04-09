@@ -2,12 +2,7 @@
 #define ITEM_MANAGER_H_DEFINED
 
 #include "../Engine/Engine.h"
-
-enum class ItemType
-{
-    WaterBottle,
-    Medic
-};
+#include "../Gameplay/Scene/MainScene.h"
 
 struct ItemData
 {
@@ -15,9 +10,10 @@ struct ItemData
     std::string geometryName;
     std::string materialName;
     float scaleX, scaleY, scaleZ;
-    float offsetY; // hauteur au sol
-	int weight; // poids de l'item pour le spawn
-	bool collectible;
+    float offsetY;
+    float guaranteedPercent;
+    float bonusWeight;
+	bool isFood;
 };
 
 class ItemManager
@@ -29,6 +25,8 @@ public:
 
 	static ItemType PickRandomType();
     static EntityId SpawnItem(ItemType _type, float _x, float _y, float _z);
+
+    static void RegisterItem(EntityId _item);
 
 private:
     static Scene* m_scene;

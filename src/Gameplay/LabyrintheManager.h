@@ -27,6 +27,8 @@ public:
 
 	static void SetLevel(int _levelNb) { m_levelNb = _levelNb; }
 
+	static void UnregisterEntity(EntityId* _entity, int _count);
+
 private:
 	static float m_cellSize;
 	static float m_labySize;

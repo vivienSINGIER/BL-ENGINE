@@ -3,7 +3,17 @@
 
 #include "../Engine/Engine.h"
 
-struct ItemCollectableComponent {};
+enum class ItemType
+{
+	Food,
+	Medic,
+	Other
+};
+
+struct ItemCollectableComponent 
+{
+	ItemType type;
+};
 
 class MainScene : public Scene
 {
@@ -42,7 +52,8 @@ private:
 	bool m_started;
 	
 	void SetStarted(bool _started) { m_started = _started; }
-
+	void PreserveInventory();
+	void ReRegisterInventoryItem();
 	int m_levelSize;
 
 	bool m_skipNextFrame = false;

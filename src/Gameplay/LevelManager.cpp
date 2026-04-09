@@ -99,3 +99,9 @@ bool LevelManager::LevelLoaded()
 {
 	return m_levelLoaded;
 }
+
+void LevelManager::UnregisterEntity(EntityId* _entity, int _count)
+{
+	LabyrintheManager::UnregisterEntity(_entity, _count);
+}
+

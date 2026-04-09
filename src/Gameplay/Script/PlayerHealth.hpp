@@ -11,6 +11,7 @@ struct PlayerHealthComponent
     {
         if (isDead) return;
         health -= _dmg;
+		std::cout << "Player took " << _dmg << " damage, health is now " << health << std::endl;
         if (health <= 0.0f)
         {
             health = 0.0f;
@@ -23,6 +24,7 @@ struct PlayerHealthComponent
         if (isDead) return;
         health += _amount;
         if (health > maxHealth) health = maxHealth;
+		std::cout << "Player healed " << _amount << ", health is now " << health << std::endl;
     }
 
     void Reset()

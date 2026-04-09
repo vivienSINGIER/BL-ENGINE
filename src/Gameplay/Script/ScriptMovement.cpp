@@ -2,6 +2,8 @@
 #include "../Gameplay/GlowStick.h"
 #include "../Gameplay/Scene/MainScene.h"
 #include "../Gameplay/InventoryManager.h"
+#include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/GameManager.h"
 
 void Movement::ScriptMovement::Awake()
 {
@@ -101,6 +103,21 @@ void Movement::ScriptMovement::Update(float dt)
 	{
 		m_itemInHand = InventoryManager::TakeItem(2);
 	}
+	if (InputManager::IsKeyDown(E))
+	{
+		if(m_itemInHand != 0)
+		{
+			ItemCollectableComponent& item = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<ItemCollectableComponent>(m_itemInHand);
+			if (item.type == ItemType::Medic)
+			{
+				PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
+				hp.Heal(30.0f);
+				SceneManager::GetSceneWithId(sceneId)->world->DestroyEntity(m_itemInHand);
+				InventoryManager::RemoveItem(m_itemInHand);
+				m_itemInHand = 0;
+			}
+		}
+	}
 
 	if(m_itemInHand != 0 && InputManager::IsMouseButtonPressed(InputMouse::LEFT_MOUSE))
 	{
@@ -140,7 +157,8 @@ void Movement::ScriptMovement::Reload()
 	m_pitch = 0.0f;
 	t.local.SetPosition(XMFLOAT3(0.0f, 1.0f, 0.0f));
 	t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
-
+	m_itemInHand = 0;
+	
 	for (int i = 0; i < 3; i++)
 	{
 		SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_glowStick[i]);
