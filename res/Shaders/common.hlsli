@@ -56,3 +56,14 @@ cbuffer cbPerPassData : register(b2)
     float2 gRenderTargetSize;
     float2 gInvRenderTargetSize;
 };
+
+void DecomposeScale(in float4x4 m, out float3 scale)
+{
+    float sx = length(float3(m[0][0], m[0][1], m[0][2]));
+    float sy = length(float3(m[1][0], m[1][1], m[1][2]));
+    float sz = length(float3(m[2][0], m[2][1], m[2][2]));
+
+    scale.x = sx;
+    scale.y = sy;
+    scale.z = sz;
+}

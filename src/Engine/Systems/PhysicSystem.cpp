@@ -162,9 +162,9 @@ void PhysicSystem::SolveNormalImpulses(
 
         const XMFLOAT3 impulse = Mul(_contact.normal, appliedImpulse);
 
-        const bool supportLikeContact =
+        bool supportLikeContact =
             fabsf(_contact.normal.y) > 0.9f &&
-            (_rigidA.type == BodyType::Static || _rigidB.type == BodyType::Static);
+            (_rigidA.type == BodyType::Static || _rigidB.type == BodyType::Static); 
 
         _motionA.linearVelocity = Add(_motionA.linearVelocity, Mul(impulse, _rigidA.massInverse));
         _motionB.linearVelocity = Subtract(_motionB.linearVelocity, Mul(impulse, _rigidB.massInverse));

@@ -2,7 +2,7 @@
 #include "../Gameplay/GlowStick.h"
 #include "../Gameplay/Scene/MainScene.h"
 #include "../Gameplay/InventoryManager.h"
-#include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/PlayerHealth.hpp"
 #include "../Gameplay/GameManager.h"
 
 void Movement::ScriptMovement::Awake()
@@ -18,6 +18,12 @@ void Movement::ScriptMovement::Awake()
 		m_glowStick[i] = SceneManager::GetSceneWithId(sceneId)->world->CreateEntity();
 		SceneManager::GetSceneWithId(sceneId)->world->AddScript<GlowStick>(m_glowStick[i]);
 	}
+
+	m_healthText = SceneManager::GetSceneWithId(sceneId)->world->CreateEntity();
+	TextComponent& healthText = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<TextComponent>(m_healthText);
+	healthText.textId = RessourceManager::GetTextId("HealthLabel");
+	healthText.transform.SetPosition(XMFLOAT2(-900.0f, 350.0f));
+	SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_healthText);
 }
 
 void Movement::ScriptMovement::Update(float dt)
@@ -26,6 +32,11 @@ void Movement::ScriptMovement::Update(float dt)
 	m_cursorLocked = InputManager::IsMouseCursorLocked();
 	TransformComponent& t = GetComponent<TransformComponent>();
 	MotionComponent& motion = GetComponent<MotionComponent>();
+
+	PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
+	std::string hpText = std::to_string((int)hp.GetHealth());
+	TextComponent& healthText = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<TextComponent>(m_healthText);
+	healthText.SetText(hpText);
 
 	float mouseSensitivity = 0.005f;
 	XMFLOAT2 mouseDelta = InputManager::GetMouseDelta();

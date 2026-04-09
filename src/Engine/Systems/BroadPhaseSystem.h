@@ -70,6 +70,7 @@ public:
     void OnEntityDestroyed(EntityId _e);
 
     const Vector<CandidatePair>& GetCandidatePairs() const { return m_candidatePairs; }
+    void ClearAll();
 
 private:
     // AABB
