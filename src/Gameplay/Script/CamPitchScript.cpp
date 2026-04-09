@@ -12,7 +12,7 @@ void CamPitchScript::Update(float dt)
 {
 	m_cursorLocked = InputManager::IsMouseCursorLocked();
 	TransformComponent& camT = GetComponent<TransformComponent>();
-	float mouseSensitivity = 0.01f;
+	float mouseSensitivity = 0.001f;
 	XMFLOAT2 mouseDelta = InputManager::GetMouseDelta();
 	m_pitch += mouseDelta.y * mouseSensitivity;
 

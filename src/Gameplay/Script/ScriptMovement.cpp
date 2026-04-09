@@ -38,13 +38,13 @@ void Movement::ScriptMovement::Update(float dt)
 	TextComponent& healthText = SceneManager::GetSceneWithId(sceneId)->world->GetComponent<TextComponent>(m_healthText);
 	healthText.SetText(hpText);
 
-	float mouseSensitivity = 0.005f;
+	float mouseSensitivity = 0.001f;
 	XMFLOAT2 mouseDelta = InputManager::GetMouseDelta();
 	m_yaw += mouseDelta.x * mouseSensitivity;
 	if (m_cursorLocked)
 		t.local.SetYPR(XMFLOAT3(m_yaw, m_pitch, 0.0f));
 
-	float moveSpeed = 30.0f;
+	float moveSpeed = 20.0f;
 	float maxHorizontalSpeed = 8.0f;
 
 	XMFLOAT3 forward = t.local.GetForward();
