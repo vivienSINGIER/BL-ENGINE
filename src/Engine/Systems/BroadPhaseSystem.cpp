@@ -181,6 +181,14 @@ bool BroadPhaseSystem::IsDynamicSource(EntityId _e) const
     return r.type == BodyType::Dynamic;
 }
 
+void BroadPhaseSystem::ClearAll()
+{
+    m_candidatePairs.clear();
+    m_entityStates.clear();
+    m_pairKeys.clear();
+    m_grid.Clear();
+}
+
 void BroadPhaseSystem::BuildCandidatePairs()
 {
     m_pairKeys.clear();

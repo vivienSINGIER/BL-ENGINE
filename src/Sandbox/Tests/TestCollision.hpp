@@ -56,7 +56,6 @@ public:
         TransformComponent& t = world->AddComponent<TransformComponent>(e);
         t.local.SetPosition(position);
         t.local.SetScale({ 1.0f, 1.0f, 1.0f });
-		t.local.AddYPR({ XM_PIDIV2, 0.0f, 0.0f });
 
         MeshRenderer& mr = world->AddComponent<MeshRenderer>(e);
         mr.geoId = RessourceManager::GetGeometryId("Cube");
@@ -70,7 +69,7 @@ public:
         r.SetMass(mass);
         r.type = BodyType::Dynamic;
         r.useGravity = true;
-        r.allowRotation = true;
+        r.allowRotation = false;
         SetupBoxInertia(r, halfExtents);
 
         // Motion
@@ -165,10 +164,13 @@ public:
 		uint32 otherMat = RessourceManager::GetMaterialId("Default");
 
         CreateStaticBox(world, { 0.0f, -2.0f, 0.0f }, { 10.0f, 1.0f, 10.0f }, { 0.5f, 0.5f, 0.5f });
-        CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 1.0f);
+
+        CreateStaticBox(world, { 3.0f, 0.0f, 0.0f }, { 5.0f, 3.0f, 5.0f }, { 0.5f, 0.5f, 0.5f });
+
+        //CreateDynamicBox(world, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 1.0f);
 
 		//CreateDynamicBox(world, { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, 1.0f);
-        EntityId box = CreateDynamicBox(world, { -2.0f, 2.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, { 2.0f, 0.0f, 0.0f }, 1.0f);
+        EntityId box = CreateDynamicBox(world, { -2.0f, -1.0f, -1.0f }, { 0.5f, 0.5f, 0.5f }, { 4.0f, 0.0f, 0.0f }, 1.0f);
 		RigidBodyComponent& rbBox = world->GetComponent<RigidBodyComponent>(box);
 
         // -----------------------------

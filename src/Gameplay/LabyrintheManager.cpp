@@ -113,7 +113,7 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
                 MeshRenderer& mr = m_scene->world->AddComponent<MeshRenderer>(e);
                 mr.geoId = RessourceManager::GetGeometryId("Cube");
                 mr.materialId = RessourceManager::GetMaterialId("WallMaterial");
-                tWall.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
+                tWall.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f - 2.0f, cy));
                 tWall.local.SetScale(XMFLOAT3((float)lenX * m_cellSize, wallHeight, (float)lenY * m_cellSize));
 				ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(e);
 				RigidBodyComponent& rbW = m_scene->world->AddComponent<RigidBodyComponent>(e);
@@ -265,6 +265,8 @@ void LabyrintheManager::DestroyLabyrinthe()
     for (EntityId e : m_Entities)
         m_scene->world->DestroyEntity(e);
     m_Entities.clear();
+
+    SystemScheduler::Get().GetSystem<BroadPhaseSystem>()->ClearAll();
 }
 
 void LabyrintheManager::ReloadDoor()
