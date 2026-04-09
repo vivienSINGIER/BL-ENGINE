@@ -54,7 +54,7 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
     mr.geoId = RessourceManager::GetGeometryId(data->geometryName);
     mr.materialId = RessourceManager::GetMaterialId(data->materialName);
     ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(e);
-	col.SetBox(0.3f, 0.3f, 0.3f);
+	col.SetBox(RessourceManager::GetGeometry(mr.geoId)->GetBounds());
 	RigidBodyComponent& rb = m_scene->world->AddComponent<RigidBodyComponent>(e);
 	rb.SetMass(1.0f);
 	rb.type = BodyType::Dynamic;
