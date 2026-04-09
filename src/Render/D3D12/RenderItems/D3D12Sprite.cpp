@@ -34,6 +34,8 @@ void D3D12Sprite::SetVertexData(const UiVertex* _data, uint64 _vertexCount)
     {
         m_vertexBufferDefault = new DefaultBuffer<UiVertex>(m_pContext, m_vertexCount, _data);       
     }
+
+    CalculateBounds(_data, _vertexCount);
 }
 
 void D3D12Sprite::SetIndexData(const uint32* _indices, uint64 _indexCount)

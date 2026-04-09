@@ -99,6 +99,7 @@ public:
     static void SetMouseButtonState(InputMouse _key, InputState _state, uint32 _clientId = 0);
     
     static XMINT2 GetMousePosition(uint32 _clientId = 0);
+    static XMINT2 GetCenteredMousePosition(uint32 _clientId = 0);
     static XMFLOAT2 GetMouseDelta(uint32 _clientId = 0);
     static void SetMousePosition(XMINT2 const& coordinates, uint32 _clientId = 0);
     
