@@ -4,6 +4,7 @@
 #include "InputManager.h"
 
 #include "EngineManager.h"
+#include "Generic/Base/Window.h"
 #include "Network/Client.h"
 #include "Network/Packet.hpp"
 
@@ -418,6 +419,19 @@ XMINT2 InputManager::GetMousePosition(uint32 _clientId)
     RegisterClient(_clientId);
     
     return { s_mouseDatas[_clientId].x, s_mouseDatas[_clientId].y };
+}
+
+XMINT2 InputManager::GetCenteredMousePosition(uint32 _clientId)
+{
+    XMINT2 mousePos = GetMousePosition(_clientId);
+
+    int width = EngineManager::GetWindow()->GetWidth();
+    int height = EngineManager::GetWindow()->GetHeight();
+
+    mousePos.x -= width / 2;
+    mousePos.y -= height / 2;
+
+    return mousePos;
 }
 
 XMFLOAT2 InputManager::GetMouseDelta(uint32 _clientId)

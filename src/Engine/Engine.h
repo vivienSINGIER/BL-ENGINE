@@ -22,6 +22,9 @@
 #include "Components/LightComponent.hpp"
 #include "Components/NetworkComponent.hpp"
 #include "Components/OwnerComponent.hpp"
+#include "Components/UiImageComponent.hpp"
+#include "Components/UiButtonComponent.hpp"
+#include "Components/TextComponent.hpp"
 
 // ------------ SYSTEMS -------------
 #include "Systems/MeshRendererSystem.h"
@@ -31,5 +34,7 @@
 #include "Systems/LightSystem.h"
 #include "Systems/ReceiveSystem.h"
 #include "Systems/SendSystem.h"
+#include "Systems/ButtonSystem.h"
+#include "Systems/TextSystem.h"
 
 #endif

@@ -10,14 +10,11 @@ void CameraSystem::OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, Tr
     if (cam == nullptr) return;
     
     Device* d = EngineManager::GetInstance().GetDevice();
-
-    if ((_transform.world.dirty & (uint8)DIRTY_FLAG::WORLD) == (uint8)DIRTY_FLAG::WORLD)
+    
+    cam->SetWorld(_transform.world.GetMatrix());
+    if (_camera.isMainCamera)
     {
-        cam->SetWorld(_transform.world.GetMatrix());
-        if (_camera.isMainCamera)
-        {
-            d->SetMainCamera(cam);
-            _transform.world.dirty &= ~(uint8)DIRTY_FLAG::WORLD;
-        }   
-    }
+        d->SetMainCamera(cam);
+        _transform.world.dirty &= ~(uint8)DIRTY_FLAG::WORLD;
+    }   
 }

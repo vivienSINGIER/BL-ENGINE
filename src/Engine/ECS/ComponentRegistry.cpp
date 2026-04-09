@@ -3,7 +3,6 @@
 
 #include "../define.h"
 #include "Script.h"
-#include "SystemScheduler.h"
 
 #include "../Components/TransformComponent.hpp"
 #include "../Components/MeshRenderer.hpp"
@@ -13,6 +12,9 @@
 #include "../Components/PhysicComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
 #include "../Components/OwnerComponent.hpp"
+#include "../Components/UiImageComponent.hpp"
+#include "../Components/UiButtonComponent.hpp"
+#include "../Components/TextComponent.hpp"
 
 void ComponentRegistry::Init()
 {
@@ -25,6 +27,9 @@ void ComponentRegistry::Init()
     RegisterComponent<NetworkComponent>();
     RegisterComponent<ScriptRegistry>();
     RegisterComponent<OwnerComponent>();
+    RegisterComponent<UiImageComponent>(true);
+    RegisterComponent<UiButtonComponent>(true);
+    RegisterComponent<TextComponent>(true);
 }
 
 IScript* ComponentRegistry::GetScript(ComponentId _id, EntityId _e, World&_w)
