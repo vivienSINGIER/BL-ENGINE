@@ -113,3 +113,12 @@ void InventoryManager::ThrowSelectedItem(float _strength)
 
     motion.AddLinearImpulse(XMFLOAT3(forward.x * _strength, forward.y * _strength, forward.z * _strength));
 }
+
+void InventoryManager::ResetInventory()
+{
+    m_itemId[0] = 0;
+    m_itemId[1] = 0;
+    m_itemId[2] = 0;
+    m_selectedItem = 0;
+	UiInventory::RemoveAllItems();
+}

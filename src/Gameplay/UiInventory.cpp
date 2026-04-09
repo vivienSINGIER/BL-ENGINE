@@ -11,7 +11,6 @@ void UiInventory::Init(Scene* _scene)
 	m_scene = _scene;
 }
 
-
 void UiInventory::AddItemToInventory(int _index, ItemType _type)
 {
 	if(_type == ItemType::Food)
@@ -23,6 +22,17 @@ void UiInventory::AddItemToInventory(int _index, ItemType _type)
 void UiInventory::RemoveItemFromInventory(int _index)
 {
 	m_scene->world->DestroyEntity(m_Item[_index]);
+	m_Item[_index] = 0;
+}
+
+void UiInventory::RemoveAllItems()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (m_Item[i] != 0)
+			m_scene->world->DestroyEntity(m_Item[i]);
+		m_Item[i] = 0;
+	}
 }
 
 void UiInventory::CreateBottle(int _index)

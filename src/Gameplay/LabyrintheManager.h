@@ -25,8 +25,6 @@ public:
 	static void SetPlayer(int playerIndex, EntityId playerEntity);
 	static void SpawnMagu(int _count);
 
-	static void SetLevel(int _levelNb) { m_levelNb = _levelNb; }
-
 	static void UnregisterEntity(EntityId* _entity, int _count);
 
 private:

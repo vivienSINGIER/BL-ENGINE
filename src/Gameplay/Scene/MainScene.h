@@ -33,6 +33,10 @@ private:
 
 	EntityId m_splashScreen;
 	EntityId m_crosshair;
+	EntityId m_waterBottle;
+
+	EntityId m_nbLevelText;
+	EntityId m_quotaText;
 	EntityId m_dayText;
 	EntityId m_nightText;
 

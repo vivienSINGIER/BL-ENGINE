@@ -40,6 +40,8 @@ void LevelManager::LoadLevel()
 
 void LevelManager::ReloadLevel()
 {
+	m_levelNb = 1;
+
 	m_levelSize = 21 + ((m_levelNb - 1) * 2 * m_nbPlayer);
 
 	if (m_levelSize > 51) m_levelSize = 51;

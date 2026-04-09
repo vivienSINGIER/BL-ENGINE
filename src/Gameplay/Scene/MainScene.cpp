@@ -82,6 +82,18 @@ void MainScene::OnInit()
 	crosshairUi.transform.SetPosition(XMFLOAT2(0.0f, 10.0f));
 	crosshairUi.transform.SetScale(XMFLOAT2(0.5f, 0.5f));
 	world->SetInactive(m_crosshair);
+	m_waterBottle = world->CreateEntity();
+	UiImageComponent& bottleImg = world->AddComponent<UiImageComponent>(m_waterBottle);
+	bottleImg.spriteId = RessourceManager::GetSpriteId("Sprite");
+	bottleImg.materialId = RessourceManager::GetUiMaterialId("WaterBottleUiMat");
+	bottleImg.transform.SetPosition(XMFLOAT2(800.0f, 450.0f));
+	world->SetInactive(m_waterBottle);
+
+	m_quotaText = world->CreateEntity();
+	TextComponent& quotaText = world->AddComponent<TextComponent>(m_quotaText);
+	quotaText.textId = RessourceManager::GetTextId("QuotaLabel");
+	world->SetInactive(m_quotaText);
+	quotaText.transform.SetPosition(XMFLOAT2(550.0f, -500.0f));
 
 	m_dayText = world->CreateEntity();
 	TextComponent& dayText = world->AddComponent<TextComponent>(m_dayText);
@@ -94,6 +106,13 @@ void MainScene::OnInit()
 	nightText.textId = RessourceManager::GetTextId("NightLabel");
 	world->SetInactive(m_nightText);
 	nightText.transform.SetPosition(XMFLOAT2(0.0f, -500.0f));
+
+	m_nbLevelText = world->CreateEntity();
+	TextComponent& nbLevelText = world->AddComponent<TextComponent>(m_nbLevelText);
+	nbLevelText.textId = RessourceManager::GetTextId("LevelLabel");
+	world->SetInactive(m_nbLevelText);
+	nbLevelText.transform.SetPosition(XMFLOAT2(-900.0f, -500.0f));
+
 }
 
 void MainScene::OnUpdate(float _dt)
@@ -122,10 +141,6 @@ void MainScene::OnUpdate(float _dt)
 	{
 		m_started = true;
 	}
-    if (InputManager::IsKeyDown(J))
-    {
-        GameManager::CollectFood();
-    }
 
     if (world->IsActive(m_splashScreen) == true) return;
 
@@ -138,14 +153,26 @@ void MainScene::OnUpdate(float _dt)
         {
 			world->SetInactive(m_nightText);
 			world->SetActive(m_dayText);
+			world->SetActive(m_waterBottle);
+			world->SetActive(m_quotaText);
+			world->SetActive(m_nbLevelText);
+
 			m_lightPosXStart = LevelManager::GetLightPosXStart();
 			m_lightTravelDistance = LevelManager::GetLightTravelDistance();
             l.SetStrength(1.0f);
+
             m_timer += _dt;
 			m_dayDecrement -= _dt;
             std::string dayTime = std::to_string((int)m_dayDecrement);
 			TextComponent& dayText = world->GetComponent<TextComponent>(m_dayText);
             dayText.SetText(dayTime);
+			TextComponent& quotaText = world->GetComponent<TextComponent>(m_quotaText);
+			int currentQuota = GameManager::GetCurrentQuota();
+			quotaText.SetText(std::to_string(currentQuota) + " / " + std::to_string(GameManager::GetQuota()));
+			TextComponent& nbLevelText = world->GetComponent<TextComponent>(m_nbLevelText);
+			int currentLevel = GameManager::GetCurrentLevel();
+			nbLevelText.SetText("Level /" + std::to_string(currentLevel));
+
 			float t = m_timer / m_dayDuration;
 
             m_lightPos.x = m_lightPosXStart + t * m_lightTravelDistance;
@@ -153,9 +180,8 @@ void MainScene::OnUpdate(float _dt)
 
             float yNormalized = m_lightPos.y / 36.0f;
 
-            // Couleurs
-            XMFLOAT3 sunsetColor = XMFLOAT3(1.0f, 0.5f, 0.2f);   // orange
-            XMFLOAT3 noonColor = XMFLOAT3(1.0f, 0.95f, 0.8f);  // jaune/blanc chaud
+            XMFLOAT3 sunsetColor = XMFLOAT3(1.0f, 0.5f, 0.2f);
+            XMFLOAT3 noonColor = XMFLOAT3(1.0f, 0.95f, 0.8f);
 
             l.SetColor(XMFLOAT4(
                 sunsetColor.x * (1.0f - yNormalized) + noonColor.x * yNormalized,
@@ -211,6 +237,9 @@ void MainScene::OnUpdate(float _dt)
                 if (hp.isDead)
                 {
                     world->SetInactive(m_nightText);
+                    world->SetInactive(m_waterBottle);
+                    world->SetInactive(m_quotaText);
+                    world->SetInactive(m_nbLevelText);
                     std::cout << "You died! Restarting level..." << std::endl;
                     hp.Reset();
                     InventoryManager::ResetInventory();
@@ -237,6 +266,9 @@ void MainScene::OnUpdate(float _dt)
             if (m_timer >= m_nightDuration)
             {
                 world->SetInactive(m_nightText);
+                world->SetInactive(m_waterBottle);
+                world->SetInactive(m_quotaText);
+                world->SetInactive(m_nbLevelText);
                 GameManager::TryValidateQuota(camT.local.GetPosition());
 
                 m_timer = 0.0f;
@@ -305,6 +337,10 @@ void MainScene::LoadRessources()
 	RessourceManager::AddGeometry("Medic", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/Medic.obj"));
 	RessourceManager::AddGeometry("GlowStick", GeometryFactory::LoadGeometry(EngineManager::GetDevice(), "../../res/Obj/GlowStick.obj"));
 
+    RessourceManager::AddSprite("Sprite", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 100, 100, 5));
+    RessourceManager::AddSprite("Square", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 1920, 1080, 5));
+    uint32 uiShaderId = RessourceManager::AddUiShader("UiDefault", ShaderFactory::CreateUIBasic(EngineManager::GetDevice()));
+
     Camera* camObj = RessourceManager::GetCamera("Default");
     camObj->nearPlane = 0.01f;
 
@@ -345,9 +381,6 @@ void MainScene::LoadRessources()
 	gasMat->SetTexture("Albedo", RessourceManager::GetTexture("Gas"));
 	RessourceManager::AddMaterial("GasMaterial", gasMat);
 
-    RessourceManager::AddSprite("Square", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 1920, 1080, 5));
-    uint32 uiShaderId = RessourceManager::AddUiShader("UiDefault", ShaderFactory::CreateUIBasic(EngineManager::GetDevice()));
-
     Texture* splashscreen = EngineManager::GetDevice()->CreateTexture(RES("/Textures/Splashscreen.dds"));
     RessourceManager::AddTexture("Splashscreen", splashscreen);
     UiMaterial* uiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
@@ -359,6 +392,13 @@ void MainScene::LoadRessources()
     Text* text = EngineManager::GetDevice()->CreateText(font);
     text->SetString("DayText");
     RessourceManager::AddText("DayLabel", text);
+	Text* textQuota = EngineManager::GetDevice()->CreateText(font);
+	textQuota->SetString("QuotaText");
+	RessourceManager::AddText("QuotaLabel", textQuota);
+	Text* textNbLevel = EngineManager::GetDevice()->CreateText(font);
+	textNbLevel->SetString("LevelText");
+	RessourceManager::AddText("LevelLabel", textNbLevel);
+
 
 	RenderFont* font2 = EngineManager::GetDevice()->CreateRenderFont(RES("/Font/west.ttf"), 100.0f);
 	RessourceManager::AddFont("West", font2);
@@ -369,8 +409,6 @@ void MainScene::LoadRessources()
 	Text* text3 = EngineManager::GetDevice()->CreateText(font);
 	text3->SetString("HealthText");
 	RessourceManager::AddText("HealthLabel", text3);
-
-    RessourceManager::AddSprite("Sprite", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 100, 100, 5));
 
     Texture* waterBottleTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/waterbottleui.dds");
     RessourceManager::AddTexture("WaterBottleUI", waterBottleTextureUi);
