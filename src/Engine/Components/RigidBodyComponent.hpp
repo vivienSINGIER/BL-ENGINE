@@ -28,7 +28,7 @@ struct RigidBodyComponent
     bool inertiaDirty = true;
 
     // Propriétés matériau 
-    float restitution     = 0.0f;   // 0 = parfaitement inélastique, 1 = parfaitement élastique
+    float restitution     = 0.4f;   // 0 = parfaitement inélastique, 1 = parfaitement élastique
     float staticFriction  = 0.1f;
     float dynamicFriction = 0.05f;
 
