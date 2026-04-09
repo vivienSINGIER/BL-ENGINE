@@ -11,7 +11,6 @@ void UiInventory::Init(Scene* _scene)
 	m_scene = _scene;
 }
 
-
 void UiInventory::AddItemToInventory(int _index, ItemType _type)
 {
 	if(_type == ItemType::Food)

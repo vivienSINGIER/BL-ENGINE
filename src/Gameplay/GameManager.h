@@ -24,6 +24,8 @@ public:
 	static int GetCollected() { return m_collected; }
 	static GameState GetGameState() { return m_gameState; }
 
+	static int GetCurrentLevel() { return m_currentLevel; }
+	static int GetCurrentQuota() { return m_collected; }
 private:
 	static int m_quota;
 	static int m_collected;

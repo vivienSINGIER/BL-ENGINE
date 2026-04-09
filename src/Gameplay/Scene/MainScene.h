@@ -32,6 +32,10 @@ private:
 	EntityId m_light;
 
 	EntityId m_splashScreen;
+	EntityId m_waterBottle;
+
+	EntityId m_nbLevelText;
+	EntityId m_quotaText;
 	EntityId m_dayText;
 	EntityId m_nightText;
 
