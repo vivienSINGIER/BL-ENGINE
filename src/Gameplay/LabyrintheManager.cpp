@@ -132,12 +132,11 @@ void LabyrintheManager::Laby3d(Vector<Vector<char>>& _grid)
                 tDoor.local.SetScale(XMFLOAT3(m_cellSize, wallHeight, m_cellSize));
                 float cx = x * m_cellSize - offsetX * m_cellSize;
                 float cy = y * m_cellSize - offsetY * m_cellSize;
-                tDoor.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5f, cy));
+                tDoor.local.SetPosition(XMFLOAT3(cx, wallHeight * 0.5 - 2.0f, cy));
                 ColliderComponent& col = m_scene->world->AddComponent<ColliderComponent>(doorEntity);
 				RigidBodyComponent& rbD = m_scene->world->AddComponent<RigidBodyComponent>(doorEntity);
 				rbD.SetStatic();
                 doorCount++;
-                OpenDoor(doorCount - 1);
             }
             if(_grid[x][y] == 'F')
             {

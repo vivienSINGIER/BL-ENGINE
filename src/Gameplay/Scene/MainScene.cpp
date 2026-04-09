@@ -14,8 +14,8 @@
 
 void MainScene::OnInit()
 {
-	m_dayDuration = 5.0f;
-	m_nightDuration = 5.0f;
+	m_dayDuration = 120.0f;
+	m_nightDuration = 60.0f;
 	m_opened = false;
 	m_started = false;
 	m_isDay = true;
@@ -141,6 +141,54 @@ void MainScene::OnUpdate(float _dt)
 	{
 		m_started = true;
 	}
+    if (InputManager::IsKeyDown(R))
+    {
+        GameManager::TryValidateQuota(camT.local.GetPosition());
+        GameManager::NextLevel();
+        world->SetInactive(m_waterBottle);
+        world->SetInactive(m_quotaText);
+        world->SetInactive(m_nbLevelText);
+        world->SetInactive(m_dayText);
+        if (GameManager::GetGameState() == GameState::LOSE)
+        {
+            std::cout << "You lost! Restarting level..." << std::endl;
+            InventoryManager::ResetInventory();
+            PreserveInventory();
+            GameManager::Reset();
+            LevelManager::ReloadLevel();
+            world->SetActive(m_splashScreen);
+            m_skipNextFrame = true;
+            m_timer = 0.0f;
+            m_nightDecrement = m_nightDuration + 1.0f;
+            m_dayDecrement = m_dayDuration + 1.0f;
+            m_isDay = true;
+            m_isNight = false;
+            m_gasStarted = false;
+            world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+            PlayerHealthComponent& hp = world->GetComponent<PlayerHealthComponent>(m_playerCube);
+            hp.Reset();
+            EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+            world->SetInactive(healthText);
+            world->SetInactive(m_crosshair);
+            return;
+        }
+
+        PreserveInventory();
+        LevelManager::LoadLevel();
+        world->SetActive(m_splashScreen);
+        m_skipNextFrame = true;
+        m_timer = 0.0f;
+        m_nightDecrement = m_nightDuration + 1.0f;
+        m_dayDecrement = m_dayDuration + 1.0f;
+        m_isDay = true;
+        m_isNight = false;
+        m_gasStarted = false;
+        ReRegisterInventoryItem();
+        world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+        EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+        world->SetInactive(healthText);
+        world->SetInactive(m_crosshair);
+    }
 
     if (world->IsActive(m_splashScreen) == true) return;
 
