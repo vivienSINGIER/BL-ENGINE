@@ -41,11 +41,31 @@ VertexOut VSMain(VertexIn input)
     
     float4 posW = mul(float4(input.PosL, 1.0f), gWorld);
     output.PosW = posW.xyz;
-    output.NormalW = mul(input.NormalL, (float3x3) gWorld);
-    output.TangentW = mul(input.TangentL, (float3x3) gWorld);
+    float3 n = mul(input.NormalL, (float3x3) gWorld);
+    output.NormalW = n;
+    float3 t = mul(input.TangentL, (float3x3) gWorld);
+    output.TangentW = t;
     output.PosH = mul(posW, gViewProj);
-    output.TexCoord = input.TexC;
+
+    //float3 B = cross(n, t);
+    //float3x3 TBN = float3x3(normalize(t), normalize(B), normalize(n));
+    
+    //float3 scl;
+    //DecomposeScale(gWorld, scl);
+    //float3x3 sclMat = float3x3(scl.x, 0, 0, 0, scl.y, 0, 0, 0, scl.z);
+        
+    //TBN = mul(TBN, sclMat);
+    
+    float3 u = mul(normalize(input.TangentL), (float3x3) gWorld);
+    
+    float3 v = mul(cross(normalize(input.TangentL), normalize(input.NormalL)), (float3x3) gWorld);
+    
+    
+    
+    output.TexCoord = input.TexC * float2(abs(length(u)), abs(length(v)));
     output.Color = input.Color;
+    
+    
     
     return output;
 }
