@@ -123,7 +123,7 @@ void Movement::ScriptMovement::Update(float dt)
 			{
 				PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
 				hp.Heal(30.0f);
-				SceneManager::GetSceneWithId(sceneId)->world->DestroyEntity(m_itemInHand);
+				SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_itemInHand);
 				InventoryManager::RemoveItem(m_itemInHand);
 				m_itemInHand = 0;
 			}

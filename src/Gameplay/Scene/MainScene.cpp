@@ -291,6 +291,8 @@ void MainScene::OnUpdate(float _dt)
                     world->SetActive(m_splashScreen);
                     m_skipNextFrame = true;
                     world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+                    PlayerHealthComponent& hp = world->GetComponent<PlayerHealthComponent>(m_playerCube);
+					hp.Reset();
                     EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
                     world->SetInactive(healthText);
                     world->SetInactive(m_crosshair);
