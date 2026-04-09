@@ -3,6 +3,7 @@
 #include "../ECS/World.h"
 #include <algorithm>
 #include <cfloat>
+#include <iostream>
 
 namespace
 {
@@ -23,6 +24,24 @@ namespace
 
     static constexpr float kEdgePreferenceEpsilon = 0.02f;
     static constexpr float kEdgeValidationTolerance = 0.1f;
+
+    static void DebugPrintContact(const ContactInfo& c)
+    {
+        std::cout << "---- CONTACT ----\n";
+        std::cout << "Hit: " << c.hit << "\n";
+        std::cout << "Normal: " << c.normal.x << ", " << c.normal.y << ", " << c.normal.z << "\n";
+        std::cout << "PointCount: " << c.pointCount << "\n";
+
+        for (int i = 0; i < c.pointCount; ++i)
+        {
+            const auto& p = c.points[i];
+            std::cout << "Point[" << i << "] Pos: "
+                << p.position.x << ", "
+                << p.position.y << ", "
+                << p.position.z
+                << " | Pen: " << p.penetration << "\n";
+        }
+    }
 
     inline bool NearlyEqual(const XMFLOAT3& a, const XMFLOAT3& b, float eps = kContactMergeEpsilon)
     {

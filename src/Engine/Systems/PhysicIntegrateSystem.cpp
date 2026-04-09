@@ -127,7 +127,7 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,
         0,     0,     0,     1
     );
 
-    XMVECTOR q = XMLoadFloat4(&_transform.local.GetRotation());
+    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
     XMMATRIX R = XMMatrixRotationQuaternion(q);
     XMMATRIX RT = XMMatrixTranspose(R);
 
@@ -221,9 +221,15 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
     _motion.angularVelocity.z *= damp;
 
     // Seuil numérique — évite la dérive flottante sur les corps quasi-immobiles.
-	float aSq = LengthSq(_motion.angularVelocity);
-    if (aSq < kMinAngularVelocitySq)
-        _motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
+    float maxAngularSpeed = 4.0f;
+    float aSq = LengthSq(_motion.angularVelocity);
+    if (aSq > maxAngularSpeed * maxAngularSpeed)
+    {
+        float invLen = 1.0f / sqrtf(aSq);
+        _motion.angularVelocity.x *= invLen * maxAngularSpeed;
+        _motion.angularVelocity.y *= invLen * maxAngularSpeed;
+        _motion.angularVelocity.z *= invLen * maxAngularSpeed;
+    }
 
     _motion.torque = { 0.0f, 0.0f, 0.0f };
 
@@ -237,9 +243,29 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
 
 void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
+    const float angleSq =
+        _deltaAngle.x * _deltaAngle.x +
+        _deltaAngle.y * _deltaAngle.y +
+        _deltaAngle.z * _deltaAngle.z;
+
+    if (angleSq <= 1e-12f)
+        return;
+
+    const float angle = sqrtf(angleSq);
+
+    XMFLOAT3 axis =
+    {
+        _deltaAngle.x / angle,
+        _deltaAngle.y / angle,
+        _deltaAngle.z / angle
+    };
+
     XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
-    XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
-    XMVECTOR qNew     = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
+    XMVECTOR qDelta = XMQuaternionRotationAxis(
+        XMVectorSet(axis.x, axis.y, axis.z, 0.0f),
+        angle);
+
+    XMVECTOR qNew = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
     XMFLOAT4 out;
     XMStoreFloat4(&out, qNew);
