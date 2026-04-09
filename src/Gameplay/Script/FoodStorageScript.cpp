@@ -6,7 +6,11 @@
 void FoodStorageScript::OnTrigger(EntityId _otherId)
 {
 	Scene* s = SceneManager::GetSceneWithId(sceneId);
-	if (s->world->HasComponent<ItemCollectableComponent>(_otherId) && s->world->HasComponent<ItemFoodComponent>(_otherId) && s->world->IsActive(_otherId))
+
+	if (s->world->HasComponent<ItemCollectableComponent>(_otherId) == false) return;
+
+	ItemCollectableComponent& item = s->world->GetComponent<ItemCollectableComponent>(_otherId);
+	if (s->world->HasComponent<ItemCollectableComponent>(_otherId) && item.type == ItemType::Food && s->world->IsActive(_otherId))
 	{
 		TransformComponent& otherT = s->world->GetComponent<TransformComponent>(_otherId);
 		InventoryManager::ThrowSelectedItem(0.0f);
