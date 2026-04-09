@@ -42,7 +42,7 @@ struct RigidBodyComponent
     // Modèle multiplicatif : 1 / (1 + damping * dt). Stable inconditionnellement.
     // 0 = aucun amortissement. Valeurs typiques : 0.05 – 0.3.
     float linearDamping  = 0.15f;
-    float angularDamping = 2.0f;
+    float angularDamping = 0.2f;
     float dragCoefficient = 0.1f;
 
     void SetMass(float _mass)
@@ -67,7 +67,6 @@ struct RigidBodyComponent
         inertiaDirty = true;
         ZeroTensors();
     }
-
 
     // Initialise un tenseur diagonal (cas box/sphère).
     void SetDiagonalInertiaTensor(float _ixx, float _iyy, float _izz)

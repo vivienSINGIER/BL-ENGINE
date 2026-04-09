@@ -27,7 +27,7 @@ void Movement::ScriptMovement::Update(float dt)
 	TransformComponent& t = GetComponent<TransformComponent>();
 	MotionComponent& motion = GetComponent<MotionComponent>();
 
-	float mouseSensitivity = 0.01f;
+	float mouseSensitivity = 0.005f;
 	XMFLOAT2 mouseDelta = InputManager::GetMouseDelta();
 	m_yaw += mouseDelta.x * mouseSensitivity;
 	if (m_cursorLocked)

@@ -22,8 +22,8 @@ struct SphereShape
 
 struct CapsuleShape
 {
-    float radius     = 0.5f;   
-    float halfHeight = 1.0f;   
+    float radius = 0.5f;
+    float halfHeight = 1.0f;
 };
 
 struct AABB
@@ -64,22 +64,23 @@ struct ColliderComponent
     } shape;
 
     // Offset du collider par rapport à l'origine du TransformComponent.
-    XMFLOAT3 localOffset   = { 0.0f, 0.0f, 0.0f };
-    XMFLOAT4 localRotation = { 0.0f, 0.0f, 0.0f, 1.0f };  // quaternion identité
+    XMFLOAT3 localOffset = { 0.0f, 0.0f, 0.0f };
+    XMFLOAT4 localRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
 
     // Flags
-    bool isTrigger = false; 
-    bool toHash = true; 
+    bool isTrigger = false;
 
-    // Cache monde (écrit exclusivement par BroadPhaseSystem)
     AABB     aabb;
     XMFLOAT3 worldCenter = { 0.0f, 0.0f, 0.0f };
     float    worldRadius = 0.0f;
 
+    XMFLOAT3 worldAxes[3] = { {1,0,0}, {0,1,0}, {0,0,1} };
+    XMFLOAT3 worldHalfExtents = { 0.5f, 0.5f, 0.5f };
+
     void SetBox(const XMFLOAT3& _halfExtents)
     {
-        type                   = ShapeType::Box;
-        shape.box.halfExtents  = _halfExtents;
+        type = ShapeType::Box;
+        shape.box.halfExtents = _halfExtents;
     }
 
     void SetBox(float _hx, float _hy, float _hz)
@@ -89,31 +90,31 @@ struct ColliderComponent
 
     void SetSphere(float _radius)
     {
-        type                  = ShapeType::Sphere;
-        shape.sphere.radius   = _radius;
+        type = ShapeType::Sphere;
+        shape.sphere.radius = _radius;
     }
 
     void SetCapsule(float _radius, float _halfHeight)
     {
-        type                       = ShapeType::Capsule;
-        shape.capsule.radius       = _radius;
-        shape.capsule.halfHeight   = _halfHeight;
+        type = ShapeType::Capsule;
+        shape.capsule.radius = _radius;
+        shape.capsule.halfHeight = _halfHeight;
     }
 
     float GetLocalBoundingRadius() const
     {
         switch (type)
         {
-            case ShapeType::Box:
-            {
-                const XMFLOAT3& h = shape.box.halfExtents;
-                return sqrtf(h.x*h.x + h.y*h.y + h.z*h.z);
-            }
-            case ShapeType::Sphere:
-                return shape.sphere.radius;
+        case ShapeType::Box:
+        {
+            const XMFLOAT3& h = shape.box.halfExtents;
+            return sqrtf(h.x * h.x + h.y * h.y + h.z * h.z);
+        }
+        case ShapeType::Sphere:
+            return shape.sphere.radius;
 
-            case ShapeType::Capsule:
-                return shape.capsule.halfHeight + shape.capsule.radius;
+        case ShapeType::Capsule:
+            return shape.capsule.halfHeight + shape.capsule.radius;
         }
         return 0.0f;
     }

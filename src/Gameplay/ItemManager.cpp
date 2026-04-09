@@ -60,7 +60,7 @@ EntityId ItemManager::SpawnItem(ItemType _type, float _x, float _y, float _z)
 	rb.SetMass(1.0f);
 	rb.type = BodyType::Dynamic;
 	rb.useGravity = true;
-	rb.allowRotation = false;
+	rb.allowRotation = true;
 	MotionComponent& motion = m_scene->world->AddComponent<MotionComponent>(e);
     t.local.SetPosition(XMFLOAT3(_x, _y + data->offsetY, _z));
     t.local.SetScale(XMFLOAT3(data->scaleX, data->scaleY, data->scaleZ));

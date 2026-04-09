@@ -188,7 +188,8 @@ bool World::IsActiveScript(EntityId _e)
 template <typename ... Args>
 void World::NotifyScripts(EntityId _e, void(IScript::*_fn)(Args...), Args... args)
 {
-    if (HasComponent<ScriptRegistry>(_e) == false) return;
+    if (HasComponent<ScriptRegistry>(_e) == false)
+        return;
 
     auto& reg = GetComponent<ScriptRegistry>(_e);
     for (int i = 0; i < reg.count; i++ )

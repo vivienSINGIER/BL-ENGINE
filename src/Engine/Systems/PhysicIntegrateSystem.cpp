@@ -13,9 +13,6 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
         _rigid.inertiaDirty = false;
     }
 
-    if (_rigid.allowRotation)
-        UpdateWorldInertiaTensor(_rigid, _transform);
-
     // Intégration normale
     XMFLOAT3 deltaPos = IntegrateLinearVelocity(_rigid, _motion, _dt);
     _transform.local.Move(deltaPos);
@@ -31,9 +28,12 @@ void PhysicIntegrateSystem::OnUpdate(float _dt, EntityId _e, RigidBodyComponent&
         _motion.torque = { 0,0,0 };
     }
 
+    if (_rigid.allowRotation)
+        UpdateWorldInertiaTensor(_rigid, _transform);
+
     // Sleep
-	float linearSq = NormSquared(_motion.linearVelocity);
-	float angularSq = NormSquared(_motion.angularVelocity);
+	float linearSq = LengthSq(_motion.linearVelocity);
+	float angularSq = LengthSq(_motion.angularVelocity);
 
     bool lowMotion = linearSq < (kSleepLinearThreshold) && angularSq < (kSleepAngularThreshold);
 
@@ -127,9 +127,9 @@ void PhysicIntegrateSystem::UpdateWorldInertiaTensor(RigidBodyComponent& _rigid,
         0,     0,     0,     1
     );
 
-    XMVECTOR q   = XMLoadFloat4(&_transform.local.GetRotation());
-    XMMATRIX R   = XMMatrixRotationQuaternion(q);
-    XMMATRIX RT  = XMMatrixTranspose(R);
+    XMVECTOR q = XMLoadFloat4(&_transform.world.GetRotation());
+    XMMATRIX R = XMMatrixRotationQuaternion(q);
+    XMMATRIX RT = XMMatrixTranspose(R);
 
     XMMATRIX I_world_inv = R * I_body_inv * RT;
 
@@ -174,7 +174,7 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateLinearVelocity(RigidBodyComponent& _rig
     // F_drag = -dragCoefficient * |v| * v
     if (_rigid.dragCoefficient > 0.0f)
     {
-		float speed = sqrt(NormSquared(_motion.linearVelocity));
+		float speed = Length(_motion.linearVelocity);
 
         if (speed > 0.1f)
         {
@@ -221,9 +221,15 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
     _motion.angularVelocity.z *= damp;
 
     // Seuil numérique — évite la dérive flottante sur les corps quasi-immobiles.
-	float aSq = NormSquared(_motion.angularVelocity);
-    if (aSq < kMinAngularVelocitySq)
-        _motion.angularVelocity = { 0.0f, 0.0f, 0.0f };
+    float maxAngularSpeed = 4.0f;
+    float aSq = LengthSq(_motion.angularVelocity);
+    if (aSq > maxAngularSpeed * maxAngularSpeed)
+    {
+        float invLen = 1.0f / sqrtf(aSq);
+        _motion.angularVelocity.x *= invLen * maxAngularSpeed;
+        _motion.angularVelocity.y *= invLen * maxAngularSpeed;
+        _motion.angularVelocity.z *= invLen * maxAngularSpeed;
+    }
 
     _motion.torque = { 0.0f, 0.0f, 0.0f };
 
@@ -237,9 +243,29 @@ XMFLOAT3 PhysicIntegrateSystem::IntegrateAngularVelocity(RigidBodyComponent& _ri
 
 void PhysicIntegrateSystem::UpdateQuaternion(TransformComponent& _transform, const XMFLOAT3& _deltaAngle)
 {
+    const float angleSq =
+        _deltaAngle.x * _deltaAngle.x +
+        _deltaAngle.y * _deltaAngle.y +
+        _deltaAngle.z * _deltaAngle.z;
+
+    if (angleSq <= 1e-12f)
+        return;
+
+    const float angle = sqrtf(angleSq);
+
+    XMFLOAT3 axis =
+    {
+        _deltaAngle.x / angle,
+        _deltaAngle.y / angle,
+        _deltaAngle.z / angle
+    };
+
     XMVECTOR qCurrent = XMLoadFloat4(&_transform.local.GetRotation());
-    XMVECTOR qDelta   = XMQuaternionRotationRollPitchYaw(_deltaAngle.x, _deltaAngle.y, _deltaAngle.z);
-    XMVECTOR qNew     = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
+    XMVECTOR qDelta = XMQuaternionRotationAxis(
+        XMVectorSet(axis.x, axis.y, axis.z, 0.0f),
+        angle);
+
+    XMVECTOR qNew = XMQuaternionNormalize(XMQuaternionMultiply(qDelta, qCurrent));
 
     XMFLOAT4 out;
     XMStoreFloat4(&out, qNew);
