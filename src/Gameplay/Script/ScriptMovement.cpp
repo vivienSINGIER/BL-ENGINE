@@ -3,6 +3,7 @@
 #include "../Gameplay/Scene/MainScene.h"
 #include "../Gameplay/InventoryManager.h"
 #include "../Gameplay/Script/PlayerHealth.hpp"
+#include "../Gameplay/GameManager.h"
 
 void Movement::ScriptMovement::Awake()
 {
@@ -119,8 +120,7 @@ void Movement::ScriptMovement::Update(float dt)
 
 	if(InputManager::IsKeyDown(R))
 	{
-		PlayerHealthComponent& hp = GetComponent<PlayerHealthComponent>();
-		hp.TakeDamage(30.0f);
+		GameManager::CollectFood();
 	}
 
 	if(m_itemInHand != 0 && InputManager::IsMouseButtonPressed(InputMouse::LEFT_MOUSE))

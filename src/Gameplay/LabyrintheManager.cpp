@@ -248,7 +248,7 @@ void LabyrintheManager::CreateLabyrinthe(int _width, int _height)
 
     LabyrintheHelper::Lobby(grid, rxMin, rxMax, ryMin, ryMax);
     Laby3d(grid);
-	ItemManager::SpawnItems(grid, 10, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
+	ItemManager::SpawnItems(grid, 15, rxMin, rxMax, ryMin, ryMax, m_cellSize, m_levelNb, m_nbPlayer);
 	SpawnMagu(1 + m_levelNb / 2);
 
     LabyrintheHelper::bfs_check(grid);

@@ -76,7 +76,6 @@ void MainScene::OnUpdate(float _dt)
     if(m_skipNextFrame)
     {
         m_skipNextFrame = false;
-		std::cout << "Skipping frame to avoid input issues after level reload." << std::endl;
         return;
 	}
 

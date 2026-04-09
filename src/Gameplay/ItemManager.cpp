@@ -81,7 +81,8 @@ void ItemManager::RegisterItem(EntityId _item)
 
 void ItemManager::SpawnItems(Vector<Vector<char>>& _grid, int _count, int _xMin, int _xMax, int _yMin, int _yMax, float _cellSize, int _levelNb, int _nbPlayer)
 {
-    _count += (_levelNb - 1) * _nbPlayer;
+    _count += ((_levelNb - 1) * (_nbPlayer * 2));
+	std::cout << "Spawning " << _count << " items\n";
 
     std::vector<std::pair<int, int>> emptyCells;
     for (int x = 0; x < (int)_grid.size(); x++)
