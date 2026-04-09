@@ -6,6 +6,7 @@
 
 struct ImageSystem : public System<UiImageComponent>
 {
+	void OnStartUpdate(float _dt) override;
     void OnUpdate(float _dt, EntityId _e, UiImageComponent& _image);
 };
 

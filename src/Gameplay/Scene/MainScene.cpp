@@ -21,6 +21,8 @@ void MainScene::OnInit()
 	m_isDay = true;
 	m_isNight = false;
 	m_gasStarted = false;
+    m_dayDecrement = m_dayDuration + 1.0f;
+	m_nightDecrement = m_nightDuration + 1.0f;
 
 	m_dayColorStart = XMFLOAT3(1.0f, 0.7f, 0.5f);
 
@@ -67,15 +69,41 @@ void MainScene::OnInit()
 	l.SetPoint(1.0f, 500.0f);
 	l.SetColor(XMFLOAT4(1.0f,0.8f,0.35f, 1.0f));
 	
+	m_splashScreen = world->CreateEntity();
+	UiImageComponent& ui = world->AddComponent<UiImageComponent>(m_splashScreen);
+	ui.spriteId = RessourceManager::GetSpriteId("Square");
+	ui.materialId = RessourceManager::GetUiMaterialId("SplashscreenMaterial");
+	world->SetInactive(m_splashScreen);
+
+	m_dayText = world->CreateEntity();
+	TextComponent& dayText = world->AddComponent<TextComponent>(m_dayText);
+	dayText.textId = RessourceManager::GetTextId("DayLabel");
+	world->SetInactive(m_dayText);
+	dayText.transform.SetPosition(XMFLOAT2(0.0f, -500.0f));
+
+	m_nightText = world->CreateEntity();
+	TextComponent& nightText = world->AddComponent<TextComponent>(m_nightText);
+	nightText.textId = RessourceManager::GetTextId("NightLabel");
+	world->SetInactive(m_nightText);
+	nightText.transform.SetPosition(XMFLOAT2(0.0f, -500.0f));
 }
 
 void MainScene::OnUpdate(float _dt)
 {
     if(m_skipNextFrame)
     {
+		world->SetActive(m_splashScreen);
         m_skipNextFrame = false;
-        return;
 	}
+    if(m_reloadDelay >= m_reloadTimer && world->IsActive(m_splashScreen))
+    {
+        m_reloadTimer += _dt;
+	}
+    else if (m_reloadDelay < m_reloadTimer && world->IsActive(m_splashScreen))
+    {
+        m_reloadTimer = 0.0f;
+		world->SetInactive(m_splashScreen);
+    }
 
     TransformComponent& camT = world->GetComponent<TransformComponent>(m_camera);
     TransformComponent& lt = world->GetComponent<TransformComponent>(m_light);
@@ -91,15 +119,22 @@ void MainScene::OnUpdate(float _dt)
         GameManager::CollectFood();
     }
 
+    if (world->IsActive(m_splashScreen) == true) return;
 
     if (m_started == true)
     {
         if (m_isDay == true)
         {
+			world->SetInactive(m_nightText);
+			world->SetActive(m_dayText);
 			m_lightPosXStart = LevelManager::GetLightPosXStart();
 			m_lightTravelDistance = LevelManager::GetLightTravelDistance();
             l.SetStrength(1.0f);
             m_timer += _dt;
+			m_dayDecrement -= _dt;
+            std::string dayTime = std::to_string((int)m_dayDecrement);
+			TextComponent& dayText = world->GetComponent<TextComponent>(m_dayText);
+            dayText.SetText(dayTime);
 			float t = m_timer / m_dayDuration;
 
             m_lightPos.x = m_lightPosXStart + t * m_lightTravelDistance;
@@ -126,7 +161,9 @@ void MainScene::OnUpdate(float _dt)
 
             if(m_timer >= m_dayDuration)
             {
+                world->SetInactive(m_dayText);
                 m_timer = 0.0f;
+				m_dayDecrement = m_dayDuration + 1.0f;
                 m_isDay = false;
                 m_isNight = true;
 				m_opened = false;
@@ -136,7 +173,13 @@ void MainScene::OnUpdate(float _dt)
         }
         else if (m_isNight == true)
         {
+			world->SetInactive(m_dayText);
+			world->SetActive(m_nightText);
             m_timer += _dt;
+			m_nightDecrement -= _dt;
+			std::string nightTime = std::to_string((int)m_nightDecrement);
+            TextComponent& nightText = world->GetComponent<TextComponent>(m_nightText);
+			nightText.SetText(nightTime);
 			l.SetStrength(0.0f);
             if(m_gasStarted == false)
             {
@@ -157,6 +200,7 @@ void MainScene::OnUpdate(float _dt)
                 PlayerHealthComponent& hp = world->GetComponent<PlayerHealthComponent>(m_playerCube);
                 if (hp.isDead)
                 {
+                    world->SetInactive(m_nightText);
                     std::cout << "You died! Restarting level..." << std::endl;
                     hp.Reset();
                     InventoryManager::ResetInventory();
@@ -164,9 +208,12 @@ void MainScene::OnUpdate(float _dt)
                     GameManager::Reset();
                     LevelManager::ResetGas();
                     LevelManager::ReloadLevel();
+                    world->SetActive(m_splashScreen);
 					m_skipNextFrame = true;
                     world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
                     m_timer = 0.0f;
+					m_nightDecrement = m_nightDuration + 1.0f;
+					m_dayDecrement = m_dayDuration + 1.0f;
                     m_isDay = true;
                     m_isNight = false;
                     m_gasStarted = false;
@@ -176,10 +223,11 @@ void MainScene::OnUpdate(float _dt)
 
             if (m_timer >= m_nightDuration)
             {
-                
+                world->SetInactive(m_nightText);
                 GameManager::TryValidateQuota(camT.local.GetPosition());
 
                 m_timer = 0.0f;
+                m_nightDecrement = m_nightDuration + 1.0f;
                 m_isDay = true;
                 m_isNight = false;
 				m_opened = true;
@@ -195,6 +243,7 @@ void MainScene::OnUpdate(float _dt)
                     PreserveInventory();
 					GameManager::Reset();
                     LevelManager::ReloadLevel();
+                    world->SetActive(m_splashScreen);
                     m_skipNextFrame = true;
                     world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
                     return;
@@ -202,6 +251,8 @@ void MainScene::OnUpdate(float _dt)
 
 				PreserveInventory();
                 LevelManager::LoadLevel();
+                world->SetActive(m_splashScreen);
+                m_skipNextFrame = true;
                 ReRegisterInventoryItem();
 				world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
             }
@@ -211,8 +262,8 @@ void MainScene::OnUpdate(float _dt)
 
 void MainScene::OnStart()
 {
-	LevelManager::Init(4);
-	GameManager::Init(4);
+	LevelManager::Init(1);
+	GameManager::Init(1);
     LevelManager::SetPlayer(0, m_playerCube);
 
 	m_skipNextFrame = true;
@@ -220,6 +271,7 @@ void MainScene::OnStart()
 
 void MainScene::OnEnd()
 {
+
 }
 
 void MainScene::LoadRessources()
@@ -273,6 +325,41 @@ void MainScene::LoadRessources()
 	Material* gasMat = RessourceManager::GetShader(shaderTextId)->CreateMaterial();
 	gasMat->SetTexture("Albedo", RessourceManager::GetTexture("Gas"));
 	RessourceManager::AddMaterial("GasMaterial", gasMat);
+
+    RessourceManager::AddSprite("Square", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 1920, 1080, 5));
+    uint32 uiShaderId = RessourceManager::AddUiShader("UiDefault", ShaderFactory::CreateUIBasic(EngineManager::GetDevice()));
+
+    Texture* splashscreen = EngineManager::GetDevice()->CreateTexture(RES("/Textures/Splashscreen.dds"));
+    RessourceManager::AddTexture("Splashscreen", splashscreen);
+    UiMaterial* uiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+    RessourceManager::AddUiMaterial("SplashscreenMaterial", uiMaterial);
+    uiMaterial->SetTexture("Image", RessourceManager::GetTexture("Splashscreen"));
+
+    RenderFont* font = EngineManager::GetDevice()->CreateRenderFont(RES("/Font/GoldenVarsity.ttf"), 100.0f);
+    RessourceManager::AddFont("Valentine", font);
+    Text* text = EngineManager::GetDevice()->CreateText(font);
+    text->SetString("DayText");
+    RessourceManager::AddText("DayLabel", text);
+
+	RenderFont* font2 = EngineManager::GetDevice()->CreateRenderFont(RES("/Font/west.ttf"), 100.0f);
+	RessourceManager::AddFont("West", font2);
+	Text* text2 = EngineManager::GetDevice()->CreateText(font2);
+	text2->SetString("NightText");
+	RessourceManager::AddText("NightLabel", text2);
+
+    RessourceManager::AddSprite("Sprite", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 100, 100, 5));
+
+    Texture* waterBottleTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/waterbottleui.dds");
+    RessourceManager::AddTexture("WaterBottleUI", waterBottleTextureUi);
+    UiMaterial* wateruiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+    RessourceManager::AddUiMaterial("WaterBottleUiMat", wateruiMaterial);
+    uiMaterial->SetTexture("Image", RessourceManager::GetTexture("WaterBottleUI"));
+
+    Texture* medicTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/medicui.dds");
+    RessourceManager::AddTexture("MedicUi", medicTextureUi);
+    UiMaterial* medicUiMat = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+    RessourceManager::AddUiMaterial("MedicUiMat", medicUiMat);
+    medicUiMat->SetTexture("Image", RessourceManager::GetTexture("MedicUi"));
 }
 
 void MainScene::PreserveInventory()
