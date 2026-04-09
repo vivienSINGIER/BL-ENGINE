@@ -512,7 +512,6 @@ ContactInfo PhysicSystem::BuildReducedContact(const ContactInfo& _contact) const
 {
     if (!ShouldReduceToCenterPoint(_contact))
         return _contact;
-    std::cout << "[ReduceContact] 4 points -> 1 center point\n";
 
     ContactInfo reduced;
     reduced.hit = _contact.hit;

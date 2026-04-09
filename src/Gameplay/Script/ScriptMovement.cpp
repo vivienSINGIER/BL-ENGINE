@@ -118,11 +118,6 @@ void Movement::ScriptMovement::Update(float dt)
 		}
 	}
 
-	if(InputManager::IsKeyDown(R))
-	{
-		GameManager::CollectFood();
-	}
-
 	if(m_itemInHand != 0 && InputManager::IsMouseButtonPressed(InputMouse::LEFT_MOUSE))
 	{
 		m_throwStrength += dt * 50.0f;
