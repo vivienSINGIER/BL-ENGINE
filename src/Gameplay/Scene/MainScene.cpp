@@ -79,6 +79,8 @@ void MainScene::OnInit()
 	UiImageComponent& crosshairUi = world->AddComponent<UiImageComponent>(m_crosshair);
 	crosshairUi.spriteId = RessourceManager::GetSpriteId("Sprite");
 	crosshairUi.materialId = RessourceManager::GetUiMaterialId("CrosshairUiMat");
+	crosshairUi.transform.SetPosition(XMFLOAT2(0.0f, 10.0f));
+	crosshairUi.transform.SetScale(XMFLOAT2(0.5f, 0.5f));
 	world->SetInactive(m_crosshair);
 
 	m_dayText = world->CreateEntity();
