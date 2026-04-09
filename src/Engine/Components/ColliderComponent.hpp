@@ -83,6 +83,12 @@ struct ColliderComponent
         shape.box.halfExtents = _halfExtents;
     }
 
+    void SetBox(BoundingBox& _box)
+    {
+        XMFLOAT3& extents = _box.Extents;
+        SetBox(extents);
+    }
+
     void SetBox(float _hx, float _hy, float _hz)
     {
         SetBox({ _hx, _hy, _hz });
