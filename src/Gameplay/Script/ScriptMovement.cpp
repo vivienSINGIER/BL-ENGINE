@@ -22,7 +22,7 @@ void Movement::ScriptMovement::Awake()
 	m_healthText = SceneManager::GetSceneWithId(sceneId)->world->CreateEntity();
 	TextComponent& healthText = SceneManager::GetSceneWithId(sceneId)->world->AddComponent<TextComponent>(m_healthText);
 	healthText.textId = RessourceManager::GetTextId("HealthLabel");
-	healthText.transform.SetPosition(XMFLOAT2(-400.0f, -500.0f));
+	healthText.transform.SetPosition(XMFLOAT2(-900.0f, 350.0f));
 	SceneManager::GetSceneWithId(sceneId)->world->SetInactive(m_healthText);
 }
 
