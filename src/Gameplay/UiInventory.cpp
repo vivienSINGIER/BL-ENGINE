@@ -22,6 +22,7 @@ void UiInventory::AddItemToInventory(int _index, ItemType _type)
 void UiInventory::RemoveItemFromInventory(int _index)
 {
 	m_scene->world->DestroyEntity(m_Item[_index]);
+	m_Item[_index] = 0;
 }
 
 void UiInventory::RemoveAllItems()
@@ -30,6 +31,7 @@ void UiInventory::RemoveAllItems()
 	{
 		if (m_Item[i] != 0)
 			m_scene->world->DestroyEntity(m_Item[i]);
+		m_Item[i] = 0;
 	}
 }
 

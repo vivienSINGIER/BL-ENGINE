@@ -397,8 +397,6 @@ void MainScene::LoadRessources()
 	text3->SetString("HealthText");
 	RessourceManager::AddText("HealthLabel", text3);
 
-    RessourceManager::AddSprite("Sprite", SpriteFactory::BuildRoundedRectangle(EngineManager::GetDevice(), 100, 100, 5));
-
     Texture* waterBottleTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Obj/waterbottleui.dds");
     RessourceManager::AddTexture("WaterBottleUI", waterBottleTextureUi);
     UiMaterial* wateruiMaterial = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
