@@ -14,8 +14,8 @@
 
 void MainScene::OnInit()
 {
-	m_dayDuration = 60.0f;
-	m_nightDuration = 30.0f;
+	m_dayDuration = 5.0f;
+	m_nightDuration = 5.0f;
 	m_opened = false;
 	m_started = false;
 	m_isDay = true;

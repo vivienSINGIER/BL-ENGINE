@@ -13,7 +13,7 @@ public:
 	static void Update(float dt);
 	static void ThrowSelectedItem(float _strength);
 	static bool FullInventory() { return m_itemId[0] != 0 && m_itemId[1] != 0 && m_itemId[2] != 0; }
-	static void ResetInventory() { m_itemId[0] = 0; m_itemId[1] = 0; m_itemId[2] = 0; m_selectedItem = 0; }
+	static void ResetInventory();
 	static EntityId* GetInventory() { return m_itemId; }
 	static int GetItemCount() { return 3; }
 

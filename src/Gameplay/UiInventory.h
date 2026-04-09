@@ -10,6 +10,7 @@ public:
 	static void Init(Scene* _scene);
 	static void AddItemToInventory(int _index, ItemType _type);
 	static void RemoveItemFromInventory(int _index);
+	static void RemoveAllItems();
 
 private:
 	static void CreateBottle(int _index);

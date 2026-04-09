@@ -136,7 +136,9 @@ void ItemManager::DestroyItems()
             }
         }
         if (!inInventory)
+        {
             m_scene->world->DestroyEntity(item);
+        }
 	}
 	m_Items.clear();
 }

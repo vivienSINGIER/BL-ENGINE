@@ -24,6 +24,15 @@ void UiInventory::RemoveItemFromInventory(int _index)
 	m_scene->world->DestroyEntity(m_Item[_index]);
 }
 
+void UiInventory::RemoveAllItems()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (m_Item[i] != 0)
+			m_scene->world->DestroyEntity(m_Item[i]);
+	}
+}
+
 void UiInventory::CreateBottle(int _index)
 {
 	m_Item[_index] = m_scene->world->CreateEntity();
