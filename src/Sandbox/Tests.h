@@ -17,6 +17,7 @@
 #include "Tests/TestCollision.hpp"
 #include "Tests/TestLights.hpp"
 #include "Tests/TestNetwork.hpp"
+#include "Tests/TestUi.hpp"
 
 
 #endif

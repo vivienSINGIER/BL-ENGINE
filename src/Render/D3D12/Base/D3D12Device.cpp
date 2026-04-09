@@ -195,8 +195,9 @@ void D3D12Device::RunComputeShader(ComputeShader* _pComputeShader, bool _isOnRT)
 
 void D3D12Device::DrawUi(Sprite* _sprite, XMFLOAT4X4& _mat)
 {
-    assert(m_pMainCamera != nullptr && "No camera selected");
     assert(m_pCurrUiMaterial != nullptr && "No material selected");
+
+    if (m_pMainCamera == nullptr) return;
 
     m_pCurrUiMaterial->Bind();
     m_pContext.GetCommandList()->SetGraphicsRootConstantBufferView(0, GetObjectCBAdress(_mat));

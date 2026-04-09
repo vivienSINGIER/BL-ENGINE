@@ -34,7 +34,7 @@ VertexUiOut VSMain(VertexUiIn input)
                           0.0f, 1.0f);
     
     output.TexCoord = input.TexC;
-    output.Color = input.Color;
+    output.Color = input.Color * gColor;
     
     return output;
 }

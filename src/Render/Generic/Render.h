@@ -25,5 +25,6 @@
 #include "Factories/SpriteFactory.hpp"
 
 #include "FontRendering/Font.h"
+#include "FontRendering/Text.hpp"
 
 #endif

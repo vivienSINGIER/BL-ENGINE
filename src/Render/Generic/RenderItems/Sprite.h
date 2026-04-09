@@ -13,6 +13,14 @@ struct UiVertex
 class Sprite
 {
 public:
+    struct SpriteBoundingBox
+    {
+        int centerX = 0;
+        int centerY = 0;
+        int distanceX = 0;
+        int distanceY = 0;
+    };
+    
     virtual ~Sprite() = default;
     
     virtual void SetVertexData(const UiVertex* _data, uint64 _vertexCount) = 0;
@@ -21,12 +29,18 @@ public:
     uint64 GetVertexCount() const { return m_vertexCount; }
     uint64 GetIndexCount() const { return m_indexCount; }
     bool IsIndexed() const { return m_indexCount > 0; }
+
+    SpriteBoundingBox& GetBounds() { return m_boundingBox; }
     
 protected:
     bool m_isDynamic = false;
+
+    SpriteBoundingBox m_boundingBox;
     
     uint64 m_vertexCount = 0;
     uint64 m_indexCount = 0;
+
+    void CalculateBounds(const UiVertex* _vertices, uint64 _vertexCount);
 };
 
 #endif

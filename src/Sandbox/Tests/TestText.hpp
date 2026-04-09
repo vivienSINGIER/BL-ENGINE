@@ -20,7 +20,6 @@ public:
         RenderFont* font = pDevice->CreateRenderFont(RES("/Font/Valentine.ttf"), 150.0f);
         // RenderFont* font = pDevice->CreateRenderFont(RES("/Font/west.ttf"), 150.0f);
         
-        
         Text* text = pDevice->CreateText(font);
 
         text->SetString("Tu est moche");
