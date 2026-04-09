@@ -32,6 +32,7 @@ private:
 	EntityId m_light;
 
 	EntityId m_splashScreen;
+	EntityId m_crosshair;
 	EntityId m_dayText;
 	EntityId m_nightText;
 

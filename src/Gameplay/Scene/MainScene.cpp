@@ -75,6 +75,12 @@ void MainScene::OnInit()
 	ui.materialId = RessourceManager::GetUiMaterialId("SplashscreenMaterial");
 	world->SetInactive(m_splashScreen);
 
+	m_crosshair = world->CreateEntity();
+	UiImageComponent& crosshairUi = world->AddComponent<UiImageComponent>(m_crosshair);
+	crosshairUi.spriteId = RessourceManager::GetSpriteId("Sprite");
+	crosshairUi.materialId = RessourceManager::GetUiMaterialId("CrosshairUiMat");
+	world->SetInactive(m_crosshair);
+
 	m_dayText = world->CreateEntity();
 	TextComponent& dayText = world->AddComponent<TextComponent>(m_dayText);
 	dayText.textId = RessourceManager::GetTextId("DayLabel");
@@ -125,6 +131,7 @@ void MainScene::OnUpdate(float _dt)
     {
         EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
         world->SetActive(healthText);
+		world->SetActive(m_crosshair);
         if (m_isDay == true)
         {
 			world->SetInactive(m_nightText);
@@ -220,6 +227,7 @@ void MainScene::OnUpdate(float _dt)
                     m_gasStarted = false;
                     EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
                     world->SetInactive(healthText);
+                    world->SetInactive(m_crosshair);
                     return;
                 }
             }
@@ -251,6 +259,7 @@ void MainScene::OnUpdate(float _dt)
                     world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
                     EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
                     world->SetInactive(healthText);
+                    world->SetInactive(m_crosshair);
                     return;
                 }
 
@@ -260,6 +269,9 @@ void MainScene::OnUpdate(float _dt)
                 m_skipNextFrame = true;
                 ReRegisterInventoryItem();
 				world->GetScript<Movement::ScriptMovement>(m_playerCube).Reload();
+                EntityId healthText = world->GetScript<Movement::ScriptMovement>(m_playerCube).GetHealthText();
+                world->SetInactive(healthText);
+                world->SetInactive(m_crosshair);
             }
         }
     }
@@ -369,6 +381,12 @@ void MainScene::LoadRessources()
     UiMaterial* medicUiMat = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
     RessourceManager::AddUiMaterial("MedicUiMat", medicUiMat);
     medicUiMat->SetTexture("Image", RessourceManager::GetTexture("MedicUi"));
+
+	Texture* crosshairTextureUi = EngineManager::GetDevice()->CreateTexture(L"../../res/Textures/Crosshair.dds");
+	RessourceManager::AddTexture("Crosshair", crosshairTextureUi);
+	UiMaterial* crosshairUiMat = RessourceManager::GetUiShader(uiShaderId)->CreateMaterial();
+	RessourceManager::AddUiMaterial("CrosshairUiMat", crosshairUiMat);
+	crosshairUiMat->SetTexture("Image", RessourceManager::GetTexture("Crosshair"));
 }
 
 void MainScene::PreserveInventory()
