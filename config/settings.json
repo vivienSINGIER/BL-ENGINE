@@ -74,29 +74,6 @@
             "property-vcpkg": false,
             "property-window": false
         },
-        "2CA5693A-5CCC-1494-4A74-131E34756FDF": {
-            "config-debug": {
-                "additionalDependencies": [],
-                "additionalIncludeDirectories": [],
-                "additionalLibraryDirectories": [],
-                "preprocessorDefinitions": []
-            },
-            "config-release": {
-                "additionalDependencies": [],
-                "additionalIncludeDirectories": [],
-                "additionalLibraryDirectories": [],
-                "preprocessorDefinitions": []
-            },
-            "dependencies": [
-                "2B5B58A5-54D3-7ED9-6508-05E6687F72C6"
-            ],
-            "dependents": [],
-            "name": "Gameplay",
-            "property-lib": false,
-            "property-pch": false,
-            "property-vcpkg": false,
-            "property-window": true
-        },
         "2CD33508-2DBE-388A-7E88-69DC5EAB4FC9": {
             "config-debug": {
                 "additionalDependencies": [],
