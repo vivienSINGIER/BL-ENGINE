@@ -51,6 +51,8 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
+        ComponentRegistry::RegisterScript<TestScript>();
+        ComponentRegistry::RegisterScript<TestScript2>();
 
         EntityId e = scene->world->CreateEntity();
         scene->world->AddComponent<TransformComponent>(e);

@@ -88,6 +88,28 @@ public:
 
         return I;
     }
+	
+	static float Dot(DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z;
+	}
+	
+	static float Distance(DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& b)
+	{
+		DirectX::XMFLOAT3 d(a.x - b.x, a.y - b.y, a.z - b.z);
+		return sqrtf(d.x*d.x + d.y*d.y + d.z*d.z);
+	}
+	
+	static XMFLOAT3 Normalize(XMFLOAT3 const& a)
+	{
+		float len = a.x * a.x + a.y * a.y + a.z * a.z;
+		return {a.x / len, a.y / len, a.z / len};
+	}
+	
+	static XMFLOAT3 Cross(DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& b)
+	{
+		return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+	}
 
     static DirectX::XMVECTOR RandUnitVec3();
     static DirectX::XMVECTOR RandHemisphereUnitVec3(DirectX::XMVECTOR n);

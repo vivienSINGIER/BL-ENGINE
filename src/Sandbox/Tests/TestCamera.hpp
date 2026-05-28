@@ -32,7 +32,8 @@ public:
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");
-
+        ComponentRegistry::RegisterScript<TestScript>();
+        
         EntityId e = scene->world->CreateEntity();
         scene->world->AddComponent<TransformComponent>(e);
         MeshRenderer& m = scene->world->AddComponent<MeshRenderer>(e);

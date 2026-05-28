@@ -2,11 +2,7 @@
 #define CAMERA_H_DEFINED
 
 #include "../../Common/Common.h"
-
-struct Plane
-{
-    float a, b, c, d;
-};
+#include "../../Common/Utils/FrustumHelper.hpp"
 
 struct PassData
 {
@@ -36,11 +32,12 @@ public:
     
     Camera();
     ~Camera();
-    bool IsInFrustum(BoundingBox const& _b, XMFLOAT4X4 _world);
     
     void SetWorld(XMFLOAT4X4& _world);
-    void SetProj(float _aspectRatio);
+    void SetAspectRatio(float _aspectRatio);
     void UpdateMatrices();
+    
+    Frustum& GetFrustum() { return m_frustum; }
 
     // TODO REMOVE
     void SetRotation(XMFLOAT3 ypr);
@@ -48,19 +45,20 @@ public:
     void SetPos(XMFLOAT3 _pos);
     
 private:
-    XMFLOAT4X4 m_world = MathHelper::Identity4x4();
-    XMFLOAT4X4 m_view = MathHelper::Identity4x4();
-    XMFLOAT4X4 m_proj = MathHelper::Identity4x4();
-    XMFLOAT4X4 m_viewProj = MathHelper::Identity4x4();
+    XMFLOAT4X4 m_world      = MathHelper::Identity4x4();
+    XMFLOAT4X4 m_view       = MathHelper::Identity4x4();
+    XMFLOAT4X4 m_proj       = MathHelper::Identity4x4();
+    XMFLOAT4X4 m_viewProj   = MathHelper::Identity4x4();
     
     XMFLOAT3 m_pos = {0.0f, 0.0f, 0.0f};
-
-    Plane m_frustum[6];
+    
+    float m_aspectRatio = 0.0f;
+    Frustum m_frustum;
     
     void FillData(PassData* _passData);
-
+    
+    Plane ExctractPlane(XMFLOAT3 _p0, XMFLOAT3 _p1, XMFLOAT3 _p2);
     void CalculateFrustum();
-    Plane MakePlane(XMFLOAT4& _a, XMFLOAT4 _b);
     
     friend class Device;
     friend class D3D12Device;

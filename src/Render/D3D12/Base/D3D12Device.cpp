@@ -94,7 +94,7 @@ void D3D12Device::BeginDraw(RenderTarget* _pRenderTarget, DepthStencil* _pDepthS
 
     if (m_pMainCamera != nullptr)
     {
-        m_pMainCamera->SetProj(m_screenViewport.Width / m_screenViewport.Height);
+        m_pMainCamera->SetAspectRatio(m_screenViewport.Width / m_screenViewport.Height);
         m_pMainCamera->FillData(&m_passData);
         m_passData.renderTargetSize = XMFLOAT2((float)m_pRenderTarget->m_width, (float)m_pRenderTarget->m_height);
     }
@@ -110,8 +110,10 @@ void D3D12Device::Draw(Geometry* _geo, XMFLOAT4X4& _mat)
 
     if (m_pMainCamera == nullptr) return;
 
-    if (m_pMainCamera->IsInFrustum(_geo->GetBounds(), _mat) == false)
-        return;
+    if (!_geo->FrustumCheck(m_pMainCamera->GetFrustum(), _mat))
+    {
+        std::cout << "Object culled" << std::endl;
+    }
     
     m_pCurrMaterial->Bind();
     m_pContext.GetCommandList()->SetGraphicsRootConstantBufferView(0, GetObjectCBAdress(_mat));

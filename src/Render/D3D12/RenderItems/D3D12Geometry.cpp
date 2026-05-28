@@ -34,7 +34,7 @@ void D3D12Geometry::SetVertexData(const Vertex* _data, uint64 _vertexCount)
         m_vertexBufferDefault = new DefaultBuffer<Vertex>(m_pContext, m_vertexCount, _data);       
     }
     
-    CalculateBounds(_data, m_vertexCount);
+    GetVolume()->CalculateVolume(_data, m_vertexCount);
 }
 
 void D3D12Geometry::SetIndexData(const uint32* _indices, uint64 _indexCount)
