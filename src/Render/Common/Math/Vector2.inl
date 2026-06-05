@@ -158,7 +158,7 @@ Vector2<T> Vector2<T>::Perpendicular()
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::yz()
+Vector2<T> Vector2<T>::yx()
 {
     return Vector2(y, x);
 }
@@ -173,6 +173,15 @@ template <typename T>
 bool Vector2<T>::operator!=(Vector2 const& _o)
 {
     return x != _o.x || y != _o.y;
+}
+
+template <typename T>
+float Vector2<T>::DeltaAngle(Vector2 const& _o)
+{
+    float dot_val   = MathUtils::Clamp(Dot(*this, _o) / (Length() * _o.Length()), -1.0f, 1.0f);
+    float angle     = std::acos(dot_val);          
+    float cross_val = x * _o.y - y * _o.x;  
+    return cross_val < 0.0f ? -angle : angle;     
 }
 
 template <typename T>

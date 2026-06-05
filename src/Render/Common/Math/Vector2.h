@@ -26,6 +26,11 @@ public:
     Vector2& operator*=(float _scalar);
     Vector2& operator/=(float _scalar);
     
+    bool operator==(Vector2 const& _o);
+    bool operator!=(Vector2 const& _o);
+    
+    float DeltaAngle(Vector2 const& _o);
+    
     float Length();
     float LengthSquared();
     
@@ -35,15 +40,6 @@ public:
     Vector2 Reflect(Vector2 const& _normal);
     Vector2 Project(Vector2 const& _target);
     Vector2 Perpendicular();
-    
-    Vector2 yz();
-    
-    bool operator==(Vector2 const& _o);
-    bool operator!=(Vector2 const& _o);
-    
-    T  operator[](int _i) const;
-    T& operator[](int _i);
-    T* Data();
     
     static Vector2 Zero();
     static Vector2 One();
@@ -55,6 +51,12 @@ public:
     static Vector2 Max(Vector2 const& _v1, Vector2 const& _v2);
     static Vector2 Abs(Vector2 const& _v);
     static Vector2 Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 const& _max);
+    
+    Vector2 yx();
+    
+    T  operator[](int _i) const;
+    T& operator[](int _i);
+    T* Data();
 };
 
 #include "Vector2.inl"
