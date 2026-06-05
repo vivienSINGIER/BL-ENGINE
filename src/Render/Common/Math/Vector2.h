@@ -29,6 +29,8 @@ public:
     bool operator==(Vector2 const& _o);
     bool operator!=(Vector2 const& _o);
     
+    bool IsNull();
+    
     float DeltaAngle(Vector2 const& _o);
     
     float Length();

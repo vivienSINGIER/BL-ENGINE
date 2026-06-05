@@ -14,7 +14,8 @@ public:
     Vector3();
     Vector3(T _x, T _y, T _z);
     Vector3(T _scalar);
-    Vector3(Vector2<T> const& _xy);
+    Vector3(Vector2<T> const& _xy, T _z);
+    Vector3(T _x, Vector2<T> const& _yz);
     
     Vector3 operator+(Vector3 const& _o);
     Vector3 operator-(Vector3 const& _o);
@@ -34,6 +35,8 @@ public:
     
     bool operator==(Vector3 const& _o);
     bool operator!=(Vector3 const& _o);
+    
+    bool IsNull();
     
     float Length();
     float LengthSquared();
@@ -74,6 +77,6 @@ public:
     T* Data();
 };
 
-#include "Vector2.inl"
+#include "Vector3.inl"
 
 #endif

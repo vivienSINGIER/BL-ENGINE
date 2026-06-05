@@ -28,11 +28,19 @@ Vector3<T>::Vector3(T _scalar)
 }
 
 template <typename T>
-Vector3<T>::Vector3(Vector2<T> const& _xy)
+Vector3<T>::Vector3(Vector2<T> const& _xy, T _z)
 {
     x = _xy.x;
     y = _xy.y;
-    z = T();
+    z = _z;
+}
+
+template <typename T>
+Vector3<T>::Vector3(T _x, Vector2<T> const& _yz)
+{
+    x = _x;
+    y = _yz.x;
+    z = _yz.y;
 }
 
 template <typename T>
@@ -153,6 +161,12 @@ template <typename T>
 bool Vector3<T>::operator!=(Vector3 const& _o)
 {
     return x != _o.x || y != _o.y || z != _o.z;
+}
+
+template <typename T>
+bool Vector3<T>::IsNull()
+{
+    return x == 0.0f && y == 0.0f && z == 0.0f;
 }
 
 template <typename T>

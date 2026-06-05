@@ -125,7 +125,8 @@ template <typename T>
 Vector2<T> Vector2<T>::Normalized()
 {
     float length = Length();
-    assert(length != 0.0f && "Can't normalize null vector");
+    if (length == 0.0f || length == 1.0f)
+        return *this;
     return Vector2(x / length, y / length);
 }
 
@@ -133,7 +134,8 @@ template <typename T>
 Vector2<T>& Vector2<T>::SelfNormalize()
 {
     float length = Length();
-    assert(length != 0.0f && "Can't normalize null vector");
+    if (length == 0.0f || length == 1.0f)
+        return *this;
     x /= length;
     y /= length;
     return *this;
@@ -173,6 +175,12 @@ template <typename T>
 bool Vector2<T>::operator!=(Vector2 const& _o)
 {
     return x != _o.x || y != _o.y;
+}
+
+template <typename T>
+bool Vector2<T>::IsNull()
+{
+    return x == 0.0f && y == 0.0f;
 }
 
 template <typename T>
