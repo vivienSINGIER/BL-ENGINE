@@ -1,6 +1,8 @@
 #ifndef VECTOR2_H_DEFINED
 #define VECTOR2_H_DEFINED
 
+#include <iostream>
+
 template <typename T>
 class Vector2
 {
@@ -54,11 +56,15 @@ public:
     static Vector2 Abs(Vector2 const& _v);
     static Vector2 Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 const& _max);
     
+    static Vector2 NearlyEqual(Vector2 const& _v1, Vector2 const& _v2);
+    
     Vector2 yx();
     
     T  operator[](int _i) const;
     T& operator[](int _i);
     T* Data();
+    
+    std::ostream& operator<<(std::ostream& _os, Vector2 const& _v);
 };
 
 #include "Vector2.inl"

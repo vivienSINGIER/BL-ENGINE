@@ -1,7 +1,7 @@
 ﻿#ifndef TEST_LIGHTS_H_DEFINED
 #define TEST_LIGHTS_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Engine/Engine.h"
 
 class TestLights : public Test
@@ -36,7 +36,7 @@ public:
         }
     };
     
-    static void Run()
+    void Run()
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Transform");
         Scene* scene = SceneManager::GetSceneWithName("Default");

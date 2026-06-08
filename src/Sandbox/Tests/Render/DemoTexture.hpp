@@ -1,10 +1,10 @@
-﻿#ifndef DEMO_LIGHT_HPP_DEFINED
-#define DEMO_LIGHT_HPP_DEFINED
+﻿#ifndef DEMO_TEXTURE_HPP_DEFINED
+#define DEMO_TEXTURE_HPP_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Render/Generic/Render.h"
 
-class DemoLight : public Test
+class DemoTexture : public Test
 {
     static void SetPosition(XMFLOAT3 position, XMFLOAT4X4& matrix)
     {
@@ -14,7 +14,7 @@ class DemoLight : public Test
     }
     
 public: 
-    static void Run()
+    void Run()
     {
         Window window(1080, 720, L"Test", true);
         window.InitD3D12();
@@ -83,17 +83,12 @@ public:
         pDevice->SetMainCamera(&cam);
 
         {
-            LightDescriptor point1 = LightHelper::CreateLight(LightType::Point);
-            point1.light.Position = XMFLOAT3(-2.0, -1.0f, -1.0f);
-            point1.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point1.light.Color = XMFLOAT4(1.0f, 0.5f, 0.0f, 1.0f);
-
-            LightDescriptor point2 = LightHelper::CreateLight(LightType::Point);
-            point2.light.Position = XMFLOAT3(2.0, 1.0f, -1.0f);
-            point2.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point2.light.Color = XMFLOAT4(0.0f, 0.3f, 0.8f, 1.0f);
+            LightDescriptor dirLight = LightHelper::CreateLight(LightType::Directional);
+            dirLight.light.Direction = XMFLOAT3(-0.5f, 0.0f, 0.5f);
+            dirLight.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
+            dirLight.light.Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
         
-            Vector<LightDescriptor> lights = { point1, point2 };
+            Vector<LightDescriptor> lights = { dirLight };
             pDevice->SetLights(lights);
         }
 
@@ -112,7 +107,7 @@ public:
             
             window.Clear();
 
-            pDevice->SetMaterial(litRock);
+            pDevice->SetMaterial(litConcrete);
             pDevice->Draw(Donut, donutM);
             
             window.Display();

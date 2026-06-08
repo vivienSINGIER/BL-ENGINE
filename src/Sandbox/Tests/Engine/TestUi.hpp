@@ -1,7 +1,7 @@
 #ifndef TEST_UI_H_DEFINED
 #define TEST_UI_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Engine/Engine.h"
 #include "Network/Client.h"
 
@@ -36,7 +36,7 @@ public:
         }
     };
     
-    static void Run(LPSTR lpCmdLine = nullptr)
+    void Run(LPSTR lpCmdLine = nullptr)
     {
         String args = lpCmdLine;
 

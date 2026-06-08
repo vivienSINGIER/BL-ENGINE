@@ -56,17 +56,19 @@ public:
     
     static int Floor(float _v)
     {
-        return int(_v);
+        int i = (int)_v;
+        return (i > _v) ? i - 1 : i;
     }
-    
+
     static int Ceil(float _v)
     {
-        return int(_v + 1.0f);
+        int i = (int)_v;
+        return (i < _v) ? i + 1 : i;
     }
-    
+
     static int Round(float _v)
     {
-        return int(_v + 0.5f);
+        return (int)(_v + (_v < 0.0f ? -0.5f : 0.5f));
     }
     
     static float Sqrt(float _v);
@@ -92,7 +94,7 @@ public:
     static float Asin(float _x);
     static float Acos(float _x);
     static float Atan(float _x);
-    static float Atan2(float _x, float _y);
+    static float Atan2(float _y, float _x);
     
     static bool NearlyEqual(float _x, float _y);
     static bool NearlyEqual(float _x, float _y, float _epsilon);

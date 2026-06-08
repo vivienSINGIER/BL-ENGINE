@@ -1,7 +1,7 @@
 #ifndef TEST_WINDOW_H_DEFINED
 #define TEST_WINDOW_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Render/Generic/Render.h"
 
 class TestWindow : public Test

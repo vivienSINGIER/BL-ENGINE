@@ -3,7 +3,6 @@
 #include "main.h"
 
 #include "Tests.h"
-#include "Tests/DemoLight.hpp"
 
 #ifdef _DEBUG
 int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
@@ -11,8 +10,13 @@ int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 	Console::InitConsol();
 	/////////////////////////////////////////////////////////////////////////////
 	
-	TestCollision::Run();
+	TestMathMethods test;
+	
+	test.Run();
 
+	float a;
+	std::cin >> a;
+	
 	Console::DeleteConsol();
 	return 0;
 }

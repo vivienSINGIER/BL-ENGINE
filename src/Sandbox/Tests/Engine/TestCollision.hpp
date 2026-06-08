@@ -1,7 +1,7 @@
 ﻿#ifndef TEST_COLLISION_HPP_DEFINED
 #define TEST_COLLISION_HPP_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Engine/Engine.h"
 
 class TestCollision : public Test
@@ -143,7 +143,7 @@ public:
         return e;
     }
 
-    static void Run()
+    void Run()
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Collision Reference");
 

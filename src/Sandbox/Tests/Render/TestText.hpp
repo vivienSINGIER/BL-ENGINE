@@ -1,14 +1,14 @@
 #ifndef TEST_TEXT_H_DEFINED
 #define TEST_TEXT_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Render/Generic/Render.h"
 #include "Render/Generic/FontRendering/Text.hpp"
 
 class TestText : public Test
 {
 public: 
-    static void Run()
+    void Run()
     {
         Window window(1080, 720, L"Test", true);
         window.InitD3D12();

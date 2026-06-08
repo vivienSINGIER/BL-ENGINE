@@ -1,7 +1,7 @@
 #ifndef TEST_SCRIPTS_H_DEFINED
 #define TEST_SCRIPTS_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Engine/Engine.h"
 
 // ─────────────────────────────────────────────
@@ -57,7 +57,7 @@ struct TestScript : public IScript
 class TestScripts : public Test
 {
 public: 
-    static void Run()
+    void Run()
     {
         EngineManager::GetInstance().Initialize(1080, 720, L"Test Scripts");
         World world;

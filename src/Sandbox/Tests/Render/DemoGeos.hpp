@@ -1,7 +1,7 @@
 ﻿#ifndef DEMO_GEOS_HPP_DEFINED
 #define DEMO_GEOS_HPP_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Render/Generic/Render.h"
 
 class DemoGeos : public Test
@@ -14,7 +14,7 @@ class DemoGeos : public Test
     }
     
 public: 
-    static void Run()
+    void Run()
     {
         Window window(1080, 720, L"Test", true);
         window.InitD3D12();

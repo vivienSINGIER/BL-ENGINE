@@ -211,6 +211,12 @@ T* Vector2<T>::Data()
 }
 
 template <typename T>
+std::ostream& Vector2<T>::operator<<(std::ostream& _os, Vector2 const& _v)
+{
+    return _os << "(" << _v.x << ", " << _v.y << ")";
+}
+
+template <typename T>
 Vector2<T> Vector2<T>::Zero()
 {
     return Vector2(T(0), T(0));
@@ -256,6 +262,12 @@ template <typename T>
 Vector2<T> Vector2<T>::Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 const& _max)
 {
     return Vector2<T>(MathUtils::Clamp(_v.x, _min.x, _max.x), MathUtils::Clamp(_v.y, _min.y, _max.y));
+}
+
+template <typename T>
+Vector2<T> Vector2<T>::NearlyEqual(Vector2 const& _v1, Vector2 const& _v2)
+{
+    return MathUtils::NearlyEqual(_v1.x, _v2.x) && MathUtils::NearlyEqual(_v1.y, _v2.y);
 }
 
 #endif

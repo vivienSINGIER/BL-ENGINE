@@ -48,17 +48,17 @@ float MathUtils::Pow(float _x, uint8 _e)
 float MathUtils::Exp(float _x)
 {
     float result = 1.0f;
-    int fact = 1;
-    
-    for (int i = 1; i < 50; i++)
+    float term = 1.0f;
+
+    for (int i = 1; i < 50; ++i)
     {
-        fact *= i;
-        float term = Pow(_x, i) / fact;
-        
-        if (term < 1e-15) break;
+        term *= _x / i;   // next Taylor term
         result += term;
+
+        if (std::abs(term) < 1e-15f)
+            break;
     }
-    
+
     return result;
 }
 
@@ -89,7 +89,7 @@ float MathUtils::Log2(float _x)
             result += bit;
             _x *= 0.5f;
         }
-        bit *= 0.25f;
+        bit *= 0.5f;
     }
     return float(e) + result;
 }
@@ -112,7 +112,7 @@ float MathUtils::Ln(float _x)
 float MathUtils::WrapAngle(float _x)
 {
     while (_x > PI) _x -= TWO_PI;
-    while (_x < -PI) _x += TWO_PI;
+    while (_x <= -PI) _x += TWO_PI;
     return _x;
 }
 
@@ -177,19 +177,29 @@ float MathUtils::Acos(float _x)
 
 float MathUtils::Atan(float _x)
 {
-    _x = WrapAngle(_x);
-
-    float term   = _x;
-    float result = _x;
-    for (int n = 1; n <= 11; n++) 
+    if (Abs(_x) > 0.5f)
     {
-        term   = Pow(-1, n) * Pow(_x, 2*n + 1) / (2*n + 1);
+        float t = _x / (1.0f + Sqrt(1.0f + _x * _x));
+        return 2.0f * Atan(t);
+    }
+
+    float result = _x;
+    float power = _x;
+
+    for (int n = 1; n < 20; ++n)
+    {
+        power *= _x * _x;
+
+        float term = ((n & 1) ? -1.0f : 1.0f) *
+                     power / (2 * n + 1);
+
         result += term;
     }
+
     return result;
 }
 
-float MathUtils::Atan2(float _x, float _y)
+float MathUtils::Atan2(float _y, float _x)
 {
     if (_x == 0.0f && _y == 0.0f) return NAN;
     if (_x >  0.0f) return Atan(_y / _x);
@@ -210,7 +220,7 @@ bool MathUtils::NearlyEqual(float _x, float _y, float _epsilon)
 
 bool MathUtils::IsPowerOfTwo(int _x)
 {
-    return (_x > 0 && ((_x & (_x - 1) == 0)));
+    return !(_x == 0) && !(_x & (_x - 1));
 }
 
 int MathUtils::NextPowerOfTwo(int _x)
@@ -222,12 +232,19 @@ int MathUtils::NextPowerOfTwo(int _x)
         result *= 2;
         power++;
     }
-    return power;
+    return Pow(2, power);
 }
 
 int MathUtils::PreviousPowerOfTwo(int _x)
 {
-    return NextPowerOfTwo(_x) - 1;
+    int power = 1;
+    int result = 2;
+    while (result < _x)
+    {
+        result *= 2;
+        power++;
+    }
+    return Pow(2, power - 1);
 }
 
 

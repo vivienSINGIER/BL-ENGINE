@@ -1,7 +1,7 @@
 #ifndef TEST_ECS_H_DEFINED
 #define TEST_ECS_H_DEFINED
 
-#include "Test.h"
+#include "Test.hpp"
 #include "../Engine/Engine.h"
 
 struct Position  { float x, y; };
@@ -54,7 +54,7 @@ static void PrintEntity(World& w, EntityId e, const char* label)
 class TestECS : public Test
 {
 public: 
-    static void Run()
+    void Run()
     {
         World world;
 
