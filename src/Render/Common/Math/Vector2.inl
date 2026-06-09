@@ -26,37 +26,37 @@ Vector2<T>::Vector2(T _scalar)
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator+(const Vector2& _o)
+Vector2<T> Vector2<T>::operator+(const Vector2& _o) const
 {
     return Vector2(x + _o.x, y + _o.y); 
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator-(const Vector2& _o)
+Vector2<T> Vector2<T>::operator-(const Vector2& _o) const
 {
     return Vector2(x - _o.x, y - _o.y);
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator*(const Vector2& _o)
+Vector2<T> Vector2<T>::operator*(const Vector2& _o) const
 {
     return Vector2(x * _o.x, y * _o.y);
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator/(const Vector2& _o)
+Vector2<T> Vector2<T>::operator/(const Vector2& _o) const
 {
     return Vector2(x / _o.x, y / _o.y);
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator*(float _scalar)
+Vector2<T> Vector2<T>::operator*(float _scalar) const
 {
     return Vector2(x * _scalar, y * _scalar);
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::operator/(float _scalar)
+Vector2<T> Vector2<T>::operator/(float _scalar) const
 {
     return Vector2(x / _scalar, y / _scalar);
 }
@@ -110,19 +110,19 @@ Vector2<T>& Vector2<T>::operator/=(float _scalar)
 }
 
 template <typename T>
-float Vector2<T>::Length()
+float Vector2<T>::Length() const
 {
     return MathUtils::Sqrt(x * x + y * y);
 }
 
 template <typename T>
-float Vector2<T>::LengthSquared()
+float Vector2<T>::LengthSquared() const
 {
     return x * x + y * y;
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::Normalized()
+Vector2<T> Vector2<T>::Normalized() const
 {
     float length = Length();
     if (length == 0.0f || length == 1.0f)
@@ -142,49 +142,49 @@ Vector2<T>& Vector2<T>::SelfNormalize()
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::Reflect(const Vector2& _normal)
+Vector2<T> Vector2<T>::Reflect(const Vector2& _normal) const
 {
-    return *this - 2 * Dot(*this, _normal) * _normal;
+    return *this - T(2) * Dot(*this, _normal) * _normal;
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::Project(Vector2 const& _target)
+Vector2<T> Vector2<T>::Project(Vector2 const& _target) const
 {
-    return _target * (Dot(*this, _target) / LengthSquared());
+    return _target * (Dot(*this, _target) / _target.LengthSquared());
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::Perpendicular()
+Vector2<T> Vector2<T>::Perpendicular() const
 {
     return Vector2(-y, x);
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::yx()
+Vector2<T> Vector2<T>::yx() const
 {
     return Vector2(y, x);
 }
 
 template <typename T>
-bool Vector2<T>::operator==(Vector2 const& _o)
+bool Vector2<T>::operator==(Vector2 const& _o) const
 {
     return x == _o.x && y == _o.y;
 }
 
 template <typename T>
-bool Vector2<T>::operator!=(Vector2 const& _o)
+bool Vector2<T>::operator!=(Vector2 const& _o) const
 {
     return x != _o.x || y != _o.y;
 }
 
 template <typename T>
-bool Vector2<T>::IsNull()
+bool Vector2<T>::IsNull() const
 {
     return x == 0.0f && y == 0.0f;
 }
 
 template <typename T>
-float Vector2<T>::DeltaAngle(Vector2 const& _o)
+float Vector2<T>::DeltaAngle(Vector2 const& _o) const
 {
     float dot_val   = MathUtils::Clamp(Dot(*this, _o) / (Length() * _o.Length()), -1.0f, 1.0f);
     float angle     = std::acos(dot_val);          
@@ -211,9 +211,21 @@ T* Vector2<T>::Data()
 }
 
 template <typename T>
-std::ostream& Vector2<T>::operator<<(std::ostream& _os, Vector2 const& _v)
+T const* Vector2<T>::Data() const
+{
+    return &x;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector2<T> const& _v)
 {
     return _os << "(" << _v.x << ", " << _v.y << ")";
+}
+
+template <typename T>
+Vector2<T> operator*(T _scalar, Vector2<T> const& _o)
+{
+    return _o * _scalar;
 }
 
 template <typename T>
@@ -265,7 +277,7 @@ Vector2<T> Vector2<T>::Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 con
 }
 
 template <typename T>
-Vector2<T> Vector2<T>::NearlyEqual(Vector2 const& _v1, Vector2 const& _v2)
+bool Vector2<T>::NearlyEqual(Vector2 const& _v1, Vector2 const& _v2)
 {
     return MathUtils::NearlyEqual(_v1.x, _v2.x) && MathUtils::NearlyEqual(_v1.y, _v2.y);
 }

@@ -19,5 +19,6 @@
 #include "Tests/Engine/TestUi.hpp"
 
 #include "Tests/Math/TestMathMethods.hpp"
+#include "Tests/Math/TestVector2.hpp"
 
 #endif

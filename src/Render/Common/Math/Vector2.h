@@ -14,12 +14,12 @@ public:
     Vector2(T _x, T _y);
     Vector2(T _scalar);
     
-    Vector2 operator+(Vector2 const& _o);
-    Vector2 operator-(Vector2 const& _o);
-    Vector2 operator*(Vector2 const& _o);
-    Vector2 operator/(Vector2 const& _o);
-    Vector2 operator*(float _scalar);
-    Vector2 operator/(float _scalar);
+    Vector2 operator+(Vector2 const& _o) const;
+    Vector2 operator-(Vector2 const& _o) const;
+    Vector2 operator*(Vector2 const& _o) const;
+    Vector2 operator/(Vector2 const& _o) const;
+    Vector2 operator*(float _scalar) const;
+    Vector2 operator/(float _scalar) const;
     
     Vector2& operator+=(Vector2 const& _o);
     Vector2& operator-=(Vector2 const& _o);
@@ -28,22 +28,22 @@ public:
     Vector2& operator*=(float _scalar);
     Vector2& operator/=(float _scalar);
     
-    bool operator==(Vector2 const& _o);
-    bool operator!=(Vector2 const& _o);
+    bool operator==(Vector2 const& _o) const;
+    bool operator!=(Vector2 const& _o) const;
     
-    bool IsNull();
+    bool IsNull() const;
     
-    float DeltaAngle(Vector2 const& _o);
+    float DeltaAngle(Vector2 const& _o) const;
     
-    float Length();
-    float LengthSquared();
+    float Length() const;
+    float LengthSquared() const;
     
-    Vector2  Normalized();
+    Vector2  Normalized() const;
     Vector2& SelfNormalize();
-    
-    Vector2 Reflect(Vector2 const& _normal);
-    Vector2 Project(Vector2 const& _target);
-    Vector2 Perpendicular();
+
+    Vector2 Reflect(Vector2 const& _normal) const;
+    Vector2 Project(Vector2 const& _target) const;
+    Vector2 Perpendicular() const;
     
     static Vector2 Zero();
     static Vector2 One();
@@ -56,16 +56,21 @@ public:
     static Vector2 Abs(Vector2 const& _v);
     static Vector2 Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 const& _max);
     
-    static Vector2 NearlyEqual(Vector2 const& _v1, Vector2 const& _v2);
+    static bool NearlyEqual(Vector2 const& _v1, Vector2 const& _v2);
     
-    Vector2 yx();
+    Vector2 yx() const;
     
     T  operator[](int _i) const;
     T& operator[](int _i);
     T* Data();
-    
-    std::ostream& operator<<(std::ostream& _os, Vector2 const& _v);
+    T const* Data() const;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector2<T> const& _v);
+
+template <typename T>
+Vector2<T> operator*(T _scalar, Vector2<T> const& _o);
 
 #include "Vector2.inl"
 
