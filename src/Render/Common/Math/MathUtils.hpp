@@ -14,7 +14,8 @@ public:
     inline static const float DEG_TO_RAD   = PI / 180.0f;
     inline static const float RAD_TO_DEG   = 180.0f / PI;
     
-    inline static const float EPSILON      = 1.192092896e-07F;
+    inline static const float LARGE_EPSILON = 1e-5f;
+    inline static const float EPSILON       = 1.192092896e-07F;
     
     inline static const float FLOAT_MAX    = 3.402823466e+38F;
     inline static const float FLOAT_MIN    = 1.175494351e-38F;

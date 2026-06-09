@@ -44,43 +44,43 @@ Vector3<T>::Vector3(T _x, Vector2<T> const& _yz)
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator+(Vector3 const& _o)
+Vector3<T> Vector3<T>::operator+(Vector3 const& _o) const
 {
     return Vector3<T>(x + _o.x, y + _o.y, z + _o.z);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator-(Vector3 const& _o)
+Vector3<T> Vector3<T>::operator-(Vector3 const& _o) const
 {
     return Vector3<T>(x - _o.x, y - _o.y, z - _o.z);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator*(Vector3 const& _o)
+Vector3<T> Vector3<T>::operator*(Vector3 const& _o) const
 {
     return Vector3<T>(x * _o.x, y * _o.y, z * _o.z);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator/(Vector3 const& _o)
+Vector3<T> Vector3<T>::operator/(Vector3 const& _o) const
 {
     return Vector3<T>(x / _o.x, y / _o.y, z / _o.z);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator^(Vector3 const& _o)
+Vector3<T> Vector3<T>::operator^(Vector3 const& _o) const
 {
     return Vector3<T>(y * _o.z - z * _o.y, z * _o.x - x * _o.z, x * _o.y - y * _o.x);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator*(float _scalar)
+Vector3<T> Vector3<T>::operator*(float _scalar) const
 {
     return Vector3<T>(x * _scalar, y * _scalar, z * _scalar);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::operator/(float _scalar)
+Vector3<T> Vector3<T>::operator/(float _scalar) const
 {
     assert(_scalar != 0 && "Can't divide by zero");
     return Vector3<T>(x / _scalar, y / _scalar, z / _scalar);
@@ -152,43 +152,43 @@ Vector3<T>& Vector3<T>::operator/=(float _scalar)
 }
 
 template <typename T>
-bool Vector3<T>::operator==(Vector3 const& _o)
+bool Vector3<T>::operator==(Vector3 const& _o) const
 {
     return x == _o.x && y == _o.y && z == _o.z;
 }
 
 template <typename T>
-bool Vector3<T>::operator!=(Vector3 const& _o)
+bool Vector3<T>::operator!=(Vector3 const& _o) const
 {
     return x != _o.x || y != _o.y || z != _o.z;
 }
 
 template <typename T>
-bool Vector3<T>::IsNull()
+bool Vector3<T>::IsNull() const
 {
     return x == 0.0f && y == 0.0f && z == 0.0f;
 }
 
 template <typename T>
-float Vector3<T>::Length()
+float Vector3<T>::Length() const
 {
     return MathUtils::Sqrt(x * x + y * y + z * z);
 }
 
 template <typename T>
-float Vector3<T>::LengthSquared()
+float Vector3<T>::LengthSquared() const
 {
     return x * x + y * y + z * z;
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::Normalized()
+Vector3<T> Vector3<T>::Normalized() const
 {
     float length = Length();
     if (length == 0.0f || length == 1.0f)
         return *this;
     
-    return Vector2(x / length, y / length, z / length); 
+    return Vector3(x / length, y / length, z / length); 
 }
 
 template <typename T>
@@ -205,21 +205,21 @@ Vector3<T>& Vector3<T>::SelfNormalize()
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::Reflect(Vector3 const& _normal)
+Vector3<T> Vector3<T>::Reflect(Vector3 const& _normal) const
 {
     return *this - 2 * Dot(*this, _normal) * _normal;
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::Project(Vector3 const& _target)
+Vector3<T> Vector3<T>::Project(Vector3 const& _target) const
 {
-    return _target * (Dot(*this, _target) / LengthSquared());
+    return _target * (Dot(*this, _target) / _target.LengthSquared());
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::Perpendicular(Vector3 const& _v)
+Vector3<T> Vector3<T>::Perpendicular() const
 {
-    return Vector3(-_v.y, _v.x, T());
+    return Vector3(-y, x, T());
 }
 
 template <typename T>
@@ -243,7 +243,7 @@ float Vector3<T>::Dot(Vector3 const& _v1, Vector3 const& _v2)
 template <typename T>
 Vector3<T> Vector3<T>::Normalize(Vector3 const& _o)
 {
-    float length = Length();
+    float length = _o.Length();
     if (length == 0.0f || length == 1.0f)
         return _o;
     
@@ -275,67 +275,73 @@ Vector3<T> Vector3<T>::Clamp(Vector3 const& _v, Vector3 const& _min, Vector3 con
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::xy()
+bool Vector3<T>::NearlyEqual(Vector3 const& _v1, Vector3 const& _v2)
+{
+    return MathUtils::NearlyEqual(_v1.x, _v2.x) && MathUtils::NearlyEqual(_v1.y, _v2.y) && MathUtils::NearlyEqual(_v1.z, _v2.z);
+}
+
+template <typename T>
+Vector2<T> Vector3<T>::xy() const
 {
     return Vector2<T>(x, y);
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::yx()
+Vector2<T> Vector3<T>::yx() const
 {
     return Vector2<T>(y, x);
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::xz()
+Vector2<T> Vector3<T>::xz() const
 {
     return Vector2<T>(x, z);
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::zx()
+Vector2<T> Vector3<T>::zx() const
 {
     return Vector2<T>(z, x);
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::yz()
+Vector2<T> Vector3<T>::yz() const
 {
     return Vector2<T>(y, z);
 }
 
 template <typename T>
-Vector2<T> Vector3<T>::zy()
+Vector2<T> Vector3<T>::zy() const
 {
     return Vector2<T>(z, y);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::xzy()
+Vector3<T> Vector3<T>::xzy() const
 {
     return Vector3<T>(x, z, y);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::yxz()
+Vector3<T> Vector3<T>::yxz() const
 {
     return Vector3<T>(y, x, z);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::yzx()
+Vector3<T> Vector3<T>::yzx() const
 {
     return Vector3<T>(y, z, x);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::zxy()
+Vector3<T> Vector3<T>::zxy() const
 {
     return Vector3<T>(z, x, y);
 }
 
 template <typename T>
-Vector3<T> Vector3<T>::zyx()
+Vector3<T> Vector3<T>::zyx() const
 {
     return Vector3<T>(z, y, x);
 }
@@ -356,6 +362,24 @@ template <typename T>
 T* Vector3<T>::Data()
 {
     return &x;
+}
+
+template <typename T>
+T const* Vector3<T>::Data() const
+{
+    return &x;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector3<T> const& _v)
+{
+    return _os << "(" << _v.x << ", " << _v.y << ", " << _v.z << ")";
+}
+
+template <typename T>
+Vector3<T> operator*(T _scalar, Vector3<T> const& _o)
+{
+    return _o * _scalar;
 }
 
 

@@ -17,13 +17,13 @@ public:
     Vector3(Vector2<T> const& _xy, T _z);
     Vector3(T _x, Vector2<T> const& _yz);
     
-    Vector3 operator+(Vector3 const& _o);
-    Vector3 operator-(Vector3 const& _o);
-    Vector3 operator*(Vector3 const& _o);
-    Vector3 operator/(Vector3 const& _o);
-    Vector3 operator^(Vector3 const& _o);
-    Vector3 operator*(float _scalar);
-    Vector3 operator/(float _scalar);
+    Vector3 operator+(Vector3 const& _o) const;
+    Vector3 operator-(Vector3 const& _o) const;
+    Vector3 operator*(Vector3 const& _o) const;
+    Vector3 operator/(Vector3 const& _o) const;
+    Vector3 operator^(Vector3 const& _o) const;
+    Vector3 operator*(float _scalar) const;
+    Vector3 operator/(float _scalar) const;
     
     Vector3& operator+=(Vector3 const& _o);
     Vector3& operator-=(Vector3 const& _o);
@@ -33,20 +33,20 @@ public:
     Vector3& operator*=(float _scalar);
     Vector3& operator/=(float _scalar);
     
-    bool operator==(Vector3 const& _o);
-    bool operator!=(Vector3 const& _o);
+    bool operator==(Vector3 const& _o) const;
+    bool operator!=(Vector3 const& _o) const;
     
-    bool IsNull();
+    bool IsNull() const;
     
-    float Length();
-    float LengthSquared();
+    float Length() const;
+    float LengthSquared() const;
     
-    Vector3  Normalized();
+    Vector3  Normalized() const;
     Vector3& SelfNormalize();
     
-    Vector3 Reflect(Vector3 const& _normal);
-    Vector3 Project(Vector3 const& _target);
-    Vector3 Perpendicular(Vector3 const& _v);
+    Vector3 Reflect(Vector3 const& _normal) const;
+    Vector3 Project(Vector3 const& _target) const;
+    Vector3 Perpendicular() const;
     
     static Vector3 Zero();
     static Vector3 One();
@@ -59,23 +59,32 @@ public:
     static Vector3 Abs(Vector3 const& _v);
     static Vector3 Clamp(Vector3 const& _v, Vector3 const& _min, Vector3 const& _max);
     
-    Vector2<T> xy();
-    Vector2<T> yx();
-    Vector2<T> xz();
-    Vector2<T> zx();
-    Vector2<T> yz();
-    Vector2<T> zy();
+    static bool NearlyEqual(Vector3 const& _v1, Vector3 const& _v2);
     
-    Vector3 xzy();
-    Vector3 yxz();
-    Vector3 yzx();
-    Vector3 zxy();
-    Vector3 zyx();
+    Vector2<T> xy() const;
+    Vector2<T> yx() const;
+    Vector2<T> xz() const;
+    Vector2<T> zx() const;
+    Vector2<T> yz() const;
+    Vector2<T> zy() const;
+    
+    Vector3 xzy() const;
+    Vector3 yxz() const;
+    Vector3 yzx() const;
+    Vector3 zxy() const;
+    Vector3 zyx() const;
     
     T  operator[](int _i) const;
     T& operator[](int _i);
     T* Data();
+    T const* Data() const;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector3<T> const& _v);
+
+template <typename T>
+Vector3<T> operator*(T _scalar, Vector3<T> const& _o);
 
 #include "Vector3.inl"
 

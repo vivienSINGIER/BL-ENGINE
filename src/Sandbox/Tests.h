@@ -20,5 +20,6 @@
 
 #include "Tests/Math/TestMathMethods.hpp"
 #include "Tests/Math/TestVector2.hpp"
+#include "Tests/Math/TestVector3.hpp"
 
 #endif
