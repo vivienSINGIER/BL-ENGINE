@@ -126,9 +126,12 @@ Vector3<T>& Vector3<T>::operator/=(Vector3 const& _o)
 template <typename T>
 Vector3<T>& Vector3<T>::operator^=(Vector3 const& _o)
 {
-    x = y * _o.z - z * _o.y;
-    y = z * _o.x - x * _o.z;
-    z = x * _o.y - y * _o.x;
+    T newX = y * _o.z - z * _o.y;
+    T newY = z * _o.x - x * _o.z;
+    T newZ = x * _o.y - y * _o.x;
+    x = newX;
+    y = newY;
+    z = newZ;
     return *this;
 }
 
