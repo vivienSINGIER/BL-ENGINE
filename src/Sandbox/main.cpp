@@ -10,7 +10,7 @@ int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 	Console::InitConsol();
 	/////////////////////////////////////////////////////////////////////////////
 	
-	TestVector3 test;
+	TestVector4 test;
 	
 	test.Run();
 

@@ -24,12 +24,12 @@ public:
     Vector4(T _x, Vector2<T> const& _yz, T _w);
     Vector4(T _x, T _y, Vector2<T> const& _zw);
     
-    Vector4 operator+(Vector4 const& _o);
-    Vector4 operator-(Vector4 const& _o);
-    Vector4 operator*(Vector4 const& _o);
-    Vector4 operator/(Vector4 const& _o);
-    Vector4 operator*(float _scalar);
-    Vector4 operator/(float _scalar);
+    Vector4 operator+(Vector4 const& _o) const;
+    Vector4 operator-(Vector4 const& _o) const;
+    Vector4 operator*(Vector4 const& _o) const;
+    Vector4 operator/(Vector4 const& _o) const;
+    Vector4 operator*(float _scalar) const;
+    Vector4 operator/(float _scalar) const;
     
     Vector4& operator+=(Vector4 const& _o);
     Vector4& operator-=(Vector4 const& _o);
@@ -38,15 +38,15 @@ public:
     Vector4& operator*=(float _scalar);
     Vector4& operator/=(float _scalar);
     
-    bool operator==(Vector4 const& _o);
-    bool operator!=(Vector4 const& _o);
+    bool operator==(Vector4 const& _o)const ;
+    bool operator!=(Vector4 const& _o)const ;
     
-    bool IsNull();
+    bool IsNull() const;
     
-    float Length();
-    float LengthSquared();
+    float Length() const;
+    float LengthSquared() const;
     
-    Vector4  Normalized();
+    Vector4  Normalized() const;
     Vector4& SelfNormalize();
     
     static Vector4 Zero();
@@ -60,49 +60,56 @@ public:
     static Vector4 Abs(Vector4 const& _v);
     static Vector4 Clamp(Vector4 const& _v, Vector4 const& _min, Vector4 const& _max);
     
-    Vector2<T> xy(); Vector2<T> yx();
-    Vector2<T> xz(); Vector2<T> zx();
-    Vector2<T> xw(); Vector2<T> wx();
-    Vector2<T> yz(); Vector2<T> zy();
-    Vector2<T> yw(); Vector2<T> wy();
-    Vector2<T> zw(); Vector2<T> wz();
+    Vector2<T> xy() const; Vector2<T> yx() const;
+    Vector2<T> xz() const; Vector2<T> zx() const;
+    Vector2<T> xw() const; Vector2<T> wx() const;
+    Vector2<T> yz() const; Vector2<T> zy() const;
+    Vector2<T> yw() const; Vector2<T> wy() const;
+    Vector2<T> zw() const; Vector2<T> wz() const;
     
-    Vector3<T> xyz(); Vector3<T> xyw();
-    Vector3<T> xzy(); Vector3<T> xzw();
-    Vector3<T> xwy(); Vector3<T> xwz();
+    Vector3<T> xyz() const; Vector3<T> xyw() const;
+    Vector3<T> xzy() const; Vector3<T> xzw() const;
+    Vector3<T> xwy() const; Vector3<T> xwz() const;
 
-    Vector3<T> yxz(); Vector3<T> yxw();
-    Vector3<T> yzx(); Vector3<T> yzw();
-    Vector3<T> ywx(); Vector3<T> ywz();
+    Vector3<T> yxz() const; Vector3<T> yxw() const;
+    Vector3<T> yzx() const; Vector3<T> yzw() const;
+    Vector3<T> ywx() const; Vector3<T> ywz() const;
 
-    Vector3<T> zxy(); Vector3<T> zxw();
-    Vector3<T> zyx(); Vector3<T> zyw();
-    Vector3<T> zwx(); Vector3<T> zwy();
+    Vector3<T> zxy() const; Vector3<T> zxw() const;
+    Vector3<T> zyx() const; Vector3<T> zyw() const;
+    Vector3<T> zwx() const; Vector3<T> zwy() const;
 
-    Vector3<T> wxy(); Vector3<T> wxz();
-    Vector3<T> wyx(); Vector3<T> wyz();
-    Vector3<T> wzx(); Vector3<T> wzy();
+    Vector3<T> wxy() const; Vector3<T> wxz() const;
+    Vector3<T> wyx() const; Vector3<T> wyz() const;
+    Vector3<T> wzx() const; Vector3<T> wzy() const;
     
-    Vector4<T> xywz();
-    Vector4<T> xzyw(); Vector4<T> xzwy();
-    Vector4<T> xwyz(); Vector4<T> xwzy();
+    Vector4<T> xywz() const;
+    Vector4<T> xzyw() const; Vector4<T> xzwy() const;
+    Vector4<T> xwyz() const; Vector4<T> xwzy() const;
 
-    Vector4<T> yxzw(); Vector4<T> yxwz();
-    Vector4<T> yzxw(); Vector4<T> yzwx();
-    Vector4<T> ywxz(); Vector4<T> ywzx();
+    Vector4<T> yxzw() const; Vector4<T> yxwz() const;
+    Vector4<T> yzxw() const; Vector4<T> yzwx() const;
+    Vector4<T> ywxz() const; Vector4<T> ywzx() const;
 
-    Vector4<T> zxyw(); Vector4<T> zxwy();
-    Vector4<T> zyxw(); Vector4<T> zywx();
-    Vector4<T> zwxy(); Vector4<T> zwyx();
+    Vector4<T> zxyw() const; Vector4<T> zxwy() const;
+    Vector4<T> zyxw() const; Vector4<T> zywx() const;
+    Vector4<T> zwxy() const; Vector4<T> zwyx() const;
 
-    Vector4<T> wxyz(); Vector4<T> wxzy();
-    Vector4<T> wyxz(); Vector4<T> wyzx();
-    Vector4<T> wzxy(); Vector4<T> wzyx();
+    Vector4<T> wxyz() const; Vector4<T> wxzy() const;
+    Vector4<T> wyxz() const; Vector4<T> wyzx() const;
+    Vector4<T> wzxy() const; Vector4<T> wzyx() const;
     
     T  operator[](int _i) const;
     T& operator[](int _i);
     T* Data();
+    T const* Data() const;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector4<T> const& _v);
+
+template <typename T>
+Vector4<T> operator*(T _scalar, Vector4<T> const& _o);
 
 #include "Vector4.inl"
 

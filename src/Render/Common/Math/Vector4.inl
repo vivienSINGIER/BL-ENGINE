@@ -85,38 +85,38 @@ Vector4<T>::Vector4(T _x, T _y, Vector2<T> const& _zw)
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator+(Vector4 const& _o)
+Vector4<T> Vector4<T>::operator+(Vector4 const& _o) const
 {
     return Vector4(x + _o.x, y + _o.y, z + _o.z, w + _o.w);
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator-(Vector4 const& _o)
+Vector4<T> Vector4<T>::operator-(Vector4 const& _o) const
 {
     return Vector4(x - _o.x, y - _o.y, z - _o.z, w - _o.w);
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator*(Vector4 const& _o)
+Vector4<T> Vector4<T>::operator*(Vector4 const& _o) const
 {
     return Vector4(x * _o.x, y * _o.y, z * _o.z, w * _o.w);
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator/(Vector4 const& _o)
+Vector4<T> Vector4<T>::operator/(Vector4 const& _o) const
 {
     assert(_o.x != 0.0f && _o.y != 0.0f && _o.z != 0.0f && _o.w != 0.0f && "Division by zero");
     return Vector4(x / _o.x, y / _o.y, z / _o.z, w / _o.w);
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator*(float _scalar)
+Vector4<T> Vector4<T>::operator*(float _scalar) const
 {
     return Vector4(x * _scalar, y * _scalar, z * _scalar, w * _scalar);
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::operator/(float _scalar)
+Vector4<T> Vector4<T>::operator/(float _scalar) const
 {
     assert(_scalar != 0.0f && "Division by zero");
     return Vector4(x / _scalar, y / _scalar, z / _scalar, w / _scalar);
@@ -185,37 +185,37 @@ Vector4<T>& Vector4<T>::operator/=(float _scalar)
 }
 
 template <typename T>
-bool Vector4<T>::operator==(Vector4 const& _o)
+bool Vector4<T>::operator==(Vector4 const& _o) const
 {
     return x == _o.x && y == _o.y && z == _o.z && w == _o.w;
 }
 
 template <typename T>
-bool Vector4<T>::operator!=(Vector4 const& _o)
+bool Vector4<T>::operator!=(Vector4 const& _o) const
 {
     return x != _o.x || y != _o.y || z != _o.z || w != _o.w;
 }
 
 template <typename T>
-bool Vector4<T>::IsNull()
+bool Vector4<T>::IsNull() const
 {
     return x == 0.0f && y == 0.0f && z == 0.0f && w == 0.0f;
 }
 
 template <typename T>
-float Vector4<T>::Length()
+float Vector4<T>::Length() const
 {
     return MathUtils::Sqrt(x * x + y * y + z * z + w * w);
 }
 
 template <typename T>
-float Vector4<T>::LengthSquared()
+float Vector4<T>::LengthSquared() const
 {
     return x * x + y * y + z * z + w * w;
 }
 
 template <typename T>
-Vector4<T> Vector4<T>::Normalized()
+Vector4<T> Vector4<T>::Normalized() const
 {
     float length = Length();
     if (length == 0.0f || length == 1.0f)
@@ -304,77 +304,95 @@ T* Vector4<T>::Data()
     return &x;
 }
 
+template <typename T>
+T const* Vector4<T>::Data() const
+{
+    return &x;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Vector4<T> const& _v)
+{
+    return _os << "(" << _v.x << " ," << _v.y << " ," << _v.z << " ," << _v.w << ")";
+}
+
+template <typename T>
+Vector4<T> operator*(T _scalar, Vector4<T> const& _o)
+{
+    return _o * _scalar;
+}
+
 
 #pragma region 2ComponentGetters
 
 template <typename T>
-Vector2<T> Vector4<T>::xy()
+Vector2<T> Vector4<T>::xy() const
 {
     return Vector2<T>(x, y);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::yx()
+Vector2<T> Vector4<T>::yx() const
 {
     return Vector2<T>(y, x);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::xz()
+Vector2<T> Vector4<T>::xz() const
 {
     return Vector2<T>(x, z);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::zx()
+Vector2<T> Vector4<T>::zx() const
 {
     return Vector2<T>(z, x);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::xw()
+Vector2<T> Vector4<T>::xw() const
 {
     return Vector2<T>(x, w);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::wx()
+Vector2<T> Vector4<T>::wx() const
 {
     return Vector2<T>(w, x);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::yz()
+Vector2<T> Vector4<T>::yz() const
 {
     return Vector2<T>(y, z);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::zy()
+Vector2<T> Vector4<T>::zy() const
 {
     return Vector2<T>(z, y);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::yw()
+Vector2<T> Vector4<T>::yw() const
 {
     return Vector2<T>(y, w);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::wy()
+Vector2<T> Vector4<T>::wy() const
 {
     return Vector2<T>(w, y);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::zw()
+Vector2<T> Vector4<T>::zw() const
 {
     return Vector2<T>(z, w);
 }
 
 template <typename T>
-Vector2<T> Vector4<T>::wz()
+Vector2<T> Vector4<T>::wz() const
 {
     return Vector2<T>(w, z);
 }
@@ -384,148 +402,148 @@ Vector2<T> Vector4<T>::wz()
 #pragma region 3ComponentGetters
 
 template <typename T>
-Vector3<T> Vector4<T>::xyz() { return Vector3<T>(x, y, z); }
+Vector3<T> Vector4<T>::xyz() const { return Vector3<T>(x, y, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::xyw() { return Vector3<T>(x, y, w); }
+Vector3<T> Vector4<T>::xyw() const { return Vector3<T>(x, y, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::xzy() { return Vector3<T>(x, z, y); }
+Vector3<T> Vector4<T>::xzy() const { return Vector3<T>(x, z, y); }
 
 template <typename T>
-Vector3<T> Vector4<T>::xzw() { return Vector3<T>(x, z, w); }
+Vector3<T> Vector4<T>::xzw() const { return Vector3<T>(x, z, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::xwy() { return Vector3<T>(x, w, y); }
+Vector3<T> Vector4<T>::xwy() const { return Vector3<T>(x, w, y); }
 
 template <typename T>
-Vector3<T> Vector4<T>::xwz() { return Vector3<T>(x, w, z); }
+Vector3<T> Vector4<T>::xwz() const { return Vector3<T>(x, w, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::yxz() { return Vector3<T>(y, x, z); }
+Vector3<T> Vector4<T>::yxz() const { return Vector3<T>(y, x, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::yxw() { return Vector3<T>(y, x, w); }
+Vector3<T> Vector4<T>::yxw() const { return Vector3<T>(y, x, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::yzx() { return Vector3<T>(y, z, x); }
+Vector3<T> Vector4<T>::yzx() const { return Vector3<T>(y, z, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::yzw() { return Vector3<T>(y, z, w); }
+Vector3<T> Vector4<T>::yzw() const { return Vector3<T>(y, z, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::ywx() { return Vector3<T>(y, w, x); }
+Vector3<T> Vector4<T>::ywx() const { return Vector3<T>(y, w, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::ywz() { return Vector3<T>(y, w, z); }
+Vector3<T> Vector4<T>::ywz() const { return Vector3<T>(y, w, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zxy() { return Vector3<T>(z, x, y); }
+Vector3<T> Vector4<T>::zxy() const { return Vector3<T>(z, x, y); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zxw() { return Vector3<T>(z, x, w); }
+Vector3<T> Vector4<T>::zxw() const { return Vector3<T>(z, x, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zyx() { return Vector3<T>(z, y, x); }
+Vector3<T> Vector4<T>::zyx() const { return Vector3<T>(z, y, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zyw() { return Vector3<T>(z, y, w); }
+Vector3<T> Vector4<T>::zyw() const { return Vector3<T>(z, y, w); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zwx() { return Vector3<T>(z, w, x); }
+Vector3<T> Vector4<T>::zwx() const { return Vector3<T>(z, w, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::zwy() { return Vector3<T>(z, w, y); }
+Vector3<T> Vector4<T>::zwy() const { return Vector3<T>(z, w, y); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wxy() { return Vector3<T>(w, x, y); }
+Vector3<T> Vector4<T>::wxy() const { return Vector3<T>(w, x, y); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wxz() { return Vector3<T>(w, x, z); }
+Vector3<T> Vector4<T>::wxz() const { return Vector3<T>(w, x, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wyx() { return Vector3<T>(w, y, x); }
+Vector3<T> Vector4<T>::wyx() const { return Vector3<T>(w, y, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wyz() { return Vector3<T>(w, y, z); }
+Vector3<T> Vector4<T>::wyz() const { return Vector3<T>(w, y, z); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wzx() { return Vector3<T>(w, z, x); }
+Vector3<T> Vector4<T>::wzx() const { return Vector3<T>(w, z, x); }
 
 template <typename T>
-Vector3<T> Vector4<T>::wzy() { return Vector3<T>(w, z, y); }
+Vector3<T> Vector4<T>::wzy() const { return Vector3<T>(w, z, y); }
 
 #pragma endregion
 
 #pragma region 4ComponentGetters
 template <typename T>
-Vector4<T> Vector4<T>::xywz() { return Vector4<T>(x, y, w, z); }
+Vector4<T> Vector4<T>::xywz() const { return Vector4<T>(x, y, w, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::xzyw() { return Vector4<T>(x, z, y, w); }
+Vector4<T> Vector4<T>::xzyw() const { return Vector4<T>(x, z, y, w); }
 
 template <typename T>
-Vector4<T> Vector4<T>::xzwy() { return Vector4<T>(x, z, w, y); }
+Vector4<T> Vector4<T>::xzwy() const { return Vector4<T>(x, z, w, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::xwyz() { return Vector4<T>(x, w, y, z); }
+Vector4<T> Vector4<T>::xwyz() const { return Vector4<T>(x, w, y, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::xwzy() { return Vector4<T>(x, w, z, y); }
+Vector4<T> Vector4<T>::xwzy() const { return Vector4<T>(x, w, z, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::yxzw() { return Vector4<T>(y, x, z, w); }
+Vector4<T> Vector4<T>::yxzw() const { return Vector4<T>(y, x, z, w); }
 
 template <typename T>
-Vector4<T> Vector4<T>::yxwz() { return Vector4<T>(y, x, w, z); }
+Vector4<T> Vector4<T>::yxwz() const { return Vector4<T>(y, x, w, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::yzxw() { return Vector4<T>(y, z, x, w); }
+Vector4<T> Vector4<T>::yzxw() const { return Vector4<T>(y, z, x, w); }
 
 template <typename T>
-Vector4<T> Vector4<T>::yzwx() { return Vector4<T>(y, z, w, x); }
+Vector4<T> Vector4<T>::yzwx() const { return Vector4<T>(y, z, w, x); }
 
 template <typename T>
-Vector4<T> Vector4<T>::ywxz() { return Vector4<T>(y, w, x, z); }
+Vector4<T> Vector4<T>::ywxz() const { return Vector4<T>(y, w, x, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::ywzx() { return Vector4<T>(y, w, z, x); }
+Vector4<T> Vector4<T>::ywzx() const { return Vector4<T>(y, w, z, x); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zxyw() { return Vector4<T>(z, x, y, w); }
+Vector4<T> Vector4<T>::zxyw() const { return Vector4<T>(z, x, y, w); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zxwy() { return Vector4<T>(z, x, w, y); }
+Vector4<T> Vector4<T>::zxwy() const { return Vector4<T>(z, x, w, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zyxw() { return Vector4<T>(z, y, x, w); }
+Vector4<T> Vector4<T>::zyxw() const { return Vector4<T>(z, y, x, w); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zywx() { return Vector4<T>(z, y, w, x); }
+Vector4<T> Vector4<T>::zywx() const { return Vector4<T>(z, y, w, x); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zwxy() { return Vector4<T>(z, w, x, y); }
+Vector4<T> Vector4<T>::zwxy() const { return Vector4<T>(z, w, x, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::zwyx() { return Vector4<T>(z, w, y, x); }
+Vector4<T> Vector4<T>::zwyx() const { return Vector4<T>(z, w, y, x); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wxyz() { return Vector4<T>(w, x, y, z); }
+Vector4<T> Vector4<T>::wxyz() const { return Vector4<T>(w, x, y, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wxzy() { return Vector4<T>(w, x, z, y); }
+Vector4<T> Vector4<T>::wxzy() const { return Vector4<T>(w, x, z, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wyxz() { return Vector4<T>(w, y, x, z); }
+Vector4<T> Vector4<T>::wyxz() const { return Vector4<T>(w, y, x, z); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wyzx() { return Vector4<T>(w, y, z, x); }
+Vector4<T> Vector4<T>::wyzx() const { return Vector4<T>(w, y, z, x); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wzxy() { return Vector4<T>(w, z, x, y); }
+Vector4<T> Vector4<T>::wzxy() const { return Vector4<T>(w, z, x, y); }
 
 template <typename T>
-Vector4<T> Vector4<T>::wzyx() { return Vector4<T>(w, z, y, x); }
+Vector4<T> Vector4<T>::wzyx() const { return Vector4<T>(w, z, y, x); }
 
 #pragma endregion
 
