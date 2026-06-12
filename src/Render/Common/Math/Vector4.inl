@@ -2,6 +2,7 @@
 #define VECTOR4_INL_DEFINED
 
 #include "Vector4.h"
+#include "Matrix4.h"
 
 template <typename T>
 Vector4<T>::Vector4()
@@ -123,6 +124,17 @@ Vector4<T> Vector4<T>::operator/(float _scalar) const
 }
 
 template <typename T>
+Vector4<T> Vector4<T>::operator*(Matrix4<T> const& _m) const
+{
+    Vector4<T> result;
+    result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0] + w * _m[3][0];
+    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1] + w * _m[3][1];
+    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2] + w * _m[3][2];
+    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3] + w * _m[3][3];
+    return result;
+}
+
+template <typename T>
 Vector4<T>& Vector4<T>::operator+=(Vector4 const& _o)
 {
     x += _o.x;
@@ -181,6 +193,22 @@ Vector4<T>& Vector4<T>::operator/=(float _scalar)
     y /= _scalar;
     z /= _scalar;
     w /= _scalar;
+    return *this;
+}
+
+template <typename T>
+Vector4<T>& Vector4<T>::operator*=(Matrix4<T> const& _m)
+{
+    Vector4<T> result;
+    result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0] + w * _m[3][0];
+    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1] + w * _m[3][1];
+    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2] + w * _m[3][2];
+    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3] + w * _m[3][3];
+    
+    x = result.x;
+    y = result.y;
+    z = result.z;
+    w = result.w;
     return *this;
 }
 

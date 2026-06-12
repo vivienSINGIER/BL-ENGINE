@@ -1,7 +1,8 @@
 #ifndef VECTOR3_INL_DEFINED
 #define VECTOR3_INL_DEFINED
 
-#include "Vector3.h"
+#include "Vector3_Fwd.h"
+#include "Matrix3.h"
 
 template <typename T>
 Vector3<T>::Vector3()
@@ -87,6 +88,17 @@ Vector3<T> Vector3<T>::operator/(float _scalar) const
 }
 
 template <typename T>
+Vector3<T> Vector3<T>::operator*(Matrix3<T> const& _m) const
+{
+    Vector3<T> result;
+    result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0];
+    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
+    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
+    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3];
+    return result;
+}
+
+template <typename T>
 Vector3<T>& Vector3<T>::operator+=(Vector3 const& _o)
 {
     x = x + _o.x;
@@ -151,6 +163,21 @@ Vector3<T>& Vector3<T>::operator/=(float _scalar)
     x = x / _scalar;
     y = y / _scalar;
     z = z / _scalar;
+    return *this;
+}
+
+template <typename T>
+Vector3<T>& Vector3<T>::operator*=(Matrix3<T> const& _m)
+{
+    Vector3<T> result;
+    result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0];
+    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
+    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
+    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3];
+    
+    x = result.x;
+    y = result.y;
+    z = result.z;
     return *this;
 }
 
