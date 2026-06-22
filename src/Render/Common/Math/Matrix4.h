@@ -3,6 +3,8 @@
 
 #include "Vector4_Fwd.h"
 
+class Quaternion;
+
 template <typename T>
 class Matrix4
 {
@@ -69,6 +71,17 @@ public:
     static Matrix4  MakeRotationX(T _angle);
     static Matrix4  MakeRotationY(T _angle);
     static Matrix4  MakeRotationZ(T _angle);
+    static Matrix4  MakeRotationXYZ(T _angleX, T _angleY, T _angleZ);
+    static Matrix4  MakeRotationQuat(Quaternion const& _quat);
+    
+    static Matrix4  MakePerspective(float _fov, float _aspectRatio, float _near, float _far);
+    static Matrix4  MakeOrthographic(float _left, float _right, float _bottom, float _top ,float _near, float _far);
+    static Matrix4  MakeLookAt(Vector3<T> const& _eye, Vector3<T> const& _target, Vector3<T> const& _up);
+    
+    // static void     Decompose(Vector3<T>* _translation, Vector3<T>* _scale, Vector3<T>* _rotation); 
+    
+    bool operator==(const Matrix4& _o) const;
+    bool operator!=(const Matrix4& _o) const;
     
     Vector4<T> const& operator[](int _i) const;
     Vector4<T>&       operator[](int _i);

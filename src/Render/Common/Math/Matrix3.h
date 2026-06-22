@@ -57,6 +57,9 @@ public:
     static Matrix3  Transpose(Matrix3 const& _m);
     static Matrix3  Invert(Matrix3 const& _m);
     
+    bool operator==(const Matrix3&) const;
+    bool operator!=(const Matrix3&) const;
+    
     Vector3<T> const& operator[](int _i) const;
     Vector3<T>&       operator[](int _i);
     T* Data();

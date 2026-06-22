@@ -39,12 +39,14 @@ template <typename T>
 Matrix3<T>::Matrix3(std::initializer_list<std::initializer_list<T>> _l)
 {
     assert(_l.size() == 3 && "Incorrect init list size");
+    const std::initializer_list<float>* row = _l.begin();
     for (int i = 0; i < 3; i++)
     {
-        assert(_l[i].size() == 3 && "Incorrect init list size");
+        assert(row[i].size() == 3 && "Incorrect init list size");
+        const float* col = row[i].begin();
         for (int j = 0; j < 3; j++)
         {
-            rows[i][j] = _l[i][j];
+            rows[i][j] = col[i];
         }
     }
 }
@@ -291,6 +293,28 @@ template <typename T>
 Matrix3<T> Matrix3<T>::Invert(Matrix3 const& _m)
 {
     return _m.Inverted();
+}
+
+template <typename T>
+bool Matrix3<T>::operator==(const Matrix3& _o) const
+{
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+            if (rows[i][j] != _o.rows[i][j]) return false;
+    }
+    return true;
+}
+
+template <typename T>
+bool Matrix3<T>::operator!=(const Matrix3& _o) const
+{
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+            if (rows[i][j] != _o.rows[i][j]) return true;
+    }
+    return false;
 }
 
 template <typename T>

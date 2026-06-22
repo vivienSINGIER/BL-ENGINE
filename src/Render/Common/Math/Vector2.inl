@@ -2,7 +2,7 @@
 #define VECTOR2_INL_DEFINED
 
 #include "MathUtils.hpp"
-#include "Vector2.h"
+#include "Vector2_Fwd.h"
 
 template <typename T>
 Vector2<T>::Vector2()

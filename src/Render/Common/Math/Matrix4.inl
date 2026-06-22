@@ -2,6 +2,7 @@
 #define MATRIX4_INL_DEFINED
 
 #include "Matrix4.h"
+#include "Quaternion.h"
 
 template <typename T>
 Matrix4<T>::Matrix4() : m00(), m01(), m02(), m03(), 
@@ -46,12 +47,14 @@ template <typename T>
 Matrix4<T>::Matrix4(std::initializer_list<std::initializer_list<T>> _l)
 {
     assert(_l.size() == 4 && "Incorrect init list size");
+    const std::initializer_list<float>* row = _l.begin();
     for (int i = 0; i < 4; i++)
     {
-        assert(_l[i].size() == 4 && "Incorrect init list size");
+        assert(row[i].size() == 4 && "Incorrect init list size");
+        const float* col = row[i].begin();
         for (int j = 0; j < 4; j++)
         {
-            rows[i][j] = _l[i][j];
+            rows[i][j] = col[i];
         }
     }
 }
@@ -408,13 +411,174 @@ Matrix4<T> Matrix4<T>::MakeScale(Vector4<T> const& _v)
 template <typename T>
 Matrix4<T> Matrix4<T>::MakeRotation(Vector4<T> const& _axis, T _angle)
 {
+    assert(_axis.Length() == 1 && "Axis vector should be an unit vector");
+    
+    float c = MathUtils::Cos(_angle);
+    float s = MathUtils::Sin(_angle);
+    
+    float ic = 1 - c;
+    
+    float x = _axis.x;
+    float y = _axis.y;
+    float z = _axis.z;
+    
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+    
     return {
-            {T(1), T(0), T(0), T(0)},
-            {T(0), T(1), T(0), T(0)},
-            {T(0), T(0), T(1), T(0)},
-            {T(0), T(0), T(0), T(1)}
+        { x2 * ic + c, x * y * ic + z * s, x * z * ic - y * s , T(0) },
+        { x * y * ic - z * s, y2 * ic + c, y * z * ic + x * s , T(0) },
+        { x * z * ic + y * s, y * z * ic - x * s, z2 * ic + c , T(0) },
+        {               T(0),               T(0),         T(0), T(1) }
     };
 }
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationX(T _angle)
+{
+    return {
+            {T(1),                    T(0),                   T(0), T(0)},
+              {T(0),  MathUtils::Cos(_angle), MathUtils::Sin(_angle), T(0)},
+              {T(0), -MathUtils::Sin(_angle), MathUtils::Cos(_angle), T(0)},
+              {T(0),                    T(0),                   T(0), T(1)}
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationY(T _angle)
+{
+    return {
+            { MathUtils::Cos(_angle), T(0), -MathUtils::Sin(_angle), T(0)},
+              {                   T(0), T(1),                    T(0), T(0)},
+              { MathUtils::Sin(_angle), T(0),  MathUtils::Cos(_angle), T(0)},
+              {                   T(0), T(0),                    T(0), T(1)}
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationZ(T _angle)
+{
+    return {
+            {  MathUtils::Cos(_angle), MathUtils::Sin(_angle), T(0), T(0)},
+              { -MathUtils::Sin(_angle), MathUtils::Cos(_angle), T(0), T(0)},
+              {                    T(0),                   T(0), T(1), T(0)},
+              {                    T(0),                   T(0), T(0), T(1)}
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationXYZ(T _angleX, T _angleY, T _angleZ)
+{
+    return MakeRotationX(_angleX) * MakeRotationY(_angleY) * MakeRotationZ(_angleZ);
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationQuat(Quaternion const& _quat)
+{
+    float x = _quat.x;
+    float y = _quat.y;
+    float z = _quat.z;
+    float w = _quat.w;
+    
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+    
+    return {
+        { 1 - 2*y2 - 2*z2, 2*x*y - 2*w*y, 2*x*z + 2*w*y, T(0) },
+        { 2*x*y + 2*w*z, 1 - 2*x2 - 2*z2, 2*y*z + 2*w*x, T(0) },
+        { 2*x*z - 2*w*y, 2*y*z + 2*w*x, 1 - 2*x2 - 2*y2, T(0) },
+        { T(0), T(0), T(0), T(1)}
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakePerspective(float _fov, float _aspectRatio, float _near, float _far)
+{
+    float _00 = 1.0f / (_aspectRatio * MathUtils::Tan(_fov / 2));
+    float _11 = 1.0f / MathUtils::Tan(_fov / 2);
+    float _22 = -(_near + _far) / (_near - _far);
+    float _23 = 1.0f;
+    float _32 = -(2.0f * _far * _near) / (_far - _near);
+    
+    return {
+        {  _00, T(0), T(0), T(0) },
+        { T(0),  _11, T(0), T(0) },
+        { T(0), T(0),  _22, _23  },
+        { T(0), T(0),  _32, T(0) },
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeOrthographic(float _left, float _right, float _bottom, float _top, float _near, float _far)
+{
+    float _00 = 2.0f / (_right - _left);
+    float _11 = 2.0f / (_top - _bottom);
+    float _22 = - 2.0f / (_far - _near);
+    
+    float _03 = - (_right + _left) / (_right - _left);
+    float _13 = - (_top + _bottom) / (_top - _bottom);
+    float _23 = - (_near + _far)   / (_far - _near);
+    float _33 = 1.0f;
+    
+    return {
+        {  _00, T(0), T(0), _03 },
+        { T(0),  _11, T(0), _13 },
+        { T(0), T(0),  _22, _23 },
+        { T(0), T(0), T(0), _33 }
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeLookAt(Vector3<T> const& _eye, Vector3<T> const& _target, Vector3<T> const& _up)
+{
+    Vector3<T> forward = (_eye - _target).Normalized();
+    Vector3<T> right = (_up ^ forward).Normalized();
+    Vector3<T> up = forward ^ right;
+    
+    float tx = -Vector3<T>::Dot(right, _eye);
+    float ty = -Vector3<T>::Dot(up, _eye);
+    float tz = -Vector3<T>::Dot(forward, _eye);
+    
+    return {
+        { right.x, up.x, forward.x, T(0) },
+        { right.y, up.y, forward.y, T(0) },
+        { right.z, up.z, forward.z, T(0) },
+        {      tx,   ty,        tz, T(1) }
+    };
+}
+
+template <typename T>
+bool Matrix4<T>::operator==(const Matrix4& _o) const
+{
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+            if (rows[i][j] != _o.rows[i][j]) return false;
+    }
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::operator!=(const Matrix4& _o) const
+{
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+            if (rows[i][j] != _o.rows[i][j]) return true;
+    }
+    return false;
+}
+
+// template <typename T>
+// void Matrix4<T>::Decompose(Vector3<T>* _translation, Matrix4* _scale, Matrix4* _rotation)
+// {
+//     bool hasTranslation = _translation != nullptr;
+//     bool hasScale = _scale != nullptr;
+//     bool hasRotation = _rotation != nullptr;
+//     
+// }
 
 template <typename T>
 Vector4<T> const& Matrix4<T>::operator[](int _i) const
