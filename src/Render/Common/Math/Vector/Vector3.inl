@@ -2,7 +2,7 @@
 #define VECTOR3_INL_DEFINED
 
 #include "Vector3_Fwd.h"
-#include "Matrix3.h"
+#include "../Matrix/Matrix3.h"
 
 template <typename T>
 Vector3<T>::Vector3()
@@ -57,6 +57,12 @@ Vector3<T> Vector3<T>::operator-(Vector3 const& _o) const
 }
 
 template <typename T>
+Vector3<T> Vector3<T>::operator-() const
+{
+    return Vector3<T>(-x, -y, -z);
+}
+
+template <typename T>
 Vector3<T> Vector3<T>::operator*(Vector3 const& _o) const
 {
     return Vector3<T>(x * _o.x, y * _o.y, z * _o.z);
@@ -92,9 +98,8 @@ Vector3<T> Vector3<T>::operator*(Matrix3<T> const& _m) const
 {
     Vector3<T> result;
     result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0];
-    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
-    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
-    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3];
+    result.y = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
+    result.z = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
     return result;
 }
 
@@ -171,9 +176,8 @@ Vector3<T>& Vector3<T>::operator*=(Matrix3<T> const& _m)
 {
     Vector3<T> result;
     result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0];
-    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
-    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
-    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3];
+    result.y = x * _m[0][1] + y * _m[1][1] + z * _m[2][1];
+    result.z = x * _m[0][2] + y * _m[1][2] + z * _m[2][2];
     
     x = result.x;
     y = result.y;
@@ -379,13 +383,13 @@ Vector3<T> Vector3<T>::zyx() const
 template <typename T>
 T Vector3<T>::operator[](int _i) const
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>
 T& Vector3<T>::operator[](int _i)
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>

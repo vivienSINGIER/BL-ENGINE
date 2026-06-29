@@ -22,6 +22,7 @@ public:
     
     Vector3 operator+(Vector3 const& _o) const;
     Vector3 operator-(Vector3 const& _o) const;
+    Vector3 operator-() const;
     Vector3 operator*(Vector3 const& _o) const;
     Vector3 operator/(Vector3 const& _o) const;
     Vector3 operator^(Vector3 const& _o) const;
@@ -36,7 +37,7 @@ public:
     Vector3& operator^=(Vector3 const& _o);
     Vector3& operator*=(float _scalar);
     Vector3& operator/=(float _scalar);
-    Vector3& operator*=(Matrix3 const& _matrix);
+    Vector3& operator*=(Matrix3<T> const& _matrix);
     
     bool operator==(Vector3 const& _o) const;
     bool operator!=(Vector3 const& _o) const;

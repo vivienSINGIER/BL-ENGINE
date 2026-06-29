@@ -2,7 +2,7 @@
 #define VECTOR2_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector2.h"
+#include "../Render/Common/Math/Vector/Vector2.h"
 
 static bool Vec2Equal(Vector2<float> const& _a, Vector2<float> const& _b)
 {
@@ -71,7 +71,9 @@ private:
         const Vector2<float> a(3.0f, 4.0f);
         const Vector2<float> b(1.0f, 2.0f);
         TestObjectValue("operator+ | basic",        a, &Vector2<float>::operator+,  Vec2Equal, Vector2<float>(4.0f, 6.0f), b);
-        TestObjectValue("operator- | basic",        a, &Vector2<float>::operator-,  Vec2Equal, Vector2<float>(2.0f, 2.0f), b);
+        TestObjectValue("operator- | basic",        a, 
+            static_cast<Vector2<float>(Vector2<float>::*)(Vector2<float> const&) const>(&Vector2<float>::operator-),  
+            Vec2Equal, Vector2<float>(2.0f, 2.0f), b);
         
         TestValue("operator* | scalar reverse",
             static_cast<Vector2<float>(*)(float, Vector2<float> const&)>(&operator*),
@@ -93,7 +95,9 @@ private:
         // zero cases
         const Vector2<float> zero(0.0f);
         TestObjectValue("operator+ | zero",         a, &Vector2<float>::operator+,  Vec2Equal, a, zero);
-        TestObjectValue("operator- | self",         a, &Vector2<float>::operator-,  Vec2Equal, Vector2<float>(0.0f), a);
+        TestObjectValue("operator- | self",         a, 
+            static_cast<Vector2<float>(Vector2<float>::*)(Vector2<float> const&) const>(&Vector2<float>::operator-),  
+            Vec2Equal, Vector2<float>(0.0f), a);
 
         // negative
         const Vector2<float> neg(-1.0f, -2.0f);

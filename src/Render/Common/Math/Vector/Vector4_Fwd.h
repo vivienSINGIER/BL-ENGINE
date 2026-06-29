@@ -29,6 +29,7 @@ public:
     
     Vector4 operator+(Vector4 const& _o) const;
     Vector4 operator-(Vector4 const& _o) const;
+    Vector4 operator-() const;
     Vector4 operator*(Vector4 const& _o) const;
     Vector4 operator/(Vector4 const& _o) const;
     Vector4 operator*(float _scalar) const;
@@ -115,7 +116,5 @@ std::ostream& operator<<(std::ostream& _os, Vector4<T> const& _v);
 
 template <typename T>
 Vector4<T> operator*(T _scalar, Vector4<T> const& _o);
-
-#include "Vector4.inl"
 
 #endif

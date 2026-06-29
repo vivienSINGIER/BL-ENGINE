@@ -1,7 +1,12 @@
-#ifndef MATRIX3_H_DEFINED
-#define MATRIX3_H_DEFINED
+#ifndef MATRIX3_FWD_H_DEFINED
+#define MATRIX3_FWD_H_DEFINED
 
-#include "Vector3_Fwd.h"
+#include "../Vector/Vector3_Fwd.h"
+
+template <typename T>
+class Matrix4;
+
+class Quaternion;
 
 template <typename T>
 class Matrix3
@@ -46,6 +51,7 @@ public:
     Matrix3     Transposed() const;
     Matrix3&    SelfTranspose();
     
+    float       FrobeniusNorm()         const;
     float       Determinant()           const;
     float       Minor(int _r, int _c)   const;
     Matrix3     Comatrix()              const;
@@ -53,9 +59,23 @@ public:
     Matrix3     Inverted()          const;
     Matrix3&    SelfInvert();
     
+    Matrix4<T>      ToMatrix4() const;
+    Quaternion      ToQuaternion() const;
+
     static float    Determinant(Matrix3 const& _m);
     static Matrix3  Transpose(Matrix3 const& _m);
     static Matrix3  Invert(Matrix3 const& _m);
+    
+    static Matrix3  MakeScale(Vector3<T> const& _v);
+    static Matrix3  MakeRotation(Vector3<T> const& _axis, T _angle);
+    static Matrix3  MakeRotationX(T _angle);
+    static Matrix3  MakeRotationY(T _angle);
+    static Matrix3  MakeRotationZ(T _angle);
+    static Matrix3  MakeRotationZYX(T _angleZ, T _angleY, T _angleX);
+    static Matrix3  MakeRotationXYZ(T _angleX, T _angleY, T _angleZ);
+    static Matrix3  MakeRotationYPR(T _yawY, T _pitchX, T _rollZ);
+    static Matrix3  MakeRotationRPY(T _rollZ, T _pitchX, T _yawY);
+    static Matrix3  MakeRotationQuat(Quaternion const& _quat);
     
     bool operator==(const Matrix3&) const;
     bool operator!=(const Matrix3&) const;
@@ -66,6 +86,7 @@ public:
     T const* Data() const;
 };
 
-#include "Matrix3.inl"
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Matrix3<T> const& _m);
 
 #endif

@@ -2,7 +2,7 @@
 #define VECTOR4_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector4.h"
+#include "../Render/Common/Math/Vector/Vector4.h"
 
 static bool Vec4Equal(Vector4<float> const& _a, Vector4<float> const& _b)
 {
@@ -141,7 +141,9 @@ private:
         const V4 b(1.0f, 2.0f, 3.0f, 4.0f);
 
         TestObjectValue("operator+ | basic",    a, &V4::operator+, Vec4Equal, V4(3.0f, 6.0f, 9.0f, 12.0f), b);
-        TestObjectValue("operator- | basic",    a, &V4::operator-, Vec4Equal, V4(1.0f, 2.0f, 3.0f,  4.0f), b);
+        TestObjectValue("operator- | basic",    a, 
+            static_cast<V4(V4::*)(V4 const&) const>(&V4::operator-),
+            Vec4Equal, V4(1.0f, 2.0f, 3.0f,  4.0f), b);
         TestObjectValue("operator* | basic",    a,
             static_cast<V4(V4::*)(V4 const&) const>(&V4::operator*),
             Vec4Equal, V4(2.0f, 8.0f, 18.0f, 32.0f), b);
@@ -162,7 +164,9 @@ private:
         const V4 zero(0.0f);
         const V4 neg(-1.0f, -2.0f, -3.0f, -4.0f);
         TestObjectValue("operator+ | zero",     a, &V4::operator+, Vec4Equal, a,                           zero);
-        TestObjectValue("operator- | self",     a, &V4::operator-, Vec4Equal, V4(0.0f),                    a);
+        TestObjectValue("operator- | self",     a, 
+            static_cast<V4(V4::*)(V4 const&) const>(&V4::operator-), 
+            Vec4Equal, V4(0.0f), a);
         TestObjectValue("operator+ | negative", a, &V4::operator+, Vec4Equal, V4(1.0f, 2.0f, 3.0f, 4.0f), neg);
     }
 

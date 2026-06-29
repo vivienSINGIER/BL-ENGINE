@@ -2,7 +2,7 @@
 #define VECTOR4_INL_DEFINED
 
 #include "Vector4.h"
-#include "Matrix4.h"
+#include "../Matrix/Matrix4.h"
 
 template <typename T>
 Vector4<T>::Vector4()
@@ -95,6 +95,12 @@ template <typename T>
 Vector4<T> Vector4<T>::operator-(Vector4 const& _o) const
 {
     return Vector4(x - _o.x, y - _o.y, z - _o.z, w - _o.w);
+}
+
+template <typename T>
+Vector4<T> Vector4<T>::operator-() const
+{
+    return Vector4<T>(-x, -y, -z, -w);
 }
 
 template <typename T>
@@ -201,9 +207,9 @@ Vector4<T>& Vector4<T>::operator*=(Matrix4<T> const& _m)
 {
     Vector4<T> result;
     result.x = x * _m[0][0] + y * _m[1][0] + z * _m[2][0] + w * _m[3][0];
-    result.x = x * _m[0][1] + y * _m[1][1] + z * _m[2][1] + w * _m[3][1];
-    result.x = x * _m[0][2] + y * _m[1][2] + z * _m[2][2] + w * _m[3][2];
-    result.x = x * _m[0][3] + y * _m[1][3] + z * _m[2][3] + w * _m[3][3];
+    result.y = x * _m[0][1] + y * _m[1][1] + z * _m[2][1] + w * _m[3][1];
+    result.z = x * _m[0][2] + y * _m[1][2] + z * _m[2][2] + w * _m[3][2];
+    result.w = x * _m[0][3] + y * _m[1][3] + z * _m[2][3] + w * _m[3][3];
     
     x = result.x;
     y = result.y;
@@ -317,13 +323,13 @@ Vector4<T> Vector4<T>::Clamp(Vector4 const& _v, Vector4 const& _min, Vector4 con
 template <typename T>
 T Vector4<T>::operator[](int _i) const
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>
 T& Vector4<T>::operator[](int _i)
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>

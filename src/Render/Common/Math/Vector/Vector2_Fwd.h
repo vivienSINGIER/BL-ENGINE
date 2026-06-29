@@ -16,6 +16,7 @@ public:
     
     Vector2 operator+(Vector2 const& _o) const;
     Vector2 operator-(Vector2 const& _o) const;
+    Vector2 operator-() const;
     Vector2 operator*(Vector2 const& _o) const;
     Vector2 operator/(Vector2 const& _o) const;
     Vector2 operator*(float _scalar) const;

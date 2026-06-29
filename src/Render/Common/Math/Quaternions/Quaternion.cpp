@@ -1,9 +1,9 @@
 
 #include "Quaternion.h"
-#include "Matrix3.h"
-#include "Matrix4.h"
-#include "Vector4.h"
-#include "Vector3.h"
+#include "../Matrix/Matrix3.h"
+#include "../Matrix/Matrix4.h"
+#include "../Vector/Vector4.h"
+#include "../Vector/Vector3.h"
 
 Quaternion::Quaternion() : x(0), y(0), z(0), w(1)
 {
@@ -54,6 +54,8 @@ Quaternion Quaternion::FromEulerAngles(Vector3<float> const& _angles)
 Quaternion Quaternion::FromAxisAngle(Vector3<float> const& _axis, float _angle)
 {
     assert(_axis.Length() == 1.0f && "axis should be normalized");
+    
+    _angle = MathUtils::WrapAngle(_angle);
     
     Quaternion quat;
     quat.x = _axis.x * MathUtils::Sin(_angle / 2);
@@ -126,7 +128,7 @@ Quaternion Quaternion::operator-(Quaternion const& _q) const
 
 Quaternion Quaternion::operator*(Quaternion const& _q) const
 {
-    float rW = w * _q.w;
+    float rW = w*_q.w - x*_q.x - y*_q.y - z*_q.z;
     float rX = w*_q.x + x*_q.w + y*_q.z - z*_q.y;
     float rY = w*_q.y + y*_q.w + z*_q.x - x*_q.z;
     float rZ = w*_q.z + z*_q.w + x*_q.y - y*_q.x;
@@ -153,7 +155,7 @@ Quaternion& Quaternion::operator-=(Quaternion const& _q)
 
 Quaternion& Quaternion::operator*=(Quaternion const& _q)
 {
-    float rW = w * _q.w;
+    float rW = w*_q.w - x*_q.x - y*_q.y - z*_q.z;
     float rX = w*_q.x + x*_q.w + y*_q.z - z*_q.y;
     float rY = w*_q.y + y*_q.w + z*_q.x - x*_q.z;
     float rZ = w*_q.z + z*_q.w + x*_q.y - y*_q.x;
@@ -187,7 +189,7 @@ Quaternion Quaternion::Conjugate() const
 
 Quaternion Quaternion::Inverted() const
 {
-    float d = x * x - y * y - z * z + w * w;
+    float d = x * x + y * y + z * z + w * w;
     
     float rX = -x / d;
     float rY = -y / d;
@@ -199,7 +201,7 @@ Quaternion Quaternion::Inverted() const
 
 Quaternion& Quaternion::SelfInvert()
 {
-    float d = x * x - y * y - z * z + w * w;
+    float d = x * x + y * y + z * z + w * w;
     
     x = -x / d;
     y = -y / d;
@@ -248,6 +250,72 @@ Quaternion& Quaternion::SafeSelfNormalize()
     return *this;
 }
 
+Matrix3<float> Quaternion::ToMatrix3()
+{
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+    
+    return {
+        { 1.0f - 2*y2 - 2*z2, 2*x*y - 2*z*w, 2*x*z + 2*y*w },
+          { 2*x*y + 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z - 2*x*w },
+          { 2*x*z - 2*y*w, 2*y*z + 2*x*w, 1.0f - 2*x2 - 2*y2 }
+    };
+}
+
+Matrix4<float> Quaternion::ToMatrix4()
+{
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+    
+    return {
+            { 1.0f - 2*y2 - 2*z2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0.0f },
+              { 2*x*y + 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z - 2*x*w, 0.0f },
+              { 2*x*z - 2*y*w, 2*y*z + 2*x*w, 1.0f - 2*x2 - 2*y2, 0.0f },
+              { 0.0f, 0.0f, 0.0f, 1.0f}
+    };
+}
+
+Vector4<float> Quaternion::ToAxisAngle()
+{
+    float angle = 2 * MathUtils::Acos(w);
+    
+    Vector4<float> result;
+    result.w = angle;
+    
+    float d = MathUtils::Sqrt(1.0f - w * w);
+    if (d == 0.0f)
+        return Vector4<float>(1.0f, 0.0f, 0.0f, angle);
+    
+    result.x = x / d;
+    result.y = y / d;
+    result.z = z / d;
+    
+    return result;
+}
+
+Vector3<float> Quaternion::ToEulerAngles()
+{
+    Vector3<float> result;
+    
+    float sinY = 2.0f * (x*z - w*y);
+    sinY = MathUtils::Clamp(sinY, -1.0f, 1.0f);
+    
+    if (MathUtils::Abs(sinY) > 1.0f - MathUtils::LARGE_EPSILON)
+    {
+        result.y = (sinY > 0.0f) ? MathUtils::HALF_PI : -MathUtils::HALF_PI;
+        result.x = 2.0f * MathUtils::Atan2(y, w) * MathUtils::Sign(sinY);
+        result.z = 0.0f;
+        return result;
+    }
+    
+    result.y = MathUtils::Asin(sinY);
+    result.x = MathUtils::Atan2(-2.0f * (y*z + w*x), 1.0f - 2.0f * (x*x + y*y));
+    result.z = MathUtils::Atan2(-2.0f * (x*y - w*z), 1.0f - 2.0f * (y*y + z*z));
+    return result;
+}
+
 float Quaternion::Dot(Quaternion const& _q1, Quaternion const& _q2)
 {
     return _q1.Dot(_q2);   
@@ -292,6 +360,13 @@ bool Quaternion::operator!=(Quaternion const& _q) const
 {
     return x != _q.x || y != _q.y || z != _q.z || w != _q.w;
 }
+
+std::ostream& operator<<(std::ostream& _os, Quaternion const& _q)
+{
+    return _os << "w : " << _q.w << " | xyz : (" << _q.x << ", " << _q.y << ", " << _q.z << ")";
+}
+
+
 
 
 

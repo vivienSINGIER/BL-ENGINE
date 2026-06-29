@@ -1,7 +1,13 @@
-#ifndef MATRIX4_H_DEFINED
-#define MATRIX4_H_DEFINED
+#ifndef MATRIX4_FWD_H_DEFINED
+#define MATRIX4_FWD_H_DEFINED
 
-#include "Vector4_Fwd.h"
+#include "../Vector/Vector4_Fwd.h"
+
+template <typename T>
+class Vector3;
+
+template <typename T>
+class Matrix3;
 
 class Quaternion;
 
@@ -60,25 +66,32 @@ public:
     Matrix4&    SelfInvert();
     Matrix4&    SelfInvertAffine();
     
+    Matrix3<T>  ToMatrix3()     const;
+    Quaternion  ToQuaternion()  const;
+    
+    bool     FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation);
+    bool     AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation, Vector3<T>* _shear);
+    
     static float    Determinant(Matrix4 const& _m);
     static Matrix4  Transpose(Matrix4 const& _m);
     static Matrix4  Invert(Matrix4 const& _m);
     static Matrix4  InvertAffine(Matrix4 const& _m);
     
     static Matrix4  MakeTranslation(Vector4<T> const& _v);
-    static Matrix4  MakeScale(Vector4<T> const& _v);
-    static Matrix4  MakeRotation(Vector4<T> const& _axis, T _angle);
+    static Matrix4  MakeScale(Vector3<T> const& _v);
+    static Matrix4  MakeRotation(Vector3<T> const& _axis, T _angle);
     static Matrix4  MakeRotationX(T _angle);
     static Matrix4  MakeRotationY(T _angle);
     static Matrix4  MakeRotationZ(T _angle);
     static Matrix4  MakeRotationXYZ(T _angleX, T _angleY, T _angleZ);
+    static Matrix4  MakeRotationZYX(T _angleZ, T _angleY, T _angleX);
+    static Matrix4  MakeRotationYPR(T _yawY, T _pitchX, T _rollZ);
+    static Matrix4  MakeRotationRPY(T _rollZ, T _pitchX, T _yawY);
     static Matrix4  MakeRotationQuat(Quaternion const& _quat);
     
     static Matrix4  MakePerspective(float _fov, float _aspectRatio, float _near, float _far);
     static Matrix4  MakeOrthographic(float _left, float _right, float _bottom, float _top ,float _near, float _far);
     static Matrix4  MakeLookAt(Vector3<T> const& _eye, Vector3<T> const& _target, Vector3<T> const& _up);
-    
-    // static void     Decompose(Vector3<T>* _translation, Vector3<T>* _scale, Vector3<T>* _rotation); 
     
     bool operator==(const Matrix4& _o) const;
     bool operator!=(const Matrix4& _o) const;
@@ -87,8 +100,12 @@ public:
     Vector4<T>&       operator[](int _i);
     T* Data();
     T const* Data() const;
+    
+private:
+    Matrix3<T> PolarDecomposeRotation(Matrix3<T> const& _m);
 };
 
-#include "Matrix4.inl"
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Matrix4<T> const& _m);
 
 #endif

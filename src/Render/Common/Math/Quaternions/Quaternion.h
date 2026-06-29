@@ -1,6 +1,7 @@
 #ifndef QUATERNION_H_DEFINED
 #define QUATERNION_H_DEFINED
 #include <initializer_list>
+#include <iosfwd>
 
 template <typename T>
 class Vector4;
@@ -16,7 +17,10 @@ class Quaternion
 public:
     union
     {
-        float x, y, z, w;
+        struct
+        {
+            float x, y, z, w;
+        };
         
         float Data[4];
     };
@@ -55,6 +59,11 @@ public:
     Quaternion      SafeNormalized() const;
     Quaternion&     SafeSelfNormalize();
     
+    Matrix3<float>  ToMatrix3();
+    Matrix4<float>  ToMatrix4();
+    Vector4<float>  ToAxisAngle();
+    Vector3<float>  ToEulerAngles();
+    
     static float        Dot(Quaternion const& _q1, Quaternion const& _q2);
     
     static float        Length(Quaternion const& _q);
@@ -68,5 +77,7 @@ public:
     bool operator==(Quaternion const& _q) const;
     bool operator!=(Quaternion const& _q) const;
 };
+
+std::ostream& operator<<(std::ostream& _os, Quaternion const& _q);
 
 #endif

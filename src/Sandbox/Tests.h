@@ -22,5 +22,8 @@
 #include "Tests/Math/TestVector2.hpp"
 #include "Tests/Math/TestVector3.hpp"
 #include "Tests/Math/TestVector4.hpp"
+#include "Tests/Math/TestQuaternion.hpp"
+#include "Tests/Math/TestMatrix3.hpp"
+#include "Tests/Math/TestMatrix4.hpp"
 
 #endif

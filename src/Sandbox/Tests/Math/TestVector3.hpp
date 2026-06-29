@@ -2,7 +2,7 @@
 #define VECTOR3_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector3.h"
+#include "../Render/Common/Math/Vector/Vector3.h"
 
 static bool Vec3Equal(Vector3<float> const& _a, Vector3<float> const& _b)
 {
@@ -97,7 +97,9 @@ private:
         const V3 b(1.0f, 2.0f, 3.0f);
 
         TestObjectValue("operator+ | basic",        a, &V3::operator+, Vec3Equal, V3(4.0f, 6.0f, 8.0f),  b);
-        TestObjectValue("operator- | basic",        a, &V3::operator-, Vec3Equal, V3(2.0f, 2.0f, 2.0f),  b);
+        TestObjectValue("operator- | basic",        a, 
+            static_cast<V3(V3::*)(V3 const&) const>(&V3::operator-), 
+            Vec3Equal, V3(2.0f, 2.0f, 2.0f),  b);
         TestObjectValue("operator* | basic",        a,
             static_cast<V3(V3::*)(V3 const&) const>(&V3::operator*),
             Vec3Equal, V3(3.0f, 8.0f, 15.0f), b);
@@ -119,7 +121,9 @@ private:
         const V3 zero(0.0f);
         const V3 neg(-1.0f, -2.0f, -3.0f);
         TestObjectValue("operator+ | zero",         a, &V3::operator+, Vec3Equal, a,                      zero);
-        TestObjectValue("operator- | self",         a, &V3::operator-, Vec3Equal, V3(0.0f),               a);
+        TestObjectValue("operator- | self",         a, 
+            static_cast<V3(V3::*)(V3 const&) const>(&V3::operator-), 
+            Vec3Equal, V3(0.0f),               a);
         TestObjectValue("operator+ | negative",     a, &V3::operator+, Vec3Equal, V3(2.0f, 2.0f, 2.0f),  neg);
     }
 

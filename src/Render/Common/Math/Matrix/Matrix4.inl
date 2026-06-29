@@ -1,8 +1,10 @@
 #ifndef MATRIX4_INL_DEFINED
 #define MATRIX4_INL_DEFINED
 
-#include "Matrix4.h"
-#include "Quaternion.h"
+#include "Matrix4_Fwd.h"
+#include "Matrix3_Fwd.h"
+#include "../Quaternions/Quaternion.h"
+#include "../Vector/Vector3_Fwd.h"
 
 template <typename T>
 Matrix4<T>::Matrix4() : m00(), m01(), m02(), m03(), 
@@ -15,10 +17,10 @@ Matrix4<T>::Matrix4() : m00(), m01(), m02(), m03(),
 template <typename T>
 Matrix4<T>::Matrix4(T _scalar)
 {
-    rows[0] = Vector4<T>(_scalar, _scalar, _scalar, _scalar);
-    rows[1] = Vector4<T>(_scalar, _scalar, _scalar, _scalar);
-    rows[2] = Vector4<T>(_scalar, _scalar, _scalar, _scalar);
-    rows[3] = Vector4<T>(_scalar, _scalar, _scalar, _scalar);
+    rows[0] = Vector4<T>(_scalar, T(0), T(0), T(0));
+    rows[1] = Vector4<T>(T(0), _scalar, T(0), T(0));
+    rows[2] = Vector4<T>(T(0), T(0), _scalar, T(0));
+    rows[3] = Vector4<T>(T(0), T(0), T(0), _scalar);
 }
 
 template <typename T>
@@ -54,7 +56,7 @@ Matrix4<T>::Matrix4(std::initializer_list<std::initializer_list<T>> _l)
         const float* col = row[i].begin();
         for (int j = 0; j < 4; j++)
         {
-            rows[i][j] = col[i];
+            rows[i][j] = col[j];
         }
     }
 }
@@ -164,10 +166,10 @@ Matrix4<T> Matrix4<T>::operator*(Matrix4 const& _o) const
         for (int j = 0; j < 4; ++j)
         {
             result[i][j] =
-                *this[i][0] * _o[0][j] +
-                *this[i][1] * _o[1][j] +
-                *this[i][2] * _o[2][j] +
-                *this[i][3] * _o[3][j];
+                (*this)[i][0] * _o[0][j] +
+                (*this)[i][1] * _o[1][j] +
+                (*this)[i][2] * _o[2][j] +
+                (*this)[i][3] * _o[3][j];
         }
     }
     return result;
@@ -192,10 +194,10 @@ Matrix4<T>& Matrix4<T>::operator*=(Matrix4 const& _o)
         for (int j = 0; j < 4; ++j)
         {
             result[i][j] =
-                *this[i][0] * _o[0][j] +
-                *this[i][1] * _o[1][j] +
-                *this[i][2] * _o[2][j] +
-                *this[i][3] * _o[3][j];
+                (*this)[i][0] * _o[0][j] +
+                (*this)[i][1] * _o[1][j] +
+                (*this)[i][2] * _o[2][j] +
+                (*this)[i][3] * _o[3][j];
         }
     }
     rows[0] = result.rows[0];
@@ -307,7 +309,7 @@ Matrix4<T> Matrix4<T>::Inverted() const
     
     float invDet = 1.0f / det;
     
-    Matrix4<T> result = Comatrix() * invDet;
+    Matrix4<T> result = Comatrix().Transposed() * invDet;
     return result;
 }
 
@@ -322,10 +324,10 @@ Matrix4<T> Matrix4<T>::InvertedAffine() const
     invTrans = -invTrans;
     
     Matrix4<T> result;
-    result.rows[0] = Vector4<T>(inv.rows[0].xyz, T(0));
-    result.rows[1] = Vector4<T>(inv.rows[1].xyz, T(0));
-    result.rows[2] = Vector4<T>(inv.rows[2].xyz, T(0));
-    result.rows[3] = Vector4<T>(invTrans,        T(1));
+    result.rows[0] = Vector4<T>(inv.rows[0], T(0));
+    result.rows[1] = Vector4<T>(inv.rows[1], T(0));
+    result.rows[2] = Vector4<T>(inv.rows[2], T(0));
+    result.rows[3] = Vector4<T>(invTrans,    T(1));
     return result;
 }
 
@@ -337,7 +339,7 @@ Matrix4<T>& Matrix4<T>::SelfInvert()
     
     float invDet = 1.0f / det;
     
-    Matrix4<T> result = Comatrix() * invDet;
+    Matrix4<T> result = Comatrix().Transposed() * invDet;
     rows[0] = result.rows[0];
     rows[1] = result.rows[1];
     rows[2] = result.rows[2];
@@ -355,11 +357,27 @@ Matrix4<T>& Matrix4<T>::SelfInvertAffine()
     Vector3<T> invTrans = translation * inv;
     invTrans = -invTrans;
     
-    rows[0] = Vector4<T>(inv.rows[0].xyz, T(0));
-    rows[1] = Vector4<T>(inv.rows[1].xyz, T(0));
-    rows[2] = Vector4<T>(inv.rows[2].xyz, T(0));
-    rows[3] = Vector4<T>(invTrans,        T(1));
+    rows[0] = Vector4<T>(inv.rows[0], T(0));
+    rows[1] = Vector4<T>(inv.rows[1], T(0));
+    rows[2] = Vector4<T>(inv.rows[2], T(0));
+    rows[3] = Vector4<T>(invTrans,    T(1));
     return *this;
+}
+
+template <typename T>
+Matrix3<T> Matrix4<T>::ToMatrix3() const
+{
+    return {
+        { m00, m01, m02 },
+        { m10, m11, m12 },
+        { m20, m21, m22 }
+    };
+}
+
+template <typename T>
+Quaternion Matrix4<T>::ToQuaternion() const
+{
+    return Quaternion::FromRotationMatrix(*this);
 }
 
 template <typename T>
@@ -398,18 +416,18 @@ Matrix4<T> Matrix4<T>::MakeTranslation(Vector4<T> const& _v)
 }
 
 template <typename T>
-Matrix4<T> Matrix4<T>::MakeScale(Vector4<T> const& _v)
+Matrix4<T> Matrix4<T>::MakeScale(Vector3<T> const& _v)
 {
     return {
         {_v.x, T(0), T(0), T(0)},
-        {T(0), _v.x, T(0), T(0)},
+        {T(0), _v.y, T(0), T(0)},
         {T(0), T(0), _v.z, T(0)},
         {T(0), T(0), T(0), T(1)}
     };
 }
 
 template <typename T>
-Matrix4<T> Matrix4<T>::MakeRotation(Vector4<T> const& _axis, T _angle)
+Matrix4<T> Matrix4<T>::MakeRotation(Vector3<T> const& _axis, T _angle)
 {
     assert(_axis.Length() == 1 && "Axis vector should be an unit vector");
     
@@ -470,7 +488,73 @@ Matrix4<T> Matrix4<T>::MakeRotationZ(T _angle)
 template <typename T>
 Matrix4<T> Matrix4<T>::MakeRotationXYZ(T _angleX, T _angleY, T _angleZ)
 {
-    return MakeRotationX(_angleX) * MakeRotationY(_angleY) * MakeRotationZ(_angleZ);
+    float cX = MathUtils::Cos(_angleX);
+    float sX = MathUtils::Sin(_angleX);
+    float cY = MathUtils::Cos(_angleY);
+    float sY = MathUtils::Sin(_angleY);
+    float cZ = MathUtils::Cos(_angleZ);
+    float sZ = MathUtils::Sin(_angleZ);
+    
+    return {
+                {            cY*cZ,            cY*sZ,   -sY, T(0) },
+                { sX*sY*cZ - cX*sZ, sX*sY*sZ + cX*cZ, sX*cY, T(0) },
+                { cX*sY*cZ + sX*sZ, cX*sY*sZ - sX*cZ, cX*cY, T(0) },
+                {             T(0),             T(0),  T(0), T(1) }
+        };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationZYX(T _angleZ, T _angleY, T _angleX)
+{
+    float cX = MathUtils::Cos(_angleX);
+    float sX = MathUtils::Sin(_angleX);
+    float cY = MathUtils::Cos(_angleY);
+    float sY = MathUtils::Sin(_angleY);
+    float cZ = MathUtils::Cos(_angleZ);
+    float sZ = MathUtils::Sin(_angleZ);
+    
+    return {
+            {  cY*cZ, cX*sZ + sX*sY*cZ, sX*sZ - cX*sY*cZ, T(0) },
+            { -cY*sZ, cX*cZ - sX*sY*sZ, sX*cZ + cX*sY*sZ, T(0) },
+            {     sY,           -sX*cY,            cX*cY, T(0) },
+            {   T(0),             T(0),             T(0), T(1) }
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationYPR(T _yawY, T _pitchX, T _rollZ)
+{
+    float cX = MathUtils::Cos(_pitchX);
+    float sX = MathUtils::Sin(_pitchX);
+    float cY = MathUtils::Cos(_yawY);
+    float sY = MathUtils::Sin(_yawY);
+    float cZ = MathUtils::Cos(_rollZ);
+    float sZ = MathUtils::Sin(_rollZ);
+    
+    return {
+            { cY*cZ - sX*sY*sZ, cY*sZ + sX*sY*cZ, -cX*sY, T(0) },
+            {           -cX*sZ,            cX*cZ,     sX, T(0) },
+            { sY*cZ + sX*cY*sZ, sY*sZ - sX*cY*cZ,  cX*cY, T(0) },
+            {             T(0),             T(0),   T(0), T(1) }
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationRPY(T _rollZ, T _pitchX, T _yawY)
+{
+    float cX = MathUtils::Cos(_pitchX);
+    float sX = MathUtils::Sin(_pitchX);
+    float cY = MathUtils::Cos(_yawY);
+    float sY = MathUtils::Sin(_yawY);
+    float cZ = MathUtils::Cos(_rollZ);
+    float sZ = MathUtils::Sin(_rollZ);
+    
+    return {
+            {  cY*cZ + sX*sY*sZ, cX*sZ, -sY*cZ + sX*cY*sZ, T(0) },
+            { -cY*sZ + sX*sY*cZ, cX*cZ,  sY*sZ + sX*cY*cZ, T(0) },
+            {             cX*sY,   -sX,             cX*cY, T(0) },
+            {              T(0),  T(0),              T(0), T(1) }
+    };
 }
 
 template <typename T>
@@ -486,10 +570,10 @@ Matrix4<T> Matrix4<T>::MakeRotationQuat(Quaternion const& _quat)
     float z2 = z * z;
     
     return {
-        { 1 - 2*y2 - 2*z2, 2*x*y - 2*w*y, 2*x*z + 2*w*y, T(0) },
-        { 2*x*y + 2*w*z, 1 - 2*x2 - 2*z2, 2*y*z + 2*w*x, T(0) },
-        { 2*x*z - 2*w*y, 2*y*z + 2*w*x, 1 - 2*x2 - 2*y2, T(0) },
-        { T(0), T(0), T(0), T(1)}
+            { 1.0f - 2*y2 - 2*z2, 2*x*y + 2*z*w, 2*x*z - 2*y*w, T(0) },
+            { 2*x*y - 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z + 2*x*w, T(0) },
+            { 2*x*z + 2*y*w, 2*y*z - 2*x*w, 1.0f - 2*x2 - 2*y2, T(0) },
+            {          T(0),          T(0),               T(0), T(1) }
     };
 }
 
@@ -571,14 +655,95 @@ bool Matrix4<T>::operator!=(const Matrix4& _o) const
     return false;
 }
 
-// template <typename T>
-// void Matrix4<T>::Decompose(Vector3<T>* _translation, Matrix4* _scale, Matrix4* _rotation)
-// {
-//     bool hasTranslation = _translation != nullptr;
-//     bool hasScale = _scale != nullptr;
-//     bool hasRotation = _rotation != nullptr;
-//     
-// }
+template <typename T>
+bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation)
+{
+    bool hasTranslation = _translation != nullptr;
+    bool hasScale = _scale != nullptr;
+    bool hasRotation = _rotation != nullptr;
+    
+    if (hasTranslation)
+    {
+        _translation->x = m30;
+        _translation->y = m31;
+        _translation->z = m32;
+    }
+    
+    if (hasScale || hasRotation)
+    {
+        float sX = rows[0].xyz().Length();
+        float sY = rows[1].xyz().Length();
+        float sZ = rows[2].xyz().Length();
+        
+        if (sX == 0.0f || sY == 0.0f || sZ == 0.0f)
+            return false;
+        
+        if (hasScale)
+        {
+            _scale->x = sX;
+            _scale->y = sY;
+            _scale->z = sZ;
+        }
+        
+        if (hasRotation)
+        {
+            Matrix3<T> rot = {
+                { m00 / sX, m01 / sX, m02 / sX },
+                { m10 / sY, m11 / sY, m12 / sY },
+                { m20 / sZ, m21 / sZ, m22 / sZ }
+            };
+            
+            *_rotation = Quaternion::FromRotationMatrix(*rot);
+        }
+    }
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation, Vector3<T>* _shear)
+{
+    bool hasTranslation = _translation != nullptr;
+    bool hasScale = _scale != nullptr;
+    bool hasRotation = _rotation != nullptr;
+    bool hasShear = _shear != nullptr;
+    
+    if (hasTranslation)
+    {
+        _translation->x = m30;
+        _translation->y = m31;
+        _translation->z = m32;
+    }
+    
+    if (hasRotation || hasScale || hasShear)
+    {
+        Matrix3<T> upper = ToMatrix3();
+        Matrix3<T> rot = PolarDecomposeRotation(upper);
+        
+        if (hasRotation)
+            *_rotation = Quaternion::FromRotationMatrix(*rot);
+        
+        if (hasScale || hasShear)
+        {
+            Matrix3<T> scale = upper * rot.Transposed();
+            
+            if (hasScale)
+            {
+                _scale->x = scale.m00;
+                _scale->y = scale.m11;
+                _scale->z = scale.m12;   
+            }
+            
+            if (hasShear)
+            {
+                _shear.x = scale.m01;
+                _shear.y = scale.m02;
+                _shear.z = scale.m12;
+            }
+        }
+    }
+    
+    return true;
+}
 
 template <typename T>
 Vector4<T> const& Matrix4<T>::operator[](int _i) const
@@ -604,6 +769,33 @@ T const* Matrix4<T>::Data() const
     return &m00;
 }
 
+template <typename T>
+Matrix3<T> Matrix4<T>::PolarDecomposeRotation(Matrix3<T> const& _m)
+{
+    for (int i = 0; i < 16; ++i)
+    {
+        Matrix3<T> Minv = _m.Inverse();
+        Matrix3<T> Minv_T = Minv.Transposed();
+        
+        _m = (_m + Minv_T) * T(0.5);
+        
+        Matrix3<T> shouldBeIdentity = _m * _m.Transposed();
+        Matrix3<T> identity = Matrix3<T>::Identity();
+        if ((shouldBeIdentity - identity).FrobeniusNorm() < T(1e-6))
+            break;
+    }
+    return _m;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& _os, Matrix4<T> const& _m)
+{
+    return _os << "\n" <<
+        "| " << _m[0][0] << ", " << _m[0][1] << ", " << _m[0][2] << ", " << _m[0][3] << " | " << "\n" <<
+        "| " << _m[1][0] << ", " << _m[1][1] << ", " << _m[1][2] << ", " << _m[1][3] << " | " << "\n" <<
+        "| " << _m[2][0] << ", " << _m[2][1] << ", " << _m[2][2] << ", " << _m[2][3] << " | " << "\n" <<
+        "| " << _m[3][0] << ", " << _m[3][1] << ", " << _m[3][2] << ", " << _m[3][3] << " | " << "\n";
+}
 
 
 #endif

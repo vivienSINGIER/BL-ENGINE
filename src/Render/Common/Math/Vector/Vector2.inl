@@ -1,7 +1,7 @@
 #ifndef VECTOR2_INL_DEFINED
 #define VECTOR2_INL_DEFINED
 
-#include "MathUtils.hpp"
+#include "../MathUtils.hpp"
 #include "Vector2_Fwd.h"
 
 template <typename T>
@@ -35,6 +35,12 @@ template <typename T>
 Vector2<T> Vector2<T>::operator-(const Vector2& _o) const
 {
     return Vector2(x - _o.x, y - _o.y);
+}
+
+template <typename T>
+Vector2<T> Vector2<T>::operator-() const
+{
+    return Vector2<T>(-x, -y);
 }
 
 template <typename T>
@@ -195,13 +201,13 @@ float Vector2<T>::DeltaAngle(Vector2 const& _o) const
 template <typename T>
 T Vector2<T>::operator[](int _i) const
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>
 T& Vector2<T>::operator[](int _i)
 {
-    return &x[_i];
+    return (&x)[_i];
 }
 
 template <typename T>
