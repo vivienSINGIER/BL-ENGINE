@@ -2,11 +2,11 @@
 #define MATRIX4_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Matrix/Matrix3.h"
-#include "../Render/Common/Math/Matrix/Matrix4.h"
-#include "../Render/Common/Math/Vector/Vector3.h"
-#include "../Render/Common/Math/Vector/Vector4.h"
-#include "../Render/Common/Math/Quaternions/Quaternion.h"
+#include "../Core/Math/Matrix/Matrix3.h"
+#include "../Core/Math/Matrix/Matrix4.h"
+#include "../Core/Math/Vector/Vector3.h"
+#include "../Core/Math/Vector/Vector4.h"
+#include "../Core/Math/Quaternions/Quaternion.h"
 
 // All expected values were computed with numpy and verified by hand.
 //

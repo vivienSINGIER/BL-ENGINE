@@ -2,7 +2,7 @@
 #define VECTOR2_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector/Vector2.h"
+#include "../Core/Math/Vector/Vector2.h"
 
 static bool Vec2Equal(Vector2<float> const& _a, Vector2<float> const& _b)
 {

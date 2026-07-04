@@ -70,13 +70,22 @@ public:
     Quaternion  ToQuaternion()  const;
     
     bool     FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation);
+    bool     FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation);
     bool     AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation, Vector3<T>* _shear);
+    bool     AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation, Vector3<T>* _shear);
+    
+    static bool FastDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation);
+    static bool FastDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation);
+    static bool AffineDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation, Vector3<T>* _shear);
+    static bool AffineDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation, Vector3<T>* _shear);
     
     static float    Determinant(Matrix4 const& _m);
     static Matrix4  Transpose(Matrix4 const& _m);
     static Matrix4  Invert(Matrix4 const& _m);
     static Matrix4  InvertAffine(Matrix4 const& _m);
     
+    static Matrix4  MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Quaternion const& _rot);
+    static Matrix4  MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Matrix4 const& _rot);
     static Matrix4  MakeTranslation(Vector4<T> const& _v);
     static Matrix4  MakeScale(Vector3<T> const& _v);
     static Matrix4  MakeRotation(Vector3<T> const& _axis, T _angle);

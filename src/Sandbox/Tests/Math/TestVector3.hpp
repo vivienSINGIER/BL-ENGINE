@@ -2,7 +2,7 @@
 #define VECTOR3_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector/Vector3.h"
+#include "../Core/Math/Vector/Vector3.h"
 
 static bool Vec3Equal(Vector3<float> const& _a, Vector3<float> const& _b)
 {

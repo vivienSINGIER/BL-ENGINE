@@ -2,7 +2,7 @@
 #define VECTOR4_TEST_H_DEFINED
 
 #include "Test.hpp"
-#include "../Render/Common/Math/Vector/Vector4.h"
+#include "../Core/Math/Vector/Vector4.h"
 
 static bool Vec4Equal(Vector4<float> const& _a, Vector4<float> const& _b)
 {

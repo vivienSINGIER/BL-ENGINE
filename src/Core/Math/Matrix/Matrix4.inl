@@ -405,6 +405,18 @@ Matrix4<T> Matrix4<T>::InvertAffine(Matrix4 const& _m)
 }
 
 template <typename T>
+Matrix4<T> Matrix4<T>::MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Quaternion const& _rot)
+{
+    return MakeScale(_scale) * MakeRotationQuat(_rot) * MakeTranslation(_pos);
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Matrix4 const& _rot)
+{
+    return MakeScale(_scale) * _rot * MakeTranslation(_pos);
+}
+
+template <typename T>
 Matrix4<T> Matrix4<T>::MakeTranslation(Vector4<T> const& _v)
 {
     return {
@@ -658,6 +670,21 @@ bool Matrix4<T>::operator!=(const Matrix4& _o) const
 template <typename T>
 bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation)
 {
+    Matrix3<T> rot;
+    bool result = FastDecompose(_translation, _scale, &rot);
+    
+    if (result == false)
+        return false;
+    
+    if (_rotation != nullptr)
+        *_rotation = rot.ToQuaternion();
+    
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation)
+{
     bool hasTranslation = _translation != nullptr;
     bool hasScale = _scale != nullptr;
     bool hasRotation = _rotation != nullptr;
@@ -693,7 +720,7 @@ bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Qua
                 { m20 / sZ, m21 / sZ, m22 / sZ }
             };
             
-            *_rotation = Quaternion::FromRotationMatrix(*rot);
+            *_rotation = rot;
         }
     }
     return true;
@@ -701,6 +728,22 @@ bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Qua
 
 template <typename T>
 bool Matrix4<T>::AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation, Vector3<T>* _shear)
+{
+    Matrix3<T> rot;
+    bool result = FastDecompose(_translation, _scale, &rot, _shear);
+    
+    if (result == false)
+        return false;
+    
+    if (_rotation != nullptr)
+        *_rotation = rot.ToQuaternion();
+    
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation,
+    Vector3<T>* _shear)
 {
     bool hasTranslation = _translation != nullptr;
     bool hasScale = _scale != nullptr;
@@ -720,7 +763,128 @@ bool Matrix4<T>::AffineDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Q
         Matrix3<T> rot = PolarDecomposeRotation(upper);
         
         if (hasRotation)
-            *_rotation = Quaternion::FromRotationMatrix(*rot);
+            *_rotation = rot;
+        
+        if (hasScale || hasShear)
+        {
+            Matrix3<T> scale = upper * rot.Transposed();
+            
+            if (hasScale)
+            {
+                _scale->x = scale.m00;
+                _scale->y = scale.m11;
+                _scale->z = scale.m12;   
+            }
+            
+            if (hasShear)
+            {
+                _shear.x = scale.m01;
+                _shear.y = scale.m02;
+                _shear.z = scale.m12;
+            }
+        }
+    }
+    
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::FastDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation)
+{
+    Matrix3<T> rot;
+    bool result = Matrix4<T>::FastDecompose(_m, _translation, _scale, &rot);
+    
+    if (result == false)
+        return false;
+    
+    if (_rotation != nullptr)
+        *_rotation = rot.ToQuaternion();
+    
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::FastDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation)
+{
+    bool hasTranslation = _translation != nullptr;
+    bool hasScale = _scale != nullptr;
+    bool hasRotation = _rotation != nullptr;
+    
+    if (hasTranslation)
+    {
+        _translation->x = _m.m30;
+        _translation->y = _m.m31;
+        _translation->z = _m.m32;
+    }
+    
+    if (hasScale || hasRotation)
+    {
+        float sX = _m.rows[0].xyz().Length();
+        float sY = _m.rows[1].xyz().Length();
+        float sZ = _m.rows[2].xyz().Length();
+        
+        if (sX == 0.0f || sY == 0.0f || sZ == 0.0f)
+            return false;
+        
+        if (hasScale)
+        {
+            _scale->x = sX;
+            _scale->y = sY;
+            _scale->z = sZ;
+        }
+        
+        if (hasRotation)
+        {
+            Matrix3<T> rot = {
+                { _m.m00 / sX, _m.m01 / sX, _m.m02 / sX },
+                { _m.m10 / sY, _m.m11 / sY, _m.m12 / sY },
+                { _m.m20 / sZ, _m.m21 / sZ, _m.m22 / sZ }
+            };
+            
+            *_rotation = rot;
+        }
+    }
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::AffineDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation,
+    Vector3<T>* _shear)
+{
+    Matrix3<T> rot;
+    bool result = Matrix4<T>::AffineDecompose(_m, _translation, _scale, &rot, _shear);
+    
+    if (result == false)
+        return false;
+    
+    if (_rotation != nullptr)
+        *_rotation = rot.ToQuaternion();
+    return true;
+}
+
+template <typename T>
+bool Matrix4<T>::AffineDecompose(Matrix4 const& _m, Vector3<T>* _translation, Vector3<T>* _scale, Matrix3<T>* _rotation,
+    Vector3<T>* _shear)
+{
+    bool hasTranslation = _translation != nullptr;
+    bool hasScale = _scale != nullptr;
+    bool hasRotation = _rotation != nullptr;
+    bool hasShear = _shear != nullptr;
+    
+    if (hasTranslation)
+    {
+        _translation->x = _m.m30;
+        _translation->y = _m.m31;
+        _translation->z = _m.m32;
+    }
+    
+    if (hasRotation || hasScale || hasShear)
+    {
+        Matrix3<T> upper = _m.ToMatrix3();
+        Matrix3<T> rot = PolarDecomposeRotation(upper);
+        
+        if (hasRotation)
+            *_rotation = rot;
         
         if (hasScale || hasShear)
         {

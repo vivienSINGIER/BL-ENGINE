@@ -2,7 +2,7 @@
 #define TESTS_MATH_MATHMETHODS_HPP
 
 #include "Test.hpp"
-#include "../Render/Common/Math/MathUtils.hpp"
+#include "../Core/Math/MathUtils.hpp"
 
 static bool FloatEqual(float const& _a, float const& _b)
 {
