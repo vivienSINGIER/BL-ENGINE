@@ -1,5 +1,10 @@
 #include "AABB.h"
 
+#include "OBB.h"
+#include "Ray.h"
+#include "Plane.h"
+#include "Sphere.h"
+
 AABB AABB::FromMinMax(Vect3f32 const& _min, Vect3f32 const& _max)
 {
     return AABB(_min, _max);
@@ -126,6 +131,16 @@ bool AABB::Contains(AABB const& _o) const
     return validX && validY && validZ;
 }
 
+bool AABB::Intersects(Ray const& _r, Vect3f32* _p) const
+{
+    return _r.Intersects(*this, _p);
+}
+
+bool AABB::Intersects(Plane const& _plane) const
+{
+    return _plane.Intersects(*this);
+}
+
 bool AABB::Intersects(AABB const& _o) const
 {
     Vect3f32 c = Center();
@@ -143,19 +158,14 @@ bool AABB::Intersects(AABB const& _o) const
     return validX && validY && validZ;
 }
 
-bool AABB::Contains(AABB const& _aabb, Vect3f32 const& _p)
+bool AABB::Intersects(Sphere const& _o) const
 {
-    return _aabb.Contains(_p);
+    return _o.Intersects(*this);
 }
 
-bool AABB::Contains(AABB const& _aabb, AABB const& _o)
+bool AABB::Intersects(OBB const& _o) const
 {
-    return _aabb.Contains(_o);
-}
-
-bool AABB::Intersects(AABB const& _a, AABB const& _b)
-{
-    return _a.Intersects(_b);
+    return _o.Intersects(*this);
 }
 
 AABB AABB::Merge(AABB const& _a, AABB const& _b)
@@ -177,6 +187,31 @@ AABB AABB::Expand(AABB const& _o, float _scalar)
     Vect3f32 c = _o.Center();
     
     return FromCenterExtent(c, extent);
+}
+
+AABB AABB::Transform(AABB const& _o, Mat4f32 const& _t)
+{
+    AABB res;
+    
+    Vect3f32 newMin = { _t[3][0], _t[3][1], _t[3][2] };
+    Vect3f32 newMax = newMin;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            float coeff = _t[i][j];
+            float minContrib = coeff * (coeff > 0.f ? _o.min[i] : _o.max[i]);
+            float maxContrib = coeff * (coeff > 0.f ? _o.max[i] : _o.min[i]);
+            newMin[j] += minContrib;
+            newMax[j] += maxContrib;
+        }
+    }
+
+    res.min = newMin;
+    res.max = newMax;
+
+    return res;
 }
 
 AABB::AABB()

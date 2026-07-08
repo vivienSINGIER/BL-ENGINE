@@ -1,5 +1,9 @@
 #include "Sphere.h"
 
+#include "AABB.h"
+#include "OBB.h"
+#include "Ray.h"
+#include "Plane.h"
 #include "Utils.hpp"
 
 Sphere::Sphere()
@@ -39,7 +43,7 @@ void Sphere::Transform(Mat4f32 const& _t)
     Vect3f32 position;
     Vect3f32 scale;
     
-    Mat4f32::FastDecompose(_t, &position, &scale, nullptr);
+    Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
     
     center = position;
     radius *= (scale.x + scale.y + scale.z) / 3.0f; 
@@ -50,7 +54,7 @@ Sphere Sphere::Transformed(Mat4f32 const& _t)
     Vect3f32 position;
     Vect3f32 scale;
     
-    Mat4f32::FastDecompose(_t, &position, &scale, nullptr);
+    Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
     
     Vect3f32 nCenter = position;
     float nRadius = radius * (scale.x + scale.y + scale.z) / 3.0f; 
@@ -59,46 +63,49 @@ Sphere Sphere::Transformed(Mat4f32 const& _t)
 
 // TODO use Squared length when possible : avoid expensive Sqrt calculations
 
-bool Sphere::Contains(Vect3f32 const& _p)
+bool Sphere::Contains(Vect3f32 const& _p) const
 {
     float dist = (center - _p).Length();
     
     return dist <= radius;
 }
 
-bool Sphere::Contains(Sphere const& _o)
+bool Sphere::Contains(Sphere const& _o) const
 {
     float dist = (center - _o.center).Length();
     
     return dist + _o.radius <= radius;
 }
 
-bool Sphere::Intersects(Sphere const& _o)
+bool Sphere::Intersects(Ray const& _r, Vect3f32* _p) const
+{
+    return _r.Intersects(*this, _p);
+}
+
+bool Sphere::Intersects(Plane const& _plane) const
+{
+    return _plane.Intersects(*this);
+}
+
+bool Sphere::Intersects(AABB const& _a) const
+{
+    Vect3f32 dir = (center - _a.Center()).Normalized();
+
+    Ray ray(center, dir, radius);
+
+    return ray.Intersects(*this);
+}
+
+bool Sphere::Intersects(Sphere const& _o) const
 {
     float dist = (center - _o.center).Length();
 
     return dist <= radius + _o.radius;
 }
 
-bool Sphere::Contains(Sphere const& _sphere, Vect3f32 const& _p)
+bool Sphere::Intersects(OBB const& _o) const
 {
-    float dist = (_sphere.center - _p).Length();
-    
-    return dist <= _sphere.radius;
-}
-
-bool Sphere::Contains(Sphere const& _sphere, Sphere const& _o)
-{
-    float dist = (_sphere.center - _o.center).Length();
-    
-    return dist + _o.radius <= _sphere.radius;
-}
-
-bool Sphere::Intersects(Sphere const& _sphere, Sphere const& _o)
-{
-    float dist = (_sphere.center - _o.center).Length();
-
-    return dist <= _sphere.radius + _o.radius;
+    return _o.Intersects(*this);
 }
 
 Sphere Sphere::Merge(Sphere const& _sphere, Sphere const& _o)
@@ -123,6 +130,18 @@ Sphere Sphere::Union(Sphere const& _sphere, Sphere const& _o)
 Sphere Sphere::Expand(Sphere const& _sphere, float _scalar)
 {
     return Sphere(_sphere.center, _sphere.radius * _scalar);
+}
+
+Sphere Sphere::Transform(Sphere const& _sphere, Mat4f32 const& _t)
+{
+    Vect3f32 position;
+    Vect3f32 scale;
+    
+    Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
+    
+    Vect3f32 nCenter = position;
+    float nRadius = _sphere.radius * (scale.x + scale.y + scale.z) / 3.0f; 
+    return Sphere(nCenter, nRadius);
 }
 
 
