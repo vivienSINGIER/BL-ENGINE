@@ -79,6 +79,8 @@ public:
     
     bool operator==(const Matrix3&) const;
     bool operator!=(const Matrix3&) const;
+
+    Vector3<T> GetColumn(int _i) const;
     
     Vector3<T> const& operator[](int _i) const;
     Vector3<T>&       operator[](int _i);

@@ -104,6 +104,8 @@ public:
     
     bool operator==(const Matrix4& _o) const;
     bool operator!=(const Matrix4& _o) const;
+
+    Vector4<T> GetColumn(int _i) const;
     
     Vector4<T> const& operator[](int _i) const;
     Vector4<T>&       operator[](int _i);

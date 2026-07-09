@@ -668,6 +668,19 @@ bool Matrix4<T>::operator!=(const Matrix4& _o) const
 }
 
 template <typename T>
+Vector4<T> Matrix4<T>::GetColumn(int _i) const
+{
+    Vector4<T> res;
+    _i = _i % 4;
+
+    for (int i = 0; i < 4; i++)
+    {
+        res[i] = rows[i][_i];
+    }
+    return res;
+}
+
+template <typename T>
 bool Matrix4<T>::FastDecompose(Vector3<T>* _translation, Vector3<T>* _scale, Quaternion* _rotation)
 {
     Matrix3<T> rot;

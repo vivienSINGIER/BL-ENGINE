@@ -507,6 +507,19 @@ bool Matrix3<T>::operator!=(const Matrix3& _o) const
 }
 
 template <typename T>
+Vector3<T> Matrix3<T>::GetColumn(int _i) const
+{
+    Vector3<T> res;
+    _i = _i % 3;
+
+    for (int i = 0; i < 3; i++)
+    {
+        res[i] = rows[i][_i];
+    }
+    return res;
+}
+
+template <typename T>
 Vector3<T> const& Matrix3<T>::operator[](int _i) const
 {
     return rows[_i];
