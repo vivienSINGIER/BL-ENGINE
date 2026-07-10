@@ -417,7 +417,7 @@ Matrix4<T> Matrix4<T>::MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _
 }
 
 template <typename T>
-Matrix4<T> Matrix4<T>::MakeTranslation(Vector4<T> const& _v)
+Matrix4<T> Matrix4<T>::MakeTranslation(Vector3<T> const& _v)
 {
     return {
         {T(1), T(0), T(0), T(0)},
@@ -586,6 +586,62 @@ Matrix4<T> Matrix4<T>::MakeRotationQuat(Quaternion const& _quat)
             { 2*x*y - 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z + 2*x*w, T(0) },
             { 2*x*z + 2*y*w, 2*y*z - 2*x*w, 1.0f - 2*x2 - 2*y2, T(0) },
             {          T(0),          T(0),               T(0), T(1) }
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeRotationAxisAngle(Vector3<T> const& _axis, T _angle)
+{
+    float x = _axis.x;
+    float y = _axis.y;
+    float z = _axis.z;
+    
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+
+    float c = MathUtils::Cos(_angle);
+    float s = MathUtils::Sin(_angle);
+    
+    return {
+            {    c + x2*(1 - c), x*y*(1 - c) + z*s, x*z*(1 - c) - y*s, T(0) },
+            { x*y*(1 - c) - z*s,    c + y2*(1 - c), y*z*(1 - c) + x*s, T(0) },
+            { x*z*(1 - c) + y*s, y*z*(1 - c) - x*s,    c + z2*(1 - c), T(0) },
+            {              T(0),              T(0),              T(0), T(1) }
+    };
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeLineToLineTransform(Vector3<T> const& _a1, Vector3<T> const& _a2, Vector3<T> const& _b1,
+    Vector3<T> const& _b2)
+{
+    Vector3<T> v1 = _a2 - _a1;
+    Vector3<T> v2 = _b2 - _b1;
+
+    float len1 = v1.Length();
+    float len2 = v2.Length();
+
+    assert( len1 != 0.0f && "Can't transform null vector" );
+    float scale = len2 / len1;
+    
+    Matrix3<T> R = Matrix3<T>::MakeVectorRotation(v1, v2);
+    
+    Matrix4 t = Matrix4<T>::MakeTranslation(-_a1) *
+                R.ToMatrix4() *
+                Matrix4<T>::MakeScale(Vector3<T>(scale, scale, scale)) *
+                Matrix4<T>::MakeTranslation(_b1);
+
+    return t;
+}
+
+template <typename T>
+Matrix4<T> Matrix4<T>::MakeCrossProduct(Vector3<T> const& _v1)
+{
+    return {
+            {   T(0),  _v1.z, -_v1.y, T(0) },
+              { -_v1.z,   T(0),  _v1.x, T(0) },
+              {  _v1.y, -_v1.x, T  (0), T(0) },
+              {   T(0),   T(0),   T(0), T(1) }
     };
 }
 

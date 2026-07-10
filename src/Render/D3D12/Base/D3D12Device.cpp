@@ -123,9 +123,8 @@ void D3D12Device::Draw(Geometry* _geo, XMFLOAT4X4& _mat)
     D3D12Geometry* geo = dynamic_cast<D3D12Geometry*>(_geo);
 
     assert(geo != nullptr && "Unusable geometry type");
-
-    // TODO use per geometry topology
-    m_pContext.GetCommandList()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
+    m_pContext.GetCommandList()->IASetPrimitiveTopology(geo->GetD3DTopology());
     
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView = geo->VertexBufferView();
     D3D12_INDEX_BUFFER_VIEW indexBufferView = geo->IndexBufferView();

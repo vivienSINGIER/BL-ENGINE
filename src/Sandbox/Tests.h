@@ -4,6 +4,7 @@
 #include "Tests/Render/TestObjLoader.hpp"
 #include "Tests/Render/TestWindow.hpp"
 #include "Tests/Render/TestText.hpp"
+#include "Tests/Render/TestDebug.hpp"
 
 #include "Tests/Render/DemoGeos.hpp"
 #include "Tests/Render/DemoTexture.hpp"

@@ -76,6 +76,10 @@ public:
     static Matrix3  MakeRotationYPR(T _yawY, T _pitchX, T _rollZ);
     static Matrix3  MakeRotationRPY(T _rollZ, T _pitchX, T _yawY);
     static Matrix3  MakeRotationQuat(Quaternion const& _quat);
+    static Matrix3  MakeRotationAxisAngle(Vector3<T> const& _axis, T _angle);
+    
+    static Matrix3  MakeVectorRotation(Vector3<T> const& _start, Vector3<T> const& _end);
+    static Matrix3  MakeCrossProduct(Vector3<T> const& _v1);
     
     bool operator==(const Matrix3&) const;
     bool operator!=(const Matrix3&) const;

@@ -609,7 +609,7 @@ private:
         // The test just verifies the matrix layout:
         //   For row-vector convention the translation lives in the last row.
         // ============================================================
-        V4 tv(3.0f, 5.0f, 7.0f, 1.0f);
+        V3 tv(3.0f, 5.0f, 7.0f);
         M4 T = M4::MakeTranslation(tv);
         // Translation row (row 3) must hold (tx,ty,tz,1)
         TestValue("MakeTranslation | m30",  &GetM30, FloatEqualM4, 3.0f, T);

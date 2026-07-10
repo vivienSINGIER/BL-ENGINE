@@ -485,6 +485,68 @@ Matrix3<T> Matrix3<T>::MakeRotationQuat(Quaternion const& _quat)
 }
 
 template <typename T>
+Matrix3<T> Matrix3<T>::MakeRotationAxisAngle(Vector3<T> const& _axis, T _angle)
+{
+    float x = _axis.x;
+    float y = _axis.y;
+    float z = _axis.z;
+    
+    float x2 = x * x;
+    float y2 = y * y;
+    float z2 = z * z;
+
+    float c = MathUtils::Cos(_angle);
+    float s = MathUtils::Sin(_angle);
+    
+    return {
+        { c + x2*(1 - c), x*y*(1 - c) + z*s, x*z*(1 - c) - y*s },
+        { x*y*(1 - c) - z*s, c + y2*(1 - c), y*z*(1 - c) + x*s },
+        { x*z*(1 - c) + y*s, y*z*(1 - c) - x*s, c + z2*(1 - c) }
+    };
+}
+
+template <typename T>
+Matrix3<T> Matrix3<T>::MakeVectorRotation(Vector3<T> const& _start, Vector3<T> const& _end)
+{
+    Vector3<T> a = _start.Normalized();
+    Vector3<T> b = _end.Normalized();
+
+    float dot = Vector3<T>::Dot(a, b);
+
+    if ( 1.0f - MathUtils::EPSILON < dot )
+        return Matrix3<T>::Identity();
+
+    if ( -1.0f + MathUtils::EPSILON > dot )
+    {
+        Vector3<T> axis = Vector3<T>(1, 0, 0) ^ a;
+        if ( axis.LengthSquared() < MathUtils::EPSILON * MathUtils::EPSILON )
+            axis = Vector3<T>(0, 1, 0) ^ a;
+
+        axis.SelfNormalize();
+        return MakeRotationAxisAngle(axis, MathUtils::PI);
+    }
+
+    Vector3<T> axis = a ^ b;
+    float s = axis.Length();
+
+    Matrix3 K = MakeCrossProduct(axis);
+
+    // Rodriguez's formula
+    Matrix3 R = Identity() + K + ( K * K ) * ((1 - dot) / (s*s));
+    return R;
+}
+
+template <typename T>
+Matrix3<T> Matrix3<T>::MakeCrossProduct(Vector3<T> const& _v1)
+{
+    return {
+        {   T(0),  _v1.z, -_v1.y },
+          { -_v1.z,   T(0),  _v1.x },
+          {  _v1.y, -_v1.x, T  (0) }
+    };
+}
+
+template <typename T>
 bool Matrix3<T>::operator==(const Matrix3& _o) const
 {
     for (int i = 0; i < 3; i++)

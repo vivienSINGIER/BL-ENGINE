@@ -86,7 +86,7 @@ public:
     
     static Matrix4  MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Quaternion const& _rot);
     static Matrix4  MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Matrix4 const& _rot);
-    static Matrix4  MakeTranslation(Vector4<T> const& _v);
+    static Matrix4  MakeTranslation(Vector3<T> const& _v);
     static Matrix4  MakeScale(Vector3<T> const& _v);
     static Matrix4  MakeRotation(Vector3<T> const& _axis, T _angle);
     static Matrix4  MakeRotationX(T _angle);
@@ -97,6 +97,11 @@ public:
     static Matrix4  MakeRotationYPR(T _yawY, T _pitchX, T _rollZ);
     static Matrix4  MakeRotationRPY(T _rollZ, T _pitchX, T _yawY);
     static Matrix4  MakeRotationQuat(Quaternion const& _quat);
+    static Matrix4  MakeRotationAxisAngle(Vector3<T> const& _axis, T _angle);
+
+    static Matrix4  MakeLineToLineTransform( Vector3<T> const& _a1, Vector3<T> const& _a2,
+                                             Vector3<T> const& _b1, Vector3<T> const& _b2 );
+    static Matrix4  MakeCrossProduct(Vector3<T> const& _v1);
     
     static Matrix4  MakePerspective(float _fov, float _aspectRatio, float _near, float _far);
     static Matrix4  MakeOrthographic(float _left, float _right, float _bottom, float _top ,float _near, float _far);
