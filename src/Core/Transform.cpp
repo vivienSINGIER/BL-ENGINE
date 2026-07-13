@@ -133,9 +133,9 @@ Mat4f32 const& Transform::GetInvMatrix()
     return m_invMatrix;
 }
 
-Mat4f32 const& Transform::UpdateFromParent(Mat4f32 const& _p)
+Mat4f32 Transform::UpdateFromParent(Mat4f32 const& _p)
 {
-    return m_matrix * _p;
+    return GetMatrix() * _p;
 }
 
 void Transform::AddFlag(uint8 _flag)
@@ -220,7 +220,7 @@ Quaternion const& Transform::GetRotation()
     return m_quat;
 }
 
-Vect3f32 const& Transform::GetEulerAngles()
+Vect3f32 Transform::GetEulerAngles()
 {
     return m_quat.ToEulerAngles();
 }

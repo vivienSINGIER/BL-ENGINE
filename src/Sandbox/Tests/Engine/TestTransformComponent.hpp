@@ -1,10 +1,10 @@
-#ifndef TEST_TRANSFORM_H_DEFINED
-#define TEST_TRANSFORM_H_DEFINED
+#ifndef TEST_TRANSFORM_COMPONENT_H_DEFINED
+#define TEST_TRANSFORM_COMPONENT_H_DEFINED
 
 #include "Test.hpp"
 #include "../Engine/Engine.h"
 
-class TestTransform : public Test
+class TestTransformComponent : public Test
 {
 public:
     struct TestScript : public IScript

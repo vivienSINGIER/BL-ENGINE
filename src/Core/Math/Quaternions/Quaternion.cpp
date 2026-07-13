@@ -328,9 +328,9 @@ Matrix3<float> Quaternion::ToMatrix3()
     float z2 = z * z;
     
     return {
-        { 1.0f - 2*y2 - 2*z2, 2*x*y - 2*z*w, 2*x*z + 2*y*w },
-          { 2*x*y + 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z - 2*x*w },
-          { 2*x*z - 2*y*w, 2*y*z + 2*x*w, 1.0f - 2*x2 - 2*y2 }
+        { 1.0f - 2*y2 - 2*z2, 2*x*y + 2*z*w, 2*x*z - 2*y*w },
+          { 2*x*y - 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z + 2*x*w },
+          { 2*x*z + 2*y*w, 2*y*z - 2*x*w, 1.0f - 2*x2 - 2*y2 }
     };
 }
 
@@ -341,9 +341,9 @@ Matrix4<float> Quaternion::ToMatrix4()
     float z2 = z * z;
     
     return {
-            { 1.0f - 2*y2 - 2*z2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0.0f },
-              { 2*x*y + 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z - 2*x*w, 0.0f },
-              { 2*x*z - 2*y*w, 2*y*z + 2*x*w, 1.0f - 2*x2 - 2*y2, 0.0f },
+            { 1.0f - 2*y2 - 2*z2, 2*x*y + 2*z*w, 2*x*z - 2*y*w, 0.0f },
+              { 2*x*y - 2*z*w, 1.0f - 2*x2 - 2*z2, 2*y*z + 2*x*w, 0.0f },
+              { 2*x*z + 2*y*w, 2*y*z - 2*x*w, 1.0f - 2*x2 - 2*y2, 0.0f },
               { 0.0f, 0.0f, 0.0f, 1.0f}
     };
 }

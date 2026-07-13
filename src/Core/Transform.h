@@ -40,7 +40,7 @@ public:
     Mat4f32 const& GetMatrix();
     Mat4f32 const& GetInvMatrix();
     
-    Mat4f32 const& UpdateFromParent(Mat4f32 const& _p);
+    Mat4f32 UpdateFromParent(Mat4f32 const& _p);
     
     //////////////////// Pos //////////////////////////
     
@@ -62,7 +62,7 @@ public:
     ///////////////////// Rotation /////////////////////
 
     Quaternion const& GetRotation();
-    Vect3f32 const& GetEulerAngles();
+    Vect3f32 GetEulerAngles();
     
     Vect3f32 const& GetRight();
     Vect3f32 const& GetUp();

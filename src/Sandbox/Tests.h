@@ -1,17 +1,19 @@
 ﻿#ifndef TESTS_H_DEFINED
 #define TESTS_H_DEFINED
 
+#include "Tests/Core/TestDebug.hpp"
+#include "Tests/Core/TestTransform.hpp"
+
 #include "Tests/Render/TestObjLoader.hpp"
 #include "Tests/Render/TestWindow.hpp"
 #include "Tests/Render/TestText.hpp"
-#include "Tests/Render/TestDebug.hpp"
 
 #include "Tests/Render/DemoGeos.hpp"
 #include "Tests/Render/DemoTexture.hpp"
 
 #include "Tests/Engine/TestECS.hpp"
 #include "Tests/Engine/TestScripts.hpp"
-#include "Tests/Engine/TestTransform.hpp"
+#include "Tests/Engine/TestTransformComponent.hpp"
 #include "Tests/Engine/TestInputs.hpp"
 #include "Tests/Engine/TestCamera.hpp"
 #include "Tests/Engine/TestCollision.hpp"
