@@ -9,8 +9,7 @@ Transform::Transform()
 Transform::Transform(Transform const& _o) :
     m_pos(_o.m_pos), m_scale(_o.m_scale),
     m_quat(_o.m_quat), m_rotMatrix(_o.m_rotMatrix),
-    m_forward(_o.m_forward), m_right(_o.m_right),
-    m_up(_o.m_up), m_matrix(_o.m_matrix),
+    m_matrix(_o.m_matrix),
     m_invMatrix(_o.m_invMatrix),
     m_dirty(_o.m_dirty)
 {
@@ -20,8 +19,7 @@ Transform::Transform(Transform const& _o) :
 Transform::Transform(Transform&& _o) noexcept :
     m_pos(_o.m_pos), m_scale(_o.m_scale),
     m_quat(_o.m_quat), m_rotMatrix(_o.m_rotMatrix),
-    m_forward(_o.m_forward), m_right(_o.m_right),
-    m_up(_o.m_up), m_matrix(_o.m_matrix),
+    m_matrix(_o.m_matrix),
     m_invMatrix(_o.m_invMatrix),
     m_dirty(_o.m_dirty)
 {
@@ -37,9 +35,6 @@ Transform& Transform::operator=(Transform const& _o)
     m_scale = _o.m_scale;
     m_quat = _o.m_quat;
     m_rotMatrix = _o.m_rotMatrix;
-    m_forward = _o.m_forward;
-    m_right = _o.m_right;
-    m_up = _o.m_up;
     m_matrix = _o.m_matrix;
     m_invMatrix = _o.m_invMatrix;
     m_dirty = _o.m_dirty;
@@ -56,9 +51,6 @@ Transform& Transform::operator=(Transform&& _o) noexcept
     m_scale = _o.m_scale;
     m_quat = _o.m_quat;
     m_rotMatrix = _o.m_rotMatrix;
-    m_forward = _o.m_forward;
-    m_right = _o.m_right;
-    m_up = _o.m_up;
     m_matrix = _o.m_matrix;
     m_invMatrix = _o.m_invMatrix;
     m_dirty = _o.m_dirty;
@@ -79,9 +71,45 @@ void Transform::SetIdentity()
     ResetRotation();
 }
 
+void Transform::UpdateMatrix()
+{
+    if (GetDirtyState(World))
+    {
+        m_matrix = Mat4f32::MakeTransform(m_pos, m_scale, m_quat);
+        RemoveFlag(World);
+    }
+    
+    if (GetDirtyState(RotationScale))
+    {
+        Mat3f32 rotScale = GetRotMatrix();
+        for (int i = 0; i < 3; i++)
+        {
+            rotScale.rows[i] *= m_scale[i];
+            m_matrix.rows[i] = Vect4f32(rotScale.rows[i], 0);
+        }
+        
+        RemoveFlag(RotationScale);
+    }
+    
+    if (GetDirtyState(Position))
+    {
+        m_matrix.rows[3] = Vect4f32(m_pos, 1);
+        RemoveFlag(Position);   
+    }
+}
+
+void Transform::UpdateInvMatrix()
+{
+    if (IsWorldDirty() == true)
+        UpdateMatrix();
+    
+    m_invMatrix = Mat4f32::Invert(m_matrix);
+    RemoveFlag(Inverse);
+}
+
 bool Transform::IsWorldDirty() const
 {
-   return GetDirtyState(RotationScale | Position );
+   return GetDirtyState(RotationScale) || GetDirtyState(Position);
 }
 
 bool Transform::IsInverseDirty() const
@@ -103,6 +131,11 @@ Mat4f32 const& Transform::GetInvMatrix()
         UpdateInvMatrix();
 
     return m_invMatrix;
+}
+
+Mat4f32 const& Transform::UpdateFromParent(Mat4f32 const& _p)
+{
+    return m_matrix * _p;
 }
 
 void Transform::AddFlag(uint8 _flag)
@@ -187,6 +220,11 @@ Quaternion const& Transform::GetRotation()
     return m_quat;
 }
 
+Vect3f32 const& Transform::GetEulerAngles()
+{
+    return m_quat.ToEulerAngles();
+}
+
 Vect3f32 const& Transform::GetRight()
 {
     if ( GetDirtyState(RotationMatrix) == true )
@@ -247,6 +285,12 @@ void Transform::AddYPR(Vect3f32 const& _ypr)
     AddFlag(RotationMatrix | RotationScale | Inverse);
 }
 
+void Transform::UpdateRotationFromQuaternion()
+{
+    m_rotMatrix = m_quat.ToMatrix3();
+    RemoveFlag(RotationMatrix);
+}
+
 void Transform::ResetRotation()
 {
     m_quat = Quaternion();
@@ -256,9 +300,42 @@ void Transform::ResetRotation()
 
 #pragma endregion
 
-void Transform::LookAt(Vect3f32 const& _target)
+void Transform::LookAt(Vect3f32 const& _target, Vect3f32 const& _up)
 {
-   m_matrix = Mat4f32::MakeLookAt(m_pos, _target, Vect3f32(0.0f, 1.0f, 0.0f));
-
+    Vect3f32 up = _up;
+    Vect3f32 forward = (_target - m_pos).Normalized();
     
+    if (MathUtils::Abs(Vect3f32::Dot(forward, _up)) > 1.0f - MathUtils::EPSILON)
+        up = Vect3f32(0.0f, 0.0f, 1.0f);
+    
+    Vect3f32 right = (up ^ forward).Normalized();
+    up = forward ^ right;
+    
+    m_rotMatrix.rows[0] = right;
+    m_rotMatrix.rows[1] = up;
+    m_rotMatrix.rows[2] = forward;
+    m_quat = m_rotMatrix.ToQuaternion();
+    
+    RemoveFlag(RotationMatrix);
+    AddFlag(RotationScale | Inverse);
+}
+
+void Transform::LookTo(Vect3f32 const& _dir, Vect3f32 const& _up)
+{
+    Vect3f32 up = _up;
+    Vect3f32 forward = _dir.Normalized();
+    
+    if (MathUtils::Abs(Vect3f32::Dot(forward, _up)) > 1.0f - MathUtils::EPSILON)
+        up = Vect3f32(0.0f, 0.0f, 1.0f);
+    
+    Vect3f32 right = (up ^ forward).Normalized();
+    up = forward ^ right;
+    
+    m_rotMatrix.rows[0] = right;
+    m_rotMatrix.rows[1] = up;
+    m_rotMatrix.rows[2] = forward;
+    m_quat = m_rotMatrix.ToQuaternion();
+    
+    RemoveFlag(RotationMatrix);
+    AddFlag(RotationScale | Inverse);
 }

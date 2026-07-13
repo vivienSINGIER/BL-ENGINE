@@ -17,7 +17,8 @@ public:
         RotationScale   = 1 << 1,
         RotationMatrix  = 1 << 2,
         Inverse         = 1 << 3,
-        All             = Position | RotationScale | RotationMatrix | Inverse
+        World           = Position | RotationScale,
+        All             = World | Inverse | RotationMatrix
     };
     
     Transform();
@@ -32,13 +33,14 @@ public:
     
     void UpdateMatrix();
     void UpdateInvMatrix();
-    void UpdateFromParent(Mat4f32 const& _p);
     
     bool IsWorldDirty()     const;
     bool IsInverseDirty()   const;
     
     Mat4f32 const& GetMatrix();
     Mat4f32 const& GetInvMatrix();
+    
+    Mat4f32 const& UpdateFromParent(Mat4f32 const& _p);
     
     //////////////////// Pos //////////////////////////
     
@@ -60,6 +62,7 @@ public:
     ///////////////////// Rotation /////////////////////
 
     Quaternion const& GetRotation();
+    Vect3f32 const& GetEulerAngles();
     
     Vect3f32 const& GetRight();
     Vect3f32 const& GetUp();
@@ -74,13 +77,12 @@ public:
     void AddYPR(Vect3f32 const& _ypr);
     
     void UpdateRotationFromQuaternion();
-    void UpdateRotationFromMatrix();
     void ResetRotation();
 
     ///////////////// Other ////////////////////////////
     
-    void LookAt(Vect3f32 const& _target);
-    void LookTo(Vect3f32 const& _dir);
+    void LookAt(Vect3f32 const& _target, Vect3f32 const& _up = Vect3f32(0.0f, 1.0f, 0.0f));
+    void LookTo(Vect3f32 const& _dir, Vect3f32 const& _up = Vect3f32(0.0f, 1.0f, 0.0f));
 
 private:
     Vect3f32 m_pos;

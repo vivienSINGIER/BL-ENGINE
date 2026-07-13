@@ -407,13 +407,25 @@ Matrix4<T> Matrix4<T>::InvertAffine(Matrix4 const& _m)
 template <typename T>
 Matrix4<T> Matrix4<T>::MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Quaternion const& _rot)
 {
-    return MakeScale(_scale) * MakeRotationQuat(_rot) * MakeTranslation(_pos);
+    Matrix4<T> rot = MakeRotationQuat(_rot);
+    
+    Matrix4<T> result;
+    result.rows[0] = _scale.x * rot.rows[0];
+    result.rows[1] = _scale.y * rot.rows[1];
+    result.rows[2] = _scale.z * rot.rows[2];
+    result.rows[3] = Vector4<T>(_pos, T(1));
+    return result;
 }
 
 template <typename T>
 Matrix4<T> Matrix4<T>::MakeTransform(Vector3<T> const& _pos, Vector3<T> const& _scale, Matrix4 const& _rot)
 {
-    return MakeScale(_scale) * _rot * MakeTranslation(_pos);
+    Matrix4<T> result;
+    result.rows[0] = _scale.x * _rot.rows[0];
+    result.rows[1] = _scale.y * _rot.rows[1];
+    result.rows[2] = _scale.z * _rot.rows[2];
+    result.rows[3] = Vector4<T>(_pos, T(1));
+    return result;
 }
 
 template <typename T>
