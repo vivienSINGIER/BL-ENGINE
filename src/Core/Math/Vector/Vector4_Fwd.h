@@ -26,6 +26,7 @@ public:
     Vector4(Vector2<T> const& _xy, T _z, T _w);
     Vector4(T _x, Vector2<T> const& _yz, T _w);
     Vector4(T _x, T _y, Vector2<T> const& _zw);
+    Vector4(std::initializer_list<T> _l);
     
     Vector4 operator+(Vector4 const& _o) const;
     Vector4 operator-(Vector4 const& _o) const;

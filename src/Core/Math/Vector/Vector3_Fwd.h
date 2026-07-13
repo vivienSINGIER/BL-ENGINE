@@ -19,6 +19,7 @@ public:
     Vector3(T _scalar);
     Vector3(Vector2<T> const& _xy, T _z);
     Vector3(T _x, Vector2<T> const& _yz);
+    Vector3(std::initializer_list<T> _l);
     
     Vector3 operator+(Vector3 const& _o) const;
     Vector3 operator-(Vector3 const& _o) const;

@@ -79,41 +79,112 @@ Quaternion Quaternion::FromRotationMatrix(Matrix3<float> const& _rotMat)
 
 Quaternion Quaternion::FromRotationMatrix(Matrix4<float> const& _rotMat)
 {
-    float x = MathUtils::Sqrt( _rotMat.m00 - _rotMat.m11 - _rotMat.m22 + 1.0f) * 0.5f;
-    float y = MathUtils::Sqrt(-_rotMat.m00 + _rotMat.m11 - _rotMat.m22 + 1.0f) * 0.5f;
-    float z = MathUtils::Sqrt(-_rotMat.m00 - _rotMat.m11 + _rotMat.m22 + 1.0f) * 0.5f;
-    float w = MathUtils::Sqrt( _rotMat.m00 + _rotMat.m11 + _rotMat.m22 + 1.0f) * 0.5f;
-    
-    if (w >= x && w >= y && w >= z)
+    float const trace = _rotMat.m00 + _rotMat.m11 + _rotMat.m22;
+
+    float x, y, z, w;
+
+    if (trace > 0.0f)
     {
-        float d = 1.0f / (4.0f * w);
+        float s = MathUtils::Sqrt(trace + 1.0f) * 2.0f; // s = 4w
+        float d = 1.0f / s;
+        w = 0.25f * s;
         x = (_rotMat.m12 - _rotMat.m21) * d;
         y = (_rotMat.m20 - _rotMat.m02) * d;
         z = (_rotMat.m01 - _rotMat.m10) * d;
     }
-    else if (x >= y && x >= z)
+    else if (_rotMat.m00 >= _rotMat.m11 && _rotMat.m00 >= _rotMat.m22)
     {
-        float d = 1.0f / (4.0f * x);
+        float s = MathUtils::Sqrt(1.0f + _rotMat.m00 - _rotMat.m11 - _rotMat.m22) * 2.0f; // s = 4x
+        float d = 1.0f / s;
+        x = 0.25f * s;
         y = (_rotMat.m01 + _rotMat.m10) * d;
         z = (_rotMat.m20 + _rotMat.m02) * d;
         w = (_rotMat.m12 - _rotMat.m21) * d;
     }
-    else if (y >= z)
+    else if (_rotMat.m11 >= _rotMat.m22)
     {
-        float d = 1.0f / (4.0f * y);
+        float s = MathUtils::Sqrt(1.0f + _rotMat.m11 - _rotMat.m00 - _rotMat.m22) * 2.0f; // s = 4y
+        float d = 1.0f / s;
+        y = 0.25f * s;
         x = (_rotMat.m01 + _rotMat.m10) * d;
         z = (_rotMat.m12 + _rotMat.m21) * d;
         w = (_rotMat.m20 - _rotMat.m02) * d;
     }
     else
     {
-        float d = 1.0f / (4.0f * z);
+        float s = MathUtils::Sqrt(1.0f + _rotMat.m22 - _rotMat.m00 - _rotMat.m11) * 2.0f; // s = 4z
+        float d = 1.0f / s;
+        z = 0.25f * s;
         x = (_rotMat.m20 + _rotMat.m02) * d;
         y = (_rotMat.m12 + _rotMat.m21) * d;
         w = (_rotMat.m01 - _rotMat.m10) * d;
     }
-    
+
     return Quaternion(x, y, z, w);
+}
+
+Quaternion Quaternion::MakeXYZ(float _x, float _y, float _z)
+{
+    float sx = MathUtils::Sin(_x * 0.5f), cx = MathUtils::Cos(_x * 0.5f);
+    float sy = MathUtils::Sin(_y * 0.5f), cy = MathUtils::Cos(_y * 0.5f);
+    float sz = MathUtils::Sin(_z * 0.5f), cz = MathUtils::Cos(_z * 0.5f);
+
+    return Quaternion(
+        cz*cy*sx - sz*cx*sy,   // x
+        cz*cx*sy + sz*cy*sx,   // y
+        sz*cy*cx - cz*sy*sx,   // z
+        cz*cy*cx + sz*sy*sx    // w
+    );
+}
+
+Quaternion Quaternion::MakeZYX(float _x, float _y, float _z)
+{
+    float sz = MathUtils::Sin(_z * 0.5f), cz = MathUtils::Cos(_z * 0.5f);
+    float sy = MathUtils::Sin(_y * 0.5f), cy = MathUtils::Cos(_y * 0.5f);
+    float sx = MathUtils::Sin(_x * 0.5f), cx = MathUtils::Cos(_x * 0.5f);
+
+    return Quaternion(
+        cx*sy*sz + sx*cy*cz,   // x
+        cx*sy*cz - sx*cy*sz,   // y
+        cx*cy*sz + sx*sy*cz,   // z
+        cx*cy*cz - sx*sy*sz    // w
+    );
+}
+
+Quaternion Quaternion::MakeYPR(float _yawY, float _pitchX, float _rollZ)
+{
+    float halfY = _yawY   * 0.5f;
+    float halfP = _pitchX * 0.5f;
+    float halfR = _rollZ  * 0.5f;
+
+    float sy = MathUtils::Sin(halfY), cy = MathUtils::Cos(halfY);
+    float sx = MathUtils::Sin(halfP), cx = MathUtils::Cos(halfP);
+    float sz = MathUtils::Sin(halfR), cz = MathUtils::Cos(halfR);
+
+    return Quaternion(
+        cz*sx*cy - sz*cx*sy,   // x
+        cz*cx*sy + sz*sx*cy,   // y
+        cz*sx*sy + sz*cx*cy,   // z
+        cz*cx*cy - sz*sx*sy    // w
+    );
+}
+
+Quaternion Quaternion::MakeRPY(float _rollZ, float _pitchX, float _yawY)
+{
+    float halfY = _yawY   * 0.5f;
+    float halfP = _pitchX * 0.5f;
+    float halfR = _rollZ  * 0.5f;
+
+    float sy = MathUtils::Sin(halfY), cy = MathUtils::Cos(halfY);
+    float sx = MathUtils::Sin(halfP), cx = MathUtils::Cos(halfP);
+    float sz = MathUtils::Sin(halfR), cz = MathUtils::Cos(halfR);
+
+    return Quaternion(
+        cy*sx*cz + sy*cx*sz,   // x
+        sy*cx*cz - cy*sx*sz,   // y
+        cy*cx*sz - sy*sx*cz,   // z
+        cy*cx*cz - sy*sx*sz    // w
+    );
 }
 
 Quaternion Quaternion::operator+(Quaternion const& _q) const

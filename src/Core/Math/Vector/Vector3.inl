@@ -45,6 +45,16 @@ Vector3<T>::Vector3(T _x, Vector2<T> const& _yz)
 }
 
 template <typename T>
+Vector3<T>::Vector3(std::initializer_list<T> _l)
+{
+    assert(_l.size() == 3 && "Incorrect list size" );
+
+    x = _l.begin()[0];
+    y = _l.begin()[1];
+    z = _l.begin()[2];
+}
+
+template <typename T>
 Vector3<T> Vector3<T>::operator+(Vector3 const& _o) const
 {
     return Vector3<T>(x + _o.x, y + _o.y, z + _o.z);

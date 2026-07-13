@@ -86,6 +86,17 @@ Vector4<T>::Vector4(T _x, T _y, Vector2<T> const& _zw)
 }
 
 template <typename T>
+Vector4<T>::Vector4(std::initializer_list<T> _l)
+{
+    assert(_l.size() == 4 && "Incorrect list size");
+
+    x = _l.begin()[0];
+    y = _l.begin()[1];
+    z = _l.begin()[2];
+    w = _l.begin()[3];  
+}
+
+template <typename T>
 Vector4<T> Vector4<T>::operator+(Vector4 const& _o) const
 {
     return Vector4(x + _o.x, y + _o.y, z + _o.z, w + _o.w);

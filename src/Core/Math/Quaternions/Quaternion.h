@@ -35,6 +35,11 @@ public:
     static Quaternion FromAxisAngle(Vector3<float> const& _axis, float _angle);
     static Quaternion FromRotationMatrix(Matrix3<float> const& _rotMat);
     static Quaternion FromRotationMatrix(Matrix4<float> const& _rotMat);
+
+    static Quaternion MakeXYZ(float _x, float _y, float _z);
+    static Quaternion MakeZYX(float _x, float _y, float _z);
+    static Quaternion MakeYPR(float _yawY, float _pitchX, float _rollZ);
+    static Quaternion MakeRPY(float _rollZ, float _pitchX, float _yawY);
     
     Quaternion operator+(Quaternion const& _q) const;
     Quaternion operator-(Quaternion const& _q) const;

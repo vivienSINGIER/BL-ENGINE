@@ -13,6 +13,7 @@ public:
     Vector2();
     Vector2(T _x, T _y);
     Vector2(T _scalar);
+    Vector2(std::initializer_list<T> _l);
     
     Vector2 operator+(Vector2 const& _o) const;
     Vector2 operator-(Vector2 const& _o) const;

@@ -26,6 +26,15 @@ Vector2<T>::Vector2(T _scalar)
 }
 
 template <typename T>
+Vector2<T>::Vector2(std::initializer_list<T> _l)
+{
+    assert(_l.size() == 2 && "Incorrect list size");
+
+    x = _l.begin()[0];
+    y = _l.begin()[1];
+}
+
+template <typename T>
 Vector2<T> Vector2<T>::operator+(const Vector2& _o) const
 {
     return Vector2(x + _o.x, y + _o.y); 
