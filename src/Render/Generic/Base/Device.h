@@ -51,15 +51,15 @@ public:
     
     virtual void SetLights(Vector<LightDescriptor>& _vLights) = 0;
     
-    virtual RenderTarget* CreateRenderTarget(int _width, int _height)                               = 0;
-    virtual Geometry* CreateGeometry(bool _isDynamic = false)                                       = 0;
-    virtual Sprite*   CreateSprite(bool _isDynamic = false)                                         = 0;
-    virtual Texture* CreateTexture(WString const& _path)                                            = 0;
-    virtual Shader* CreateShader(WString const& _path, ShaderFormat _format, bool _isLit = false)   = 0; 
-    virtual UiShader* CreateUiShader(WString const& _path, ShaderFormat _format)                    = 0;
-    virtual ComputeShader* CreateComputeShader(WString const& _path)                                = 0;
-    virtual RenderFont* CreateRenderFont(WString const& _path, float _fontSize = 1.0f)              = 0;
-    virtual Text* CreateText(RenderFont* _pFont)                                                    = 0;
+    virtual RenderTarget* CreateRenderTarget(int _width, int _height)                                           = 0;
+    virtual Geometry* CreateGeometry(bool _isDynamic = false)                                                   = 0;
+    virtual Sprite*   CreateSprite(bool _isDynamic = false)                                                     = 0;
+    virtual Texture* CreateTexture(WString const& _path)                                                        = 0;
+    virtual Shader* CreateShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc = {})       = 0; 
+    virtual UiShader* CreateUiShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc = {})   = 0;
+    virtual ComputeShader* CreateComputeShader(WString const& _path)                                            = 0;
+    virtual RenderFont* CreateRenderFont(WString const& _path, float _fontSize = 1.0f)                          = 0;
+    virtual Text* CreateText(RenderFont* _pFont)                                                                = 0;
 
 protected:
     RenderTarget* m_pRenderTarget = nullptr;

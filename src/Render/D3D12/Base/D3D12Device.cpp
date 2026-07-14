@@ -281,16 +281,16 @@ void D3D12Device::SetLights(Vector<LightDescriptor>& _vLights)
     m_pLightBuffer->CopyData(0, m_lightData);
 }
 
-Shader* D3D12Device::CreateShader(WString const& _path, ShaderFormat _format, bool _isLit)
+Shader* D3D12Device::CreateShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc)
 {
-    D3D12Shader* shader = new D3D12Shader(&m_pContext, _format, _isLit);
+    D3D12Shader* shader = new D3D12Shader(&m_pContext, _format, _desc);
     shader->Compile(_path);
     return shader;
 }
 
-UiShader* D3D12Device::CreateUiShader(WString const& _path, ShaderFormat _format)
+UiShader* D3D12Device::CreateUiShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc)
 {
-    D3D12UiShader* shader = new D3D12UiShader(&m_pContext, _format);
+    D3D12UiShader* shader = new D3D12UiShader(&m_pContext, _format, _desc);
     shader->Compile(_path);
     return shader;
 }

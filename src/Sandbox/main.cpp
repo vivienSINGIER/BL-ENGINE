@@ -10,7 +10,7 @@ int WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 	Console::InitConsol();
 	/////////////////////////////////////////////////////////////////////////////
 	
-	TestTransform test;
+	TestBounds test;
 	
 	test.Run();
 
