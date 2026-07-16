@@ -20,11 +20,7 @@ Plane::Plane(Vect3f32 const& _normal, float _dist)
 Plane::Plane(Vect3f32 const& _normal, Vect3f32 const& _pos)
 {
     normal = _normal.Normalized();
-
-    Vect3f32 po = - _pos;
-    Vect3f32 proj = po.Project(normal);
-
-    distance = proj.LengthSquared();
+    distance = Vect3f32::Dot(normal, _pos);
 }
 
 Plane::Plane(Vect3f32 const& _p1, Vect3f32 const& _p2, Vect3f32 const& _p3)
@@ -33,11 +29,7 @@ Plane::Plane(Vect3f32 const& _p1, Vect3f32 const& _p2, Vect3f32 const& _p3)
     Vect3f32 b = _p3 - _p1;
 
     normal = (a ^ b).Normalized();
-
-    Vect3f32 po = - _p1;
-    Vect3f32 proj = po.Project(normal);
-
-    distance = proj.LengthSquared();
+    distance = Vect3f32::Dot(normal, _p1);
 }
 
 int Plane::ClassifyPoint(Vect3f32 const& _p) const

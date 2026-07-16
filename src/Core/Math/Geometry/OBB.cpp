@@ -34,7 +34,7 @@ Plane OBB::GetPlane(int _index) const
     float sign = _index > 2 ? -1.0f : 1.0f;
 
     Vect3f32 normal = sign * orientation.rows[_index % 3];
-    Vect3f32 pos = position + sign * normal * extent[_index % 3];
+    Vect3f32 pos = position + normal * extent[_index % 3];
 
     return Plane(normal, pos);
 }
@@ -51,9 +51,9 @@ Vect3f32 OBB::GetVertex(int _planeIndex, int _vertexIndex) const
     else if (_planeIndex % 3 == 1)
         indexY = 2;
 
-    float faceSign = (_planeIndex > 2) ? -1.0f : 1.0f;
-    float xSign    = (_vertexIndex > 1)      ? -1.0f : 1.0f;
-    float ySign    = (_vertexIndex % 2 == 1) ? -1.0f : 1.0f;
+    float faceSign = (_planeIndex > 2)          ? -1.0f : 1.0f;
+    float xSign    = (_vertexIndex > 1)         ? -1.0f : 1.0f;
+    float ySign    = (_vertexIndex % 2 == 1)    ? -1.0f : 1.0f;
 
     int normalIndex = _planeIndex % 3;
 
@@ -130,11 +130,21 @@ bool OBB::Intersects(AABB const& _a) const
 
 bool OBB::Intersects(Sphere const& _s) const
 {
-    Vect3f32 dir = (position - _s.center).Normalized();
+    Vect3f32 diff = _s.center - position;
 
-    Ray ray(_s.center, dir, _s.radius);
+    Vect3f32 localCenter;
+    localCenter.x = Vect3f32::Dot(diff, orientation.rows[0]);
+    localCenter.y = Vect3f32::Dot(diff, orientation.rows[1]);
+    localCenter.z = Vect3f32::Dot(diff, orientation.rows[2]);
 
-    return ray.Intersects(*this);
+    Vect3f32 closestLocal;
+    closestLocal.x = MathUtils::Clamp(localCenter.x, -extent.x, extent.x);
+    closestLocal.y = MathUtils::Clamp(localCenter.y, -extent.y, extent.y);
+    closestLocal.z = MathUtils::Clamp(localCenter.z, -extent.z, extent.z);
+
+    Vect3f32 diffLocal = closestLocal - localCenter;
+
+    return diffLocal.LengthSquared() <= _s.radius * _s.radius;
 }
 
 bool OBB::Intersects(OBB const& _o) const
@@ -185,13 +195,13 @@ bool OBB::IsSeparate(Vect3f32 const& _axis, OBB const& _a, OBB const& _b) const
     
     float dist = MathUtils::Abs(Vect3f32::Dot(_b.position - _a.position, _axis));
 
-    float radA =    _a.extent.x * Vect3f32::Dot(_a.orientation.rows[0], _axis) +
-                    _a.extent.y * Vect3f32::Dot(_a.orientation.rows[1], _axis) +
-                    _a.extent.z * Vect3f32::Dot(_a.orientation.rows[2], _axis);
+    float radA =    _a.extent.x * MathUtils::Abs(Vect3f32::Dot(_a.orientation.rows[0], _axis)) +
+                    _a.extent.y * MathUtils::Abs(Vect3f32::Dot(_a.orientation.rows[1], _axis)) +
+                    _a.extent.z * MathUtils::Abs(Vect3f32::Dot(_a.orientation.rows[2], _axis));
     
-    float radB =    _b.extent.x * Vect3f32::Dot(_b.orientation.rows[0], _axis) +
-                    _b.extent.y * Vect3f32::Dot(_b.orientation.rows[1], _axis) +
-                    _b.extent.z * Vect3f32::Dot(_b.orientation.rows[2], _axis);
+    float radB =    _b.extent.x * MathUtils::Abs(Vect3f32::Dot(_b.orientation.rows[0], _axis)) +
+                    _b.extent.y * MathUtils::Abs(Vect3f32::Dot(_b.orientation.rows[1], _axis)) +
+                    _b.extent.z * MathUtils::Abs(Vect3f32::Dot(_b.orientation.rows[2], _axis));
 
     return dist > radA + radB;
 }

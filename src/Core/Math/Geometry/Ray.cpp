@@ -82,10 +82,10 @@ bool Ray::Intersects(Plane const& _plane, Vect3f32* _p) const
 
     if (isParallel) return false;
 
-    float t = -   ( _plane.normal.x * origin.x +
-                    _plane.normal.y * origin.y +
-                    _plane.normal.z * origin.z +
-                    _plane.distance ) / denom; 
+    float t = ( _plane.distance - Vect3f32::Dot(_plane.normal, origin) ) / denom;
+
+    if (length < 0.0f && _p == nullptr)
+        return true;
 
     if (t < 0.0f)
         return false;
@@ -95,7 +95,7 @@ bool Ray::Intersects(Plane const& _plane, Vect3f32* _p) const
 
     if (_p != nullptr)
         *_p = origin + t * direction;
-    
+
     return true;
 }
 
@@ -159,31 +159,38 @@ bool Ray::Intersects(AABB const& _aabb, Vect3f32* _p) const
 bool Ray::Intersects(Sphere const& _sphere, Vect3f32* _p) const
 {
     Vect3f32 diff = origin - _sphere.center;
-    
-    float a = 1.0f; // Assumes normal direction
+
+    float a = 1.0f; // Assumes normalized direction
     float b = 2.0f * Vect3f32::Dot(direction, diff);
-    float c = Vect3f32::Dot(diff, diff) * _sphere.radius * _sphere.radius;
+    float c = Vect3f32::Dot(diff, diff) - _sphere.radius * _sphere.radius;
 
-    float disc = b*b - 4*a*c;
+    float disc = b * b - 4.0f * a * c;
 
-    if (b <= 0.0f) return false;
+    if (disc < 0.0f) return false;
 
     if (length < 0.0f && _p == nullptr)
         return true;
-    
-    float t;
-    float dReciprocal = 1.0f / (2.0f * a);
-    if ( disc == 0.0f )
-        t = -b * dReciprocal;
-    else
-        t = (-b - MathUtils::Sqrt(disc)) * dReciprocal;
 
-    if (t > length)
+    float dReciprocal = 1.0f / (2.0f * a);
+    float t;
+    if (disc == 0.0f)
+    {
+        t = -b * dReciprocal;
+    }
+    else
+    {
+        float sqrtDisc = MathUtils::Sqrt(disc);
+        t = (-b - sqrtDisc) * dReciprocal;
+        if (t < 0.0f)
+            t = (-b + sqrtDisc) * dReciprocal;
+    }
+
+    if (t < 0.0f || t > length)
         return false;
 
     if (_p != nullptr)
         *_p = origin + t * direction;
-    
+
     return true;
 }
 
@@ -211,12 +218,12 @@ bool Ray::Intersects(OBB const& _obb, Vect3f32* _p) const
 
             if (edg1Dist < 0.0f || edg2Dist < 0.0f)
                 continue;
-            if (edg1Dist > edg2Max || edg2Dist > edg1Max)
+            if (edg1Dist > edg1Max || edg2Dist > edg2Max)
                 continue;
 
             if (_p != nullptr)
-                *_p = origin + dist * direction;
-            
+                *_p = v;
+
             return true;
         }
     }

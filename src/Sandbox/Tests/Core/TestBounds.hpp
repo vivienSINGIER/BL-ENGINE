@@ -9,9 +9,18 @@
 
 #include "../Engine/InputManager.h"
 
+#include "../Core/Math/Geometry/AABB.h"
+#include "Core/Math/Geometry/OBB.h"
+#include "Core/Math/Geometry/Ray.h"
+#include "Core/Math/Geometry/Sphere.h"
+
 class TestBounds : public Test
 {
 public:
+    Geometry* cube;
+    Geometry* sphere;
+    Geometry* line;
+    
     XMFLOAT4X4 ToD3DMatrix(Mat4f32 const& _m)
     {
         XMFLOAT4X4 M;
@@ -76,6 +85,55 @@ public:
         _im.HandleInput(1);
     }
     
+    void DrawAABB(Device* _d, AABB _a)
+    {
+        Mat4f32 scale;
+        scale.m00 = _a.Extent().x * 2.0f;
+        scale.m11 = _a.Extent().y * 2.0f;
+        scale.m22 = _a.Extent().z * 2.0f;
+        scale.rows[3] = Vect4f32(_a.Center(), 1.0f);
+        
+        XMFLOAT4X4 m = ToD3DMatrix(scale);
+        
+        _d->Draw(cube, m);
+    }
+    
+    void DrawSphere(Device* _d, Sphere _s)
+    {
+        Mat4f32 scale;
+        scale.m00 = _s.radius * 2.0f;
+        scale.m11 = _s.radius * 2.0f;
+        scale.m22 = _s.radius * 2.0f;
+        scale.rows[3] = Vect4f32(_s.center, 1.0f);
+        
+        XMFLOAT4X4 m = ToD3DMatrix(scale);
+        
+        _d->Draw(sphere, m);
+    }
+    
+    void DrawOBB(Device* _d, OBB _o)
+    {
+        Mat4f32 t = Mat4f32::MakeTransform(_o.position, _o.extent * 2.0f, _o.orientation.ToMatrix4());
+        
+        XMFLOAT4X4 m = ToD3DMatrix(t);
+        
+        _d->Draw(cube, m);
+    }
+    
+    void DrawRay(Device* _d, Ray _r)
+    {
+        Vect3f32 origin = _r.origin;
+        Vect3f32 end = _r.origin + _r.direction * _r.length;
+        
+        Mat4f32 t = Mat4f32::MakeLineToLineTransform(
+            Vect3f32(0.0f, 0.0f, 0.0f), Vect3f32(1.0f, 0.0f, 0.0f),
+            origin, end);
+        
+        XMFLOAT4X4 m = ToD3DMatrix(t);
+        
+        _d->Draw(line, m);
+    }
+        
     void Run()
     {
         Window window(1080, 720, L"Test", false);
@@ -86,11 +144,18 @@ public:
         XMFLOAT4X4 matrix = MathHelper::Identity4x4();
 
         Shader* s = ShaderFactory::CreateWireframe(pDevice);
-        Material* green = s->CreateMaterial();
-        green->SetFloat4("Color", {0.0f, 1.0f, 0.0f, 1.0f});
+        Material* greenWF = s->CreateMaterial();
+        greenWF->SetFloat4("Color", {0.0f, 1.0f, 0.0f, 1.0f});
+        Material* redWF = s->CreateMaterial();
+        redWF->SetFloat4("Color", {1.0f, 0.0f, 0.0f, 1.0f});
+        
+        Shader* s2 = ShaderFactory::CreateLitColored(pDevice);
+        Material* white = s2->CreateMaterial();
+        white->SetFloat4("DiffuseAlbedo", {1.0f, 1.0f, 1.0f, 1.0f});
 
-        Geometry* line = GeometryFactory::BuildLine(pDevice);
-        Geometry* cube = GeometryFactory::BuildCube(pDevice);
+        line = GeometryFactory::BuildLine(pDevice);
+        cube = GeometryFactory::BuildCube(pDevice);
+        sphere = GeometryFactory::BuildIcosphere(pDevice, 2);
 
         Camera cam;
         XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, -5.0f);
@@ -114,6 +179,15 @@ public:
         inputManager.Initialize(window.GetHWND());
         
         Transform t;
+        AABB aabb = AABB(Vect3f32(-0.5), Vect3f32(0.5));
+        float rad = Vect3f32(0.5f).Length();
+        Sphere o = Sphere(Vect3f32(), rad);
+        OBB obb = OBB(Vect3f32(), Vect3f32(1.0f, 0.5f, 0.7f));
+        
+        Ray r = Ray(Vect3f32(0.0f), Vect3f32(1.0f, 0.0, 0.0f), 3.0f);
+        
+        Transform intersect;
+        intersect.SetScale(0.2f);
         
         while (window.IsOpen())
         {
@@ -123,8 +197,30 @@ public:
             window.Update();
             window.Clear();
 
-            pDevice->SetMaterial(green);
+            pDevice->SetMaterial(white);
             pDevice->Draw(cube, matrix);
+            
+            Vect3f32 intersectPos;
+            
+            if (o.Intersects(aabb.Transformed(t.GetMatrix())))
+            {
+                pDevice->SetMaterial(redWF);
+                // intersect.SetPosition(intersectPos);
+                //
+                // XMFLOAT4X4 m = ToD3DMatrix(intersect.GetMatrix());
+                //
+                // pDevice->Draw(sphere, m);
+            }
+            else
+                pDevice->SetMaterial(greenWF);
+            
+            DrawAABB(pDevice, aabb.Transformed(t.GetMatrix()));
+            // DrawAABB(pDevice, aabb);
+            // DrawSphere(pDevice, o.Transformed(t.GetMatrix()));
+            DrawSphere(pDevice, o);
+            // DrawOBB(pDevice, obb.Transformed(t.GetMatrix()));
+            // DrawOBB(pDevice, obb);
+            // DrawRay(pDevice, r);
             
             window.Display();
         }

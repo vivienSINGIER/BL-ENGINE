@@ -1,6 +1,7 @@
 #ifndef RAY_H_DEFINED
 #define RAY_H_DEFINED
-#include "Math/Vector/Vector.h"
+
+#include "../Vector/Vector.h"
 
 class Plane;
 class AABB;

@@ -89,18 +89,20 @@ bool Sphere::Intersects(Plane const& _plane) const
 
 bool Sphere::Intersects(AABB const& _a) const
 {
-    Vect3f32 dir = (center - _a.Center()).Normalized();
+    Vect3f32 closest;
+    closest.x = MathUtils::Clamp(center.x, _a.min.x, _a.max.x);
+    closest.y = MathUtils::Clamp(center.y, _a.min.y, _a.max.y);
+    closest.z = MathUtils::Clamp(center.z, _a.min.z, _a.max.z);
 
-    Ray ray(center, dir, radius);
-
-    return ray.Intersects(*this);
+    Vect3f32 diff = closest - center;
+    return diff.LengthSquared() <= radius * radius;
 }
 
 bool Sphere::Intersects(Sphere const& _o) const
 {
-    float dist = (center - _o.center).Length();
+    float dist = (center - _o.center).LengthSquared();
 
-    return dist <= radius + _o.radius;
+    return dist <= (radius + _o.radius) * (radius * _o.radius);
 }
 
 bool Sphere::Intersects(OBB const& _o) const
