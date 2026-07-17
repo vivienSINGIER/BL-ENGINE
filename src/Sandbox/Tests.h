@@ -4,6 +4,7 @@
 #include "Tests/Core/TestDebug.hpp"
 #include "Tests/Core/TestTransform.hpp"
 #include "Tests/Core/TestBounds.hpp"
+#include "Tests/Core/TestFrustum.hpp"
 
 #include "Tests/Render/TestObjLoader.hpp"
 #include "Tests/Render/TestWindow.hpp"

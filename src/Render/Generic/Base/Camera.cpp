@@ -169,16 +169,16 @@ void Camera::CalculateFrustum()
     m_frustum[4] = MakePlane(r2, {0.0f, 0.0f, 0.0f, 0.0f});
     m_frustum[5] = MakePlane(r3, {-r2.x, -r2.y, -r2.z, -r2.w});
 
-    for (Plane& p : m_frustum)
+    for (PlaneS& p : m_frustum)
     {
         float len = sqrtf(p.a*p.a + p.b*p.b + p.c*p.c);
         p = {p.a / len, p.b / len, p.c / len, p.d / len};
     }
 }
 
-Plane Camera::MakePlane(XMFLOAT4& _a, XMFLOAT4 _b)
+PlaneS Camera::MakePlane(XMFLOAT4& _a, XMFLOAT4 _b)
 {
-    Plane p;
+    PlaneS p;
     p.a = _a.x + _b.x;
     p.b = _a.y + _b.y;
     p.c = _a.z + _b.z;

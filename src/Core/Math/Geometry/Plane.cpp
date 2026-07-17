@@ -34,9 +34,9 @@ Plane::Plane(Vect3f32 const& _p1, Vect3f32 const& _p2, Vect3f32 const& _p3)
 
 int Plane::ClassifyPoint(Vect3f32 const& _p) const
 {
-    float dot = Vect3f32::Dot(normal, _p);
+    float dot = Vect3f32::Dot(normal, _p) - distance;
     
-    if (dot == 0.0f)
+    if (MathUtils::Abs(dot) < MathUtils::EPSILON)
         return 0;
     
     return MathUtils::Sign(dot);
@@ -91,6 +91,27 @@ bool Plane::Intersects(OBB const& _o) const
 
     float d =  DistanceToPoint(_o.position);
     return d <= radius;     
+}
+
+bool Plane::ThreeWayIntersect(Plane const& _o1, Plane const& _o2, Plane const& _o3, Vect3f32* _p)
+{
+    Vect3f32 n1 = _o1.normal;
+    Vect3f32 n2 = _o2.normal;
+    Vect3f32 n3 = _o3.normal;
+    
+    float denom = Vect3f32::Dot(n1, n2 ^ n3);
+    if (MathUtils::Abs(denom) < MathUtils::EPSILON)
+        return false;
+    
+    float denomRec = 1.0f / denom;
+    
+    Vect3f32 numerator = 
+            _o1.distance * (n2 ^ n3) +
+            _o2.distance * (n3 ^ n1) + 
+            _o3.distance * (n1 ^ n2);
+    
+    *_p = numerator * denomRec;
+    return true;
 }
 
 

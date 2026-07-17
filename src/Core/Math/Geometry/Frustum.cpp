@@ -17,6 +17,36 @@ Frustum::Frustum(bool _isGl)
         nearZ = Plane(Vect3f32(0, 0, 1), 0.0f);
 }
 
+Frustum::Frustum(Mat4f32 const& _view, Mat4f32 const& _proj, bool _isGl)
+{
+    Mat4f32 vp = _view * _proj;
+    
+    Vect4f32 C0 = vp.GetColumn(0);
+    Vect4f32 C1 = vp.GetColumn(1);
+    Vect4f32 C2 = vp.GetColumn(2);
+    Vect4f32 C3 = vp.GetColumn(3);
+
+    Vect4f32 raw[6] =
+    {
+        C3 + C0, // Left
+        C3 - C0, // Right
+        C3 + C1, // Bottom
+        C3 - C1, // Top
+        C2,      // Near
+        C3 - C2, // Far
+    };
+
+    if (_isGl)
+        raw[4] += C3;
+
+    for (int i = 0; i < 6; i++)
+    {
+        Vect3f32 normal(raw[i].x, raw[i].y, raw[i].z);
+        float len = normal.Length();
+        planes[i] = Plane(normal / len, -raw[i].w / len);
+    }
+}
+
 Frustum::Frustum(Mat4f32 const& _vp, bool _isGl)
 {
     Vect4f32 C0 = _vp.GetColumn(0);
@@ -41,7 +71,7 @@ Frustum::Frustum(Mat4f32 const& _vp, bool _isGl)
     {
         Vect3f32 normal(raw[i].x, raw[i].y, raw[i].z);
         float len = normal.Length();
-        planes[0] = Plane(normal / len, raw[i].w / len);
+        planes[i] = Plane(normal / len, raw[i].w / len);
     }
 }
 
@@ -56,7 +86,7 @@ bool Frustum::Contains(Vect3f32 const& _p) const
     return true;
 }
 
-bool Frustum::Intesects(AABB const& _o) const
+bool Frustum::Intersects(AABB const& _o) const
 {
     for (int i = 0; i < 6; i++)
     {
@@ -68,18 +98,18 @@ bool Frustum::Intesects(AABB const& _o) const
             n.z >= 0 ? _o.max.z : _o.min.z
         };
 
-        if (planes->ClassifyPoint(pVertex) < 0)
+        if (planes[i].ClassifyPoint(pVertex) < 0)
             return false;
     }
 
     return true;
 }
 
-bool Frustum::Intesects(Sphere const& _s) const
+bool Frustum::Intersects(Sphere const& _s) const
 {
     for (int i = 0; i < 6; i++)
     {
-        float d = planes[6].DistanceToPoint(_s.center);
+        float d = planes[i].DistanceToPoint(_s.center);
 
         if (d < - _s.radius)
             return false;
@@ -88,15 +118,15 @@ bool Frustum::Intesects(Sphere const& _s) const
     return true;
 }
 
-bool Frustum::Intesects(OBB const& _o) const
+bool Frustum::Intersects(OBB const& _o) const
 {
     for (int i = 0; i < 6; i++)
     {
         Vect3f32 n = planes[i].normal;
 
-        float s0 = n.x >= 0 ? 1.0f : -1.0f;
-        float s1 = n.y >= 0 ? 1.0f : -1.0f;
-        float s2 = n.z >= 0 ? 1.0f : -1.0f;
+        float s0 = Vect3f32::Dot(n, _o.orientation.rows[0]) >= 0 ? 1.0f : -1.0f;
+        float s1 = Vect3f32::Dot(n, _o.orientation.rows[1]) >= 0 ? 1.0f : -1.0f;
+        float s2 = Vect3f32::Dot(n, _o.orientation.rows[2]) >= 0 ? 1.0f : -1.0f;
         
         Vect3f32 pVertex = _o.position +
             s0 * _o.orientation.rows[0] * _o.extent.x +
@@ -109,7 +139,3 @@ bool Frustum::Intesects(OBB const& _o) const
 
     return true;
 }
-
-
-
-

@@ -1,7 +1,7 @@
 #ifndef PLANE_H_DEFINED
 #define PLANE_H_DEFINED
 
-#include "Math/Vector/Vector.h"
+#include "../Vector/Vector.h"
 
 class AABB;
 class Sphere;
@@ -28,6 +28,8 @@ public:
     bool Intersects(AABB const& _a)         const;
     bool Intersects(Sphere const& _s)       const;
     bool Intersects(OBB const& _o)          const;
+    
+    static bool ThreeWayIntersect(Plane const& _o1, Plane const& _o2, Plane const& _o3, Vect3f32* _p);
 };
 
 #endif

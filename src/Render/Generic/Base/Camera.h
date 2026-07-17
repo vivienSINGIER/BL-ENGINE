@@ -3,7 +3,7 @@
 
 #include "../../Common/Common.h"
 
-struct Plane
+struct PlaneS
 {
     float a, b, c, d;
 };
@@ -55,12 +55,12 @@ private:
     
     XMFLOAT3 m_pos = {0.0f, 0.0f, 0.0f};
 
-    Plane m_frustum[6];
+    PlaneS m_frustum[6];
     
     void FillData(PassData* _passData);
 
     void CalculateFrustum();
-    Plane MakePlane(XMFLOAT4& _a, XMFLOAT4 _b);
+    PlaneS MakePlane(XMFLOAT4& _a, XMFLOAT4 _b);
     
     friend class Device;
     friend class D3D12Device;
