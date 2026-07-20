@@ -175,6 +175,18 @@ Vector2<T> Vector2<T>::Perpendicular() const
 }
 
 template <typename T>
+Vector2<T> Vector2<T>::Abs() const
+{
+    return Vector2(MathUtils::Abs(x), MathUtils::Abs(y));
+}
+
+template <typename T>
+Vector2<T> Vector2<T>::Clamp(Vector2 const& _min, Vector2 const& _max) const
+{
+    return Vector2(MathUtils::Clamp(x, _min.x, _max.x), MathUtils::Clamp(y, _min.y, _max.y));
+}
+
+template <typename T>
 Vector2<T> Vector2<T>::yx() const
 {
     return Vector2(y, x);
@@ -195,7 +207,13 @@ bool Vector2<T>::operator!=(Vector2 const& _o) const
 template <typename T>
 bool Vector2<T>::IsNull() const
 {
-    return x == 0.0f && y == 0.0f;
+    return x == T(0) && y == T(0);
+}
+
+template <typename T>
+float Vector2<T>::Dot(Vector2 const& _o) const
+{
+    return x * _o.x + y * _o.y;
 }
 
 template <typename T>
@@ -256,9 +274,24 @@ Vector2<T> Vector2<T>::One()
 }
 
 template <typename T>
+Vector2<T> Vector2<T>::Scalar(T _scalar)
+{
+    return Vector2(_scalar, _scalar); 
+}
+
+template <typename T>
 float Vector2<T>::Dot(Vector2 const& _v1, Vector2 const& _v2)
 {
     return _v1.x * _v2.x + _v1.y * _v2.y;
+}
+
+template <typename T>
+float Vector2<T>::DeltaAngle(Vector2 const& _v1, Vector2 const& _v2)
+{
+    float dot_val   = MathUtils::Clamp(Dot(*_v1, _v2) / (_v1.Length() * _v2.Length()), -1.0f, 1.0f);
+    float angle     = std::acos(dot_val);          
+    float cross_val = _v1.x * _v2.y - _v1.y * _v2.x;  
+    return cross_val < 0.0f ? -angle : angle;     
 }
 
 template <typename T>
@@ -295,6 +328,12 @@ template <typename T>
 bool Vector2<T>::NearlyEqual(Vector2 const& _v1, Vector2 const& _v2)
 {
     return MathUtils::NearlyEqual(_v1.x, _v2.x) && MathUtils::NearlyEqual(_v1.y, _v2.y);
+}
+
+template <typename T>
+bool Vector2<T>::NearlyEqual(Vector2 const& _v1, Vector2 const& _v2, float _margin)
+{
+    return MathUtils::NearlyEqual(_v1.x, _v2.x, _margin) && MathUtils::NearlyEqual(_v1.y, _v2.y, _margin);
 }
 
 #endif

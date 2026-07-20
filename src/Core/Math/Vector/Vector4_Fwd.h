@@ -50,11 +50,16 @@ public:
     
     bool IsNull() const;
     
+    float Dot(Vector4 const& _o) const;
+    
     float Length() const;
     float LengthSquared() const;
     
     Vector4  Normalized() const;
     Vector4& SelfNormalize();
+    
+    Vector4 Abs() const;
+    Vector4 Clamp(Vector4 const& _min, Vector4 const& _max) const;
     
     static Vector4 Zero();
     static Vector4 One();
@@ -66,6 +71,9 @@ public:
     static Vector4 Max(Vector4 const& _v1, Vector4 const& _v2);
     static Vector4 Abs(Vector4 const& _v);
     static Vector4 Clamp(Vector4 const& _v, Vector4 const& _min, Vector4 const& _max);
+    
+    static bool NearlyEqual(Vector4 const& _v1, Vector4 const& _v2);
+    static bool NearlyEqual(Vector4 const& _v1, Vector4 const& _v2, float _margin);
     
     Vector2<T> xy() const; Vector2<T> yx() const;
     Vector2<T> xz() const; Vector2<T> zx() const;

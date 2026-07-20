@@ -209,10 +209,10 @@ private:
         // (1,2,3) . (-2,1,0) = -2+2+0 = 0
         const V3 perp(-2.0f, 1.0f, 0.0f);
 
-        TestValue("Dot | basic",            &V3::Dot, FloatEqualV3, 32.0f, a, b);
-        TestValue("Dot | perpendicular",    &V3::Dot, FloatEqualV3,  0.0f, a, perp);
-        TestValue("Dot | zero",             &V3::Dot, FloatEqualV3,  0.0f, a, zero);
-        TestValue("Dot | self",             &V3::Dot, FloatEqualV3, 14.0f, a, a);
+        TestValue("Dot | basic",            static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3, 32.0f, a, b);
+        TestValue("Dot | perpendicular",    static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3,  0.0f, a, perp);
+        TestValue("Dot | zero",             static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3,  0.0f, a, zero);
+        TestValue("Dot | self",             static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3, 14.0f, a, a);
     }
 
     // -----------------------------------------------------------------------
@@ -232,8 +232,8 @@ private:
         const V3 a(1.0f, 2.0f, 3.0f);
         const V3 b(4.0f, 5.0f, 6.0f);
         V3 cross = a ^ b;
-        TestValue("operator^ | perp to a",  &V3::Dot, FloatEqualV3, 0.0f, a, cross);
-        TestValue("operator^ | perp to b",  &V3::Dot, FloatEqualV3, 0.0f, b, cross);
+        TestValue("operator^ | perp to a",  static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3, 0.0f, a, cross);
+        TestValue("operator^ | perp to b",  static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3, 0.0f, b, cross);
 
         // compound
         V3 c(1.0f, 0.0f, 0.0f);
@@ -275,7 +275,7 @@ private:
 
         // result should be perpendicular to _v (the argument), verify via dot
         V3 perp = a.Perpendicular();
-        TestValue("Perpendicular | perp to arg",    &V3::Dot, FloatEqualV3, 0.0f, perp, a);
+        TestValue("Perpendicular | perp to arg", static_cast<float(*)(V3 const&, V3 const&)>(&V3::Dot), FloatEqualV3, 0.0f, perp, a);
     }
 
     // -----------------------------------------------------------------------
@@ -287,12 +287,12 @@ private:
 
         TestValue("Min | basic",    &V3::Min,   Vec3Equal, V3(-1.0f, -3.0f, -2.0f), a, b);
         TestValue("Max | basic",    &V3::Max,   Vec3Equal, V3( 2.0f,  4.0f,  1.0f), a, b);
-        TestValue("Abs | mixed",    &V3::Abs,   Vec3Equal, V3( 2.0f,  3.0f,  1.0f), a);
+        TestValue("Abs | mixed",    static_cast<V3(*)(V3 const&)>(&V3::Abs),   Vec3Equal, V3( 2.0f,  3.0f,  1.0f), a);
 
         const V3 v( 3.0f, -1.0f,  5.0f);
         const V3 lo(0.0f,  0.0f,  0.0f);
         const V3 hi(2.0f,  2.0f,  2.0f);
-        TestValue("Clamp | basic",  &V3::Clamp, Vec3Equal, V3(2.0f, 0.0f, 2.0f), v, lo, hi);
+        TestValue("Clamp | basic",  static_cast<V3(*)(V3 const&, V3 const&, V3 const&)>(&V3::Clamp), Vec3Equal, V3(2.0f, 0.0f, 2.0f), v, lo, hi);
 
         TestValue("Normalize | 1,2,2", &V3::Normalize, Vec3Equal,
             V3(1.0f/3.0f, 2.0f/3.0f, 2.0f/3.0f),

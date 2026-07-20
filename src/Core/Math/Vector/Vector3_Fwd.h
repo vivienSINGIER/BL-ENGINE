@@ -6,6 +6,8 @@
 template <typename T>
 class Matrix3;
 
+class Quaternion;
+
 template <typename T>
 class Vector3
 {
@@ -30,6 +32,7 @@ public:
     Vector3 operator*(float _scalar) const;
     Vector3 operator/(float _scalar) const;
     Vector3 operator*(Matrix3<T> const& _matrix) const;
+    Vector3 operator*(Quaternion const& _q) const;
     
     Vector3& operator+=(Vector3 const& _o);
     Vector3& operator-=(Vector3 const& _o);
@@ -39,11 +42,15 @@ public:
     Vector3& operator*=(float _scalar);
     Vector3& operator/=(float _scalar);
     Vector3& operator*=(Matrix3<T> const& _matrix);
+    Vector3& operator*=(Quaternion const& _q);
     
     bool operator==(Vector3 const& _o) const;
     bool operator!=(Vector3 const& _o) const;
     
     bool IsNull() const;
+    
+    float   Dot(Vector3 const& _o) const;
+    Vector3 Cross(Vector3 const& _o) const;
     
     float Length() const;
     float LengthSquared() const;
@@ -55,10 +62,14 @@ public:
     Vector3 Project(Vector3 const& _target) const;
     Vector3 Perpendicular() const;
     
+    Vector3 Abs() const;
+    Vector3 Clamp(Vector3 const& _min, Vector3 const& _max) const;
+    
     static Vector3 Zero();
     static Vector3 One();
     
-    static float Dot(Vector3 const& _v1, Vector3 const& _v2);
+    static float   Dot(Vector3 const& _v1, Vector3 const& _v2);
+    static Vector3 Cross(Vector3 const& _v1, Vector3 const& _v2);
     static Vector3 Normalize(Vector3 const& _o);
     
     static Vector3 Min(Vector3 const& _v1, Vector3 const& _v2);
@@ -67,6 +78,7 @@ public:
     static Vector3 Clamp(Vector3 const& _v, Vector3 const& _min, Vector3 const& _max);
     
     static bool NearlyEqual(Vector3 const& _v1, Vector3 const& _v2);
+    static bool NearlyEqual(Vector3 const& _v1, Vector3 const& _v2, float _margin);
     
     Vector2<T> xy() const;
     Vector2<T> yx() const;

@@ -251,10 +251,10 @@ private:
         // (1,2,3,4).(-2,1,0,0) = -2+2+0+0 = 0
         const V4 perp(-2.0f, 1.0f, 0.0f, 0.0f);
 
-        TestValue("Dot | basic",            &V4::Dot, FloatEqualV4, 70.0f, a, b);
-        TestValue("Dot | perpendicular",    &V4::Dot, FloatEqualV4,  0.0f, a, perp);
-        TestValue("Dot | zero",             &V4::Dot, FloatEqualV4,  0.0f, a, zero);
-        TestValue("Dot | self",             &V4::Dot, FloatEqualV4, 30.0f, a, a);
+        TestValue("Dot | basic",            static_cast<float(*)(V4 const&, V4 const&)>(&V4::Dot), FloatEqualV4, 70.0f, a, b);
+        TestValue("Dot | perpendicular",    static_cast<float(*)(V4 const&, V4 const&)>(&V4::Dot), FloatEqualV4,  0.0f, a, perp);
+        TestValue("Dot | zero",             static_cast<float(*)(V4 const&, V4 const&)>(&V4::Dot), FloatEqualV4,  0.0f, a, zero);
+        TestValue("Dot | self",             static_cast<float(*)(V4 const&, V4 const&)>(&V4::Dot), FloatEqualV4, 30.0f, a, a);
     }
 
     // -----------------------------------------------------------------------
@@ -266,12 +266,12 @@ private:
 
         TestValue("Min | basic",    &V4::Min,   Vec4Equal, V4(-1.0f, -3.0f, -2.0f, -4.0f), a, b);
         TestValue("Max | basic",    &V4::Max,   Vec4Equal, V4( 2.0f,  4.0f,  1.0f,  5.0f), a, b);
-        TestValue("Abs | mixed",    &V4::Abs,   Vec4Equal, V4( 2.0f,  3.0f,  1.0f,  4.0f), a);
+        TestValue("Abs | mixed",    static_cast<V4(*)(V4 const&)>(&V4::Abs),   Vec4Equal, V4( 2.0f,  3.0f,  1.0f,  4.0f), a);
 
         const V4 v( 3.0f, -1.0f,  5.0f, -2.0f);
         const V4 lo(0.0f,  0.0f,  0.0f,  0.0f);
         const V4 hi(2.0f,  2.0f,  2.0f,  2.0f);
-        TestValue("Clamp | basic",  &V4::Clamp, Vec4Equal, V4(2.0f, 0.0f, 2.0f, 0.0f), v, lo, hi);
+        TestValue("Clamp | basic",  static_cast<V4(*)(V4 const&, V4 const&, V4 const&)>(&V4::Clamp), Vec4Equal, V4(2.0f, 0.0f, 2.0f, 0.0f), v, lo, hi);
 
         TestValue("Normalize | 1,2,2,0", &V4::Normalize, Vec4Equal,
             V4(1.0f/3.0f, 2.0f/3.0f, 2.0f/3.0f, 0.0f),

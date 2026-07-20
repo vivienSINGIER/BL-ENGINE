@@ -248,6 +248,12 @@ bool Vector4<T>::IsNull() const
 }
 
 template <typename T>
+float Vector4<T>::Dot(Vector4 const& _o) const
+{
+    return x * _o.x + y * _o.y + z * _o.z + w * _o.w;
+}
+
+template <typename T>
 float Vector4<T>::Length() const
 {
     return MathUtils::Sqrt(x * x + y * y + z * z + w * w);
@@ -280,6 +286,28 @@ Vector4<T>& Vector4<T>::SelfNormalize()
     z /= length;
     w /= length;
     return *this;
+}
+
+template <typename T>
+Vector4<T> Vector4<T>::Abs() const
+{
+    return Vector4<T>(
+        MathUtils::Abs(x),
+        MathUtils::Abs(y),
+        MathUtils::Abs(z),
+        MathUtils::Abs(w)
+        );
+}
+
+template <typename T>
+Vector4<T> Vector4<T>::Clamp(Vector4 const& _min, Vector4 const& _max) const
+{
+    return Vector4<T>(
+        MathUtils::Clamp(x, _min.x, _max.x),
+        MathUtils::Clamp(y, _min.y, _max.y),
+        MathUtils::Clamp(z, _min.z, _max.z),
+        MathUtils::Clamp(w, _min.w, _max.w)
+        );
 }
 
 template <typename T>
@@ -330,6 +358,23 @@ Vector4<T> Vector4<T>::Clamp(Vector4 const& _v, Vector4 const& _min, Vector4 con
     return Vector4<T>(MathUtils::Clamp(_v.x, _min.x, _max.x), MathUtils::Clamp(_v.y, _min.y, _max.y), MathUtils::Clamp(_v.z, _min.z, _max.z), MathUtils::Clamp(_v.w, _min.w, _max.w));
 }
 
+template <typename T>
+bool Vector4<T>::NearlyEqual(Vector4 const& _v1, Vector4 const& _v2)
+{
+    return  MathUtils::NearlyEqual(_v1.x, _v2.x, MathUtils::EPSILON) &&
+            MathUtils::NearlyEqual(_v1.y, _v2.y, MathUtils::EPSILON) &&
+            MathUtils::NearlyEqual(_v1.z, _v2.z, MathUtils::EPSILON) &&
+            MathUtils::NearlyEqual(_v1.w, _v2.w, MathUtils::EPSILON);
+}
+
+template <typename T>
+bool Vector4<T>::NearlyEqual(Vector4 const& _v1, Vector4 const& _v2, float _margin)
+{
+    return  MathUtils::NearlyEqual(_v1.x, _v2.x, _margin) &&
+            MathUtils::NearlyEqual(_v1.y, _v2.y, _margin) &&
+            MathUtils::NearlyEqual(_v1.z, _v2.z, _margin) &&
+            MathUtils::NearlyEqual(_v1.w, _v2.w, _margin);
+}
 
 template <typename T>
 T Vector4<T>::operator[](int _i) const

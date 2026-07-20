@@ -3,6 +3,7 @@
 
 #include "Vector3_Fwd.h"
 #include "../Matrix/Matrix3.h"
+#include "../Quaternions/Quaternion.h"
 
 template <typename T>
 Vector3<T>::Vector3()
@@ -114,6 +115,20 @@ Vector3<T> Vector3<T>::operator*(Matrix3<T> const& _m) const
 }
 
 template <typename T>
+Vector3<T> Vector3<T>::operator*(Quaternion const& _q) const
+{
+    Vector3 u(_q.x, _q.y, _q.z);
+    
+    float s = _q.w;
+    
+    Vector3 vprime = 2.0f * Dot(u) * u
+                    + (s*s - u.Dot(u)) * (*this);
+                    + 2.0f * s * cross(u, *this);
+    
+    return vprime;
+}
+
+template <typename T>
 Vector3<T>& Vector3<T>::operator+=(Vector3 const& _o)
 {
     x = x + _o.x;
@@ -196,6 +211,24 @@ Vector3<T>& Vector3<T>::operator*=(Matrix3<T> const& _m)
 }
 
 template <typename T>
+Vector3<T>& Vector3<T>::operator*=(Quaternion const& _q)
+{
+    Vector3 u(_q.x, _q.y, _q.z);
+    
+    float s = _q.w;
+    
+    Vector3 vprime = 2.0f * Dot(u) * u
+                    + (s*s - u.Dot(u)) * (*this);
+                    + 2.0f * s * cross(u, *this);
+    
+    x = vprime.x;
+    y = vprime.y;
+    z = vprime.z;
+    
+    return *this;
+}
+
+template <typename T>
 bool Vector3<T>::operator==(Vector3 const& _o) const
 {
     return x == _o.x && y == _o.y && z == _o.z;
@@ -211,6 +244,22 @@ template <typename T>
 bool Vector3<T>::IsNull() const
 {
     return x == 0.0f && y == 0.0f && z == 0.0f;
+}
+
+template <typename T>
+float Vector3<T>::Dot(Vector3 const& _o) const
+{
+    return x * _o.x + y * _o.y + z * _o.z;
+}
+
+template <typename T>
+Vector3<T> Vector3<T>::Cross(Vector3 const& _o) const
+{
+    T newX = y * _o.z - z * _o.y;
+    T newY = z * _o.x - x * _o.z;
+    T newZ = x * _o.y - y * _o.x;
+
+    return Vector3(newX, newY, newZ);
 }
 
 template <typename T>
@@ -267,6 +316,18 @@ Vector3<T> Vector3<T>::Perpendicular() const
 }
 
 template <typename T>
+Vector3<T> Vector3<T>::Abs() const
+{
+    return Vector3(MathUtils::Abs(x), MathUtils::Abs(y), MathUtils::Abs(z));
+}
+
+template <typename T>
+Vector3<T> Vector3<T>::Clamp(Vector3 const& _min, Vector3 const& _max) const
+{
+    return Vector3(MathUtils::Clamp(x, _min.x, _max.x), MathUtils::Clamp(y, _min.y, _max.y), MathUtils::Clamp(z, _min.z, _max.z));
+}
+
+template <typename T>
 Vector3<T> Vector3<T>::Zero()
 {
     return Vector3(0, 0, 0);
@@ -282,6 +343,16 @@ template <typename T>
 float Vector3<T>::Dot(Vector3 const& _v1, Vector3 const& _v2)
 {
     return _v1.x * _v2.x + _v1.y * _v2.y + _v1.z * _v2.z;
+}
+
+template <typename T>
+Vector3<T> Vector3<T>::Cross(Vector3 const& _v1, Vector3 const& _v2)
+{
+    T newX = _v1.y * _v2.z - _v1.z * _v2.y;
+    T newY = _v1.z * _v2.x - _v1.x * _v2.z;
+    T newZ = _v1.x * _v2.y - _v1.y * _v2.x;
+
+    return Vector3(newX, newY, newZ);
 }
 
 template <typename T>
@@ -322,6 +393,14 @@ template <typename T>
 bool Vector3<T>::NearlyEqual(Vector3 const& _v1, Vector3 const& _v2)
 {
     return MathUtils::NearlyEqual(_v1.x, _v2.x) && MathUtils::NearlyEqual(_v1.y, _v2.y) && MathUtils::NearlyEqual(_v1.z, _v2.z);
+}
+
+template <typename T>
+bool Vector3<T>::NearlyEqual(Vector3 const& _v1, Vector3 const& _v2, float _margin)
+{
+    return  MathUtils::NearlyEqual(_v1.x, _v2.x, _margin) && 
+            MathUtils::NearlyEqual(_v1.y, _v2.y, _margin) && 
+            MathUtils::NearlyEqual(_v1.z, _v2.z, _margin);
 }
 
 template <typename T>

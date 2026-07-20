@@ -35,6 +35,7 @@ public:
     
     bool IsNull() const;
     
+    float Dot(Vector2 const& _o) const;
     float DeltaAngle(Vector2 const& _o) const;
     
     float Length() const;
@@ -47,10 +48,15 @@ public:
     Vector2 Project(Vector2 const& _target) const;
     Vector2 Perpendicular() const;
     
+    Vector2 Abs() const;
+    Vector2 Clamp(Vector2 const& _min, Vector2 const& _max) const;
+    
     static Vector2 Zero();
     static Vector2 One();
+    static Vector2 Scalar(T _scalar);
     
     static float Dot(Vector2 const& _v1, Vector2 const& _v2);
+    static float DeltaAngle(Vector2 const& _v1, Vector2 const& _v2);
     static Vector2 Normalize(Vector2 const& _o);
     
     static Vector2 Min(Vector2 const& _v1, Vector2 const& _v2);
@@ -59,6 +65,7 @@ public:
     static Vector2 Clamp(Vector2 const& _v, Vector2 const& _min, Vector2 const& _max);
     
     static bool NearlyEqual(Vector2 const& _v1, Vector2 const& _v2);
+    static bool NearlyEqual(Vector2 const& _v1, Vector2 const& _v2, float _margin);
     
     Vector2 yx() const;
     
