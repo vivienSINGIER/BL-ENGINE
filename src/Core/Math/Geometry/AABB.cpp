@@ -25,7 +25,7 @@ Vect3f32 AABB::Extent() const
     return (max - min) / 2.0f;
 }
 
-float AABB::SurfaceArea() const
+float AABB::Volume() const
 {
     Vect3f32 l = Extent() * 2.0f;
     

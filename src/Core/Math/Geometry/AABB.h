@@ -23,7 +23,7 @@ public:
     
     Vect3f32 Center() const;
     Vect3f32 Extent() const;
-    float SurfaceArea() const;
+    float Volume() const;
     
     void SetCenter(Vect3f32 const& _center);
     void SetExtent(Vect3f32 const& _extent);

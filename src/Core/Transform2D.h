@@ -6,6 +6,8 @@ using namespace DirectX;
 
 #include "define.h"
 
+// TODO translate to regular math lib following 3dTransform
+
 enum class DIRTY_FLAG_2D : uint32
 {
     WORLD   = 0b00001,

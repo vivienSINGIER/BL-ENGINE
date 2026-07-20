@@ -614,5 +614,4 @@ std::ostream& operator<<(std::ostream& _os, Matrix3<T> const& _m)
         "| " << _m[2][0] << ", " << _m[2][1] << ", " << _m[2][2] << " | " << "\n";
 }
 
-
 #endif
