@@ -25,7 +25,7 @@ public:
         litColoredF.AddProperty("FresnelR0", PropertyType::Float3, XMFLOAT3(0.01f, 0.01f, 0.01f));
         litColoredF.AddProperty("Roughness", PropertyType::Float, 0.25f);
 
-        Shader* litColoredS = _pDevice->CreateShader(RES("/Shaders/colored-lit.hlsl"), litColoredF, true);
+        Shader* litColoredS = _pDevice->CreateShader(RES("/Shaders/colored-lit.hlsl"), litColoredF, { true, false });
 
         return litColoredS;
     }
@@ -51,9 +51,19 @@ public:
         texturedF.AddProperty("FresnelR0", PropertyType::Float3, XMFLOAT3(0.01f, 0.01f, 0.01f));
         texturedF.AddProperty("Roughness", PropertyType::Float, 0.25f);
         
-        Shader* texturedS = _pDevice->CreateShader(RES("/Shaders/textured-lit.hlsl"), texturedF, true);
+        Shader* texturedS = _pDevice->CreateShader(RES("/Shaders/textured-lit.hlsl"), texturedF, { true, false });
 
         return texturedS;
+    }
+    
+    static Shader* CreateWireframe(Device* _pDevice)
+    {
+        ShaderFormat coloredF;
+        coloredF.AddProperty("Color", PropertyType::Float4, XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f));
+        
+        Shader* coloredS = _pDevice->CreateShader(RES("/Shaders/colored-unlit.hlsl"), coloredF, { false, true });
+        
+        return coloredS;
     }
 
     static UiShader* CreateUIBasic(Device* _pDevice)

@@ -35,8 +35,8 @@ public:
 
     void SetLights(Vector<LightDescriptor>& _vLights) override;
 
-    Shader* CreateShader(WString const& _path, ShaderFormat _format, bool _isLit = false) override;
-    UiShader* CreateUiShader(WString const& _path, ShaderFormat _format) override;
+    Shader* CreateShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc = {}) override;
+    UiShader* CreateUiShader(WString const& _path, ShaderFormat _format, ShaderDescriptor _desc = {}) override;
     Geometry* CreateGeometry(bool _isDynamic = false) override;
     Sprite* CreateSprite(bool _isDynamic) override;
     RenderTarget* CreateRenderTarget(int _width, int _height) override;

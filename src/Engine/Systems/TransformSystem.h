@@ -10,7 +10,7 @@ public:
     void OnUpdate(float _dt, EntityId _e, TransformComponent& _t) override;
 
 private:
-    bool IsDirty(Transform& _transform, uint32 _flag);
+    bool IsDirty(TransformD3D& _transform, uint32 _flag);
     void UpdateMatrix(TransformComponent& _t, EntityId _e);
 };
 

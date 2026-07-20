@@ -253,6 +253,31 @@ private:
 		}
 	}
 public:
+
+	static Geometry* BuildLine(Device* _pDevice, bool _isDynamic = false)
+	{
+		Geometry* pGeometry = _pDevice->CreateGeometry(_isDynamic);
+
+		Vector<Vertex> vertices;
+		Vector<uint32> indices;
+
+		vertices = {
+			Vertex{XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f)},
+			Vertex{XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f)}
+		};
+
+		indices = {
+			0, 1
+		};
+
+		pGeometry->SetVertexData(vertices.data(), 2);
+		pGeometry->SetIndexData(indices.data(), 2);
+
+		pGeometry->SetPrimitiveTopology(PrimitiveTopology::LineList);
+		
+		return pGeometry;
+	}
+	
 	////////////////////////////////////////////
 	//// PYRAMID
 	////////////////////////////////////////////

@@ -2,7 +2,11 @@
 #define CAMERA_H_DEFINED
 
 #include "../../Common/Common.h"
-#include "../../Common/Utils/FrustumHelper.hpp"
+
+struct PlaneS
+{
+    float a, b, c, d;
+};
 
 struct PassData
 {
@@ -51,14 +55,14 @@ private:
     XMFLOAT4X4 m_viewProj   = MathHelper::Identity4x4();
     
     XMFLOAT3 m_pos = {0.0f, 0.0f, 0.0f};
-    
-    float m_aspectRatio = 0.0f;
-    Frustum m_frustum;
+
+    PlaneS m_frustum[6];
     
     void FillData(PassData* _passData);
     
     Plane ExctractPlane(XMFLOAT3 _p0, XMFLOAT3 _p1, XMFLOAT3 _p2);
     void CalculateFrustum();
+    PlaneS MakePlane(XMFLOAT4& _a, XMFLOAT4 _b);
     
     friend class Device;
     friend class D3D12Device;

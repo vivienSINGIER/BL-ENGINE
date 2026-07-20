@@ -102,74 +102,38 @@ void Camera::FillData(PassData* _passData)
     _passData->farZ = farPlane;
 }
 
-Plane Camera::ExctractPlane(XMFLOAT3 _p0, XMFLOAT3 _p1, XMFLOAT3 _p2)
-{
-    Plane p;
-    
-}
-
 void Camera::CalculateFrustum()
 {
-    XMMATRIX w = XMLoadFloat4x4(&m_world);
-    
-    XMFLOAT4 right, up, front, pos;
-    XMStoreFloat4(&right, w.r[0]);
-    XMStoreFloat4(&up, w.r[1]);
-    XMStoreFloat4(&front, w.r[2]);
-    XMStoreFloat4(&pos, w.r[3]);
-    
-    XMFLOAT3 nearCenter =   {m_pos.x + front.x * nearPlane, m_pos.y + front.y * nearPlane, m_pos.z + front.z * nearPlane};
-    XMFLOAT3 farCenter =    {m_pos.x + front.x * farPlane, m_pos.y + front.y * farPlane, m_pos.z + front.z * farPlane};
-    float nearHeight = 2 * tanf(fov / 2) * nearPlane;
-    float farHeight = 2 * tanf(fov / 2) * farPlane;
-    float nearWidth = nearHeight * m_aspectRatio;
-    float farWidth = farHeight * m_aspectRatio;
-    
-    XMFLOAT3 farTopLeft = {
-        farCenter.x + up.x * farHeight * 0.5f - right.x * farWidth * 0.5f,
-        farCenter.y + up.y * farHeight * 0.5f - right.y * farWidth * 0.5f,
-        farCenter.z + up.z * farHeight * 0.5f - right.z * farWidth * 0.5f
-    };
-    XMFLOAT3 farTopRight = {
-        farCenter.x + up.x * farHeight * 0.5f + right.x * farWidth * 0.5f,
-        farCenter.y + up.y * farHeight * 0.5f + right.y * farWidth * 0.5f,
-        farCenter.z + up.z * farHeight * 0.5f + right.z * farWidth * 0.5f
-    };
-    XMFLOAT3 farBottomLeft = {
-        farCenter.x - up.x * farHeight * 0.5f - right.x * farWidth * 0.5f,
-        farCenter.y - up.y * farHeight * 0.5f - right.y * farWidth * 0.5f,
-        farCenter.z - up.z * farHeight * 0.5f - right.z * farWidth * 0.5f
-    };
-    XMFLOAT3 farBottomRight = {
-        farCenter.x - up.x * farHeight * 0.5f + right.x * farWidth * 0.5f,
-        farCenter.y - up.y * farHeight * 0.5f + right.y * farWidth * 0.5f,
-        farCenter.z - up.z * farHeight * 0.5f + right.z * farWidth * 0.5f
-    };
-    XMFLOAT3 nearTopLeft = {
-        nearCenter.x + up.x * nearHeight * 0.5f - right.x * nearWidth * 0.5f,
-        nearCenter.y + up.y * nearHeight * 0.5f - right.y * nearWidth * 0.5f,
-        nearCenter.z + up.z * nearHeight * 0.5f - right.z * nearWidth * 0.5f
-    };
-    XMFLOAT3 nearTopRight = {
-        nearCenter.x + up.x * nearHeight * 0.5f + right.x * nearWidth * 0.5f,
-        nearCenter.y + up.y * nearHeight * 0.5f + right.y * nearWidth * 0.5f,
-        nearCenter.z + up.z * nearHeight * 0.5f + right.z * nearWidth * 0.5f
-    };
-    XMFLOAT3 nearBottomLeft = {
-        nearCenter.x - up.x * nearHeight * 0.5f - right.x * nearWidth * 0.5f,
-        nearCenter.y - up.y * nearHeight * 0.5f - right.y * nearWidth * 0.5f,
-        nearCenter.z - up.z * nearHeight * 0.5f - right.z * nearWidth * 0.5f
-    };
-    XMFLOAT3 nearBottomRight = {
-        nearCenter.x - up.x * nearHeight * 0.5f + right.x * nearWidth * 0.5f,
-        nearCenter.y - up.y * nearHeight * 0.5f + right.y * nearWidth * 0.5f,
-        nearCenter.z - up.z * nearHeight * 0.5f + right.z * nearWidth * 0.5f
-    };
-    
-    
-    
-    OutputDebugStringA(("Far normal: " + std::to_string(m_frustum.farFace.normal.x) + ", " + std::to_string(m_frustum.farFace.normal.y) + ", " + std::to_string(m_frustum.farFace.normal.z) + "\n").c_str());
-    OutputDebugStringA(("Far distance: " + std::to_string(m_frustum.farFace.distance) + "\n").c_str());
+    XMMATRIX m = XMLoadFloat4x4(&m_viewProj);
+
+    XMFLOAT4 r0, r1, r2, r3;
+    XMStoreFloat4(&r0, m.r[0]);
+    XMStoreFloat4(&r1, m.r[1]);
+    XMStoreFloat4(&r2, m.r[2]);
+    XMStoreFloat4(&r3, m.r[3]);
+
+    m_frustum[0] = MakePlane(r3, r0);
+    m_frustum[1] = MakePlane(r2, {-r0.x, -r0.y, -r0.z, -r0.w});
+    m_frustum[2] = MakePlane(r3, r1);
+    m_frustum[3] = MakePlane(r3, {-r1.x, -r1.y, -r1.z, -r1.w});
+    m_frustum[4] = MakePlane(r2, {0.0f, 0.0f, 0.0f, 0.0f});
+    m_frustum[5] = MakePlane(r3, {-r2.x, -r2.y, -r2.z, -r2.w});
+
+    for (PlaneS& p : m_frustum)
+    {
+        float len = sqrtf(p.a*p.a + p.b*p.b + p.c*p.c);
+        p = {p.a / len, p.b / len, p.c / len, p.d / len};
+    }
+}
+
+PlaneS Camera::MakePlane(XMFLOAT4& _a, XMFLOAT4 _b)
+{
+    PlaneS p;
+    p.a = _a.x + _b.x;
+    p.b = _a.y + _b.y;
+    p.c = _a.z + _b.z;
+    p.d = _a.w + _b.w;
+    return p;
 }
 
 #endif

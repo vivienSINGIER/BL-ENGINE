@@ -28,5 +28,5 @@ VertexOut VSMain(VertexIn input)
 
 float4 PSMain(VertexOut pinput) : SV_TARGET
 {
-    return pinput.Color;
+    return pinput.Color * gColor;
 }

@@ -1,7 +1,7 @@
 #include "TransformSystem.h"
 #include "../ECS/World.h"
 
-bool TransformSystem::IsDirty(Transform& _transform, uint32 _flag)
+bool TransformSystem::IsDirty(TransformD3D& _transform, uint32 _flag)
 {
     uint32 dirty = _transform.GetDirty();
     return (dirty & _flag);

@@ -26,12 +26,12 @@ struct CapsuleShape
     float halfHeight = 1.0f;
 };
 
-struct AABB
+struct AABBCollider
 {
     XMFLOAT3 min = { 0.0f, 0.0f, 0.0f };
     XMFLOAT3 max = { 0.0f, 0.0f, 0.0f };
 
-    bool Overlaps(const AABB& _other) const
+    bool Overlaps(const AABBCollider& _other) const
     {
         return
             min.x <= _other.max.x && max.x >= _other.min.x &&
@@ -70,7 +70,7 @@ struct ColliderComponent
     // Flags
     bool isTrigger = false;
 
-    AABB     aabb;
+    AABBCollider     aabb;
     XMFLOAT3 worldCenter = { 0.0f, 0.0f, 0.0f };
     float    worldRadius = 0.0f;
 
