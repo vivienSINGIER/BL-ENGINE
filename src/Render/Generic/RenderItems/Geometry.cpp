@@ -30,9 +30,33 @@ bool Geometry::IsIndexed() const
     return m_indexCount > 0;
 }
 
-bool Geometry::FrustumCheck(Frustum const& _frustum, XMFLOAT4X4 const& _world)
+bool Geometry::FrustumCheck(Frustum const& _frustum, Mat4f32 const& _world)
 {
-    
+    switch ( m_boundingVolumeType )
+    {
+    case BoundingVolumeType::AABB_T:
+        {
+            AABB a = AABB::FromCenterExtent(m_center, m_extent);
+            a = a.Transformed(_world);
+
+            return _frustum.Intersects(a);
+        }
+    case BoundingVolumeType::SPHERE_T:
+        {
+            Sphere a(m_center, m_radius);
+            a = a.Transformed(_world);
+
+            return _frustum.Intersects(a);
+        }
+    case BoundingVolumeType::OBB_T:
+        {
+            OBB a = OBB(m_center, m_extent);
+            a = a.Transformed(_world);
+            
+            return _frustum.Intersects(a);
+        }
+    default: return false;
+    }
 }
 
 void Geometry::CalculateBounds(const Vertex* _data, uint64 _vertexCount)

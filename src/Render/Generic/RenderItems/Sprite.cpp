@@ -4,8 +4,8 @@ void Sprite::CalculateBounds(const UiVertex* _vertices, uint64 _vertexCount)
 {
     if (_vertexCount == 0) return;
     
-    XMFLOAT2 min = _vertices[0].position;
-    XMFLOAT2 max = _vertices[0].position;
+    Vect2f32 min = _vertices[0].position;
+    Vect2f32 max = _vertices[0].position;
 
     for (uint64 i = 0; i < _vertexCount; i++)
     {

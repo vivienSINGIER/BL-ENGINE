@@ -5,7 +5,7 @@
 
 #include "../../Common/Utils/RenderItemHelper.hpp"
 
-#define DEFAULT_BOUNDING_VOLUME_TYPE BoundingVolumeType::SPHERE
+#define DEFAULT_BOUNDING_VOLUME_TYPE BoundingVolumeType::SPHERE_T
 
 class Geometry
 {
@@ -24,7 +24,7 @@ public:
     PrimitiveTopology GetTopology() const;
     bool IsIndexed() const;
     
-    bool FrustumCheck(Frustum const& _frustum, XMFLOAT4X4 const& _world);
+    bool FrustumCheck(Frustum const& _frustum, Mat4f32 const& _world);
     void CalculateBounds(const Vertex* _data, uint64 _vertexCount);
     
 protected:
