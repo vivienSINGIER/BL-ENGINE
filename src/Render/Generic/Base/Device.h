@@ -45,7 +45,7 @@ public:
     void SetMaterial(Material* _material) { m_pCurrMaterial = _material; }
     void SetUiMaterial(UiMaterial* _material) { m_pCurrUiMaterial = _material; }
     void SetMainCamera(Camera* _pCamera) { m_pMainCamera = _pCamera; }
-    void SetClearColor(XMFLOAT3 _color) { m_clearColor = _color; }
+    void SetClearColor(Vect3f32 const& _color) { m_clearColor = _color; }
 
     RenderTarget* GetBlitRT() { return m_blitRT; } 
     
@@ -70,7 +70,7 @@ protected:
     Material* m_pCurrMaterial = nullptr;
     UiMaterial* m_pCurrUiMaterial = nullptr;
     
-    XMFLOAT3 m_clearColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+    Vect3f32 m_clearColor = Vect3f32(0.1f);
     
     virtual void SetViewport(int _width, int _height) = 0;
 

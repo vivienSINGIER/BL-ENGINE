@@ -31,7 +31,7 @@ public:
     SwapChain* GetSwapChain() { return m_pSwapChain; }
 
     Device* Clear();
-    Device* Clear(XMFLOAT3 _color);
+    Device* Clear(Vect3f32 const& _color);
     void Display();
 
     Window() = default;

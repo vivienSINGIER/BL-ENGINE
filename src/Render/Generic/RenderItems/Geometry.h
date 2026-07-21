@@ -4,9 +4,8 @@
 #include "../../Common/Common.h"
 
 #include "../../Common/Utils/RenderItemHelper.hpp"
-#include "../../Common/Utils/FrustumHelper.hpp"
 
-#define DEFAULT_BOUNDING_VOLUME_TYPE VolumeType::Sphere
+#define DEFAULT_BOUNDING_VOLUME_TYPE BoundingVolumeType::SPHERE
 
 class Geometry
 {
@@ -16,16 +15,17 @@ public:
     virtual void SetVertexData(const Vertex* _data, uint64 _vertexCount) = 0;
     virtual void SetIndexData(const uint32* _indices, uint64 _indexCount) = 0;
     
-    void SetPrimitiveTopology(PrimitiveTopology _topology) { m_primitiveTopology = _topology; }
+    void SetPrimitiveTopology(PrimitiveTopology _topology);
+    void SetBoundingVolumeType(BoundingVolumeType _boundingVolumeType);
     
-    uint64 GetVertexCount() const { return m_vertexCount; }
-    uint64 GetIndexCount() const { return m_indexCount; }
+    uint64 GetVertexCount() const;
+    uint64 GetIndexCount() const;
     
-    PrimitiveTopology GetTopology() const { return m_primitiveTopology; }
-    bool IsIndexed() const { return m_indexCount > 0; }
-
-    Volume* GetVolume() { return m_boundingVolume.GetVolume(); }
-    bool FrustumCheck(Frustum const& _frustum, XMFLOAT4X4 const& _world) { return GetVolume()->IsOnFrustum(_frustum, _world); }
+    PrimitiveTopology GetTopology() const;
+    bool IsIndexed() const;
+    
+    bool FrustumCheck(Frustum const& _frustum, XMFLOAT4X4 const& _world);
+    void CalculateBounds(const Vertex* _data, uint64 _vertexCount);
     
 protected:
     uint64 m_vertexCount = 0;
@@ -34,8 +34,11 @@ protected:
 
     bool m_isDynamic = false;
     
-    BoundingVolume m_boundingVolume;
+    BoundingVolumeType m_boundingVolumeType;
+    float m_radius;
+    Vect3f32 m_center;
+    Vect3f32 m_extent;
     
-    Geometry(bool _isDynamic, VolumeType _vType = DEFAULT_BOUNDING_VOLUME_TYPE);
+    Geometry(bool _isDynamic, BoundingVolumeType _vType = DEFAULT_BOUNDING_VOLUME_TYPE);
 };
 #endif
