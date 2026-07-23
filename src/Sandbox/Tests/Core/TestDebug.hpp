@@ -42,9 +42,7 @@ public:
         window.InitD3D12();
 
         Device* pDevice = window.GetDevice();
-
-        XMFLOAT4X4 matrix = MathHelper::Identity4x4();
-
+        
         Shader* s = ShaderFactory::CreateUnlitColored(pDevice);
         Material* green = s->CreateMaterial();
         green->SetFloat4("Color", {0.0f, 1.0f, 0.0f, 1.0f});
@@ -53,11 +51,11 @@ public:
         Geometry* cube = GeometryFactory::BuildCube(pDevice);
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, -5.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Transform camT;
+        camT.SetPosition(Vect3f32(0.0f, 0.0f, -5.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
         
+        cam.SetWorld(camT.GetMatrix());
         pDevice->SetMainCamera(&cam);
 
         Mat4f32 m1 = Mat4f32::MakeLineToLineTransform(
@@ -89,21 +87,15 @@ public:
         std::cout << "a1 * M3 = " << a1m3 << std::endl;
         std::cout << "a2 * M3 = " << a2m3 << std::endl;
         
-        XMFLOAT4X4 m1D3D = ToD3DMatrix(m1);
-
-        XMFLOAT4X4 m2D3D = ToD3DMatrix(m2);
-
-        XMFLOAT4X4 m3D3D = ToD3DMatrix(m3);
-        
         while (window.IsOpen())
         {
             window.Update();
             window.Clear();
 
             pDevice->SetMaterial(green);
-            pDevice->Draw(line, m1D3D);
-            pDevice->Draw(line, m2D3D);
-            pDevice->Draw(line, m3D3D);
+            pDevice->Draw(line, m1);
+            pDevice->Draw(line, m2);
+            pDevice->Draw(line, m3);
             
             window.Display();
         }

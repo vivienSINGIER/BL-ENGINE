@@ -13,7 +13,7 @@ void ImageSystem::OnUpdate(float _dt, EntityId _e, UiImageComponent& _image)
     Sprite* sp = RessourceManager::GetSprite(_image.spriteId);
     UiMaterial* uiMat = RessourceManager::GetUiMaterial(_image.materialId);
 
-    XMFLOAT4X4 t = _image.transform.GetMatrix();
+    Mat4f32 t = _image.transform.GetMatrix();
     
     if (sp == nullptr) return;
     if (uiMat == nullptr) return;

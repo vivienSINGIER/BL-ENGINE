@@ -41,8 +41,8 @@ bool ButtonSystem::IsHovered(UiButtonComponent& _button)
     if (_button.m_isInit == false) return false;
     
     XMINT2 mousePos = InputManager::GetCenteredMousePosition();
-    XMFLOAT2 pos = _button.transform.GetPosition();
-    XMFLOAT2 scale = _button.transform.GetScale();
+    Vect2f32 pos = _button.transform.GetPosition();
+    Vect2f32 scale = _button.transform.GetScale();
     
     int dX = abs(mousePos.x - (int)pos.x);
     int dY = abs(mousePos.y - (int)pos.y);
@@ -80,7 +80,7 @@ void ButtonSystem::Draw(UiButtonComponent& _button)
     if (uiMat == nullptr)
         uiMat = RessourceManager::GetUiMaterial(_button.states[UiButtonComponent::ButtonStateType::IDLE].materialId);
 
-    XMFLOAT4X4 t = _button.transform.GetMatrix();
+    Mat4f32 t = _button.transform.GetMatrix();
     
     if (sp == nullptr) return;
     if (uiMat == nullptr) return;

@@ -1,27 +1,23 @@
 #ifndef TRANSFORM2D_H_DEFINED
 #define TRANSFORM2D_H_DEFINED
 
-#include <DirectXMath.h>
-using namespace DirectX;
-
 #include "define.h"
 
-// TODO translate to regular math lib following 3dTransform
-
-enum class DIRTY_FLAG_2D : uint32
-{
-    WORLD   = 0b00001,
-    INVERSE = 0b00010,
-    POS     = 0b00100,
-    SCALE   = 0b01000,
-    ROTATE  = 0b10000,
-
-    ALL     = 0b11111
-};
+#include "Math/Matrix/Matrix.h"
+#include "Math/Vector/Vector.h"
+#include "Math/Quaternions/Quaternion.h"
 
 class Transform2D
 {
 public:
+    enum LocalDirty : uint8
+    {
+        None            = 0,
+        Position        = 1 << 0,
+        RotationScale   = 1 << 1,
+        World           = Position | RotationScale
+    };
+    
     Transform2D();
     ~Transform2D() = default;
 
@@ -30,41 +26,52 @@ public:
     Transform2D& operator=(const Transform2D& other);
     Transform2D& operator=(Transform2D&& other) noexcept;
 
-    XMFLOAT4X4& GetMatrix();
-
     void SetIdentity();
     void UpdateMatrix();
+    bool IsWorldDirty();
+    Mat4f32 const& GetMatrix();
+    
     void UpdateFromParent(Transform2D const& parent);
+    
+    void AddFlag(uint8 _flag);
+    void RemoveFlag(uint8 _flag);
+    bool GetDirtyState(uint8 _flag) const;
+    
+    //////////////////// Pos //////////////////////////
 
-    uint32 GetDirty() const { return dirty; }
+    Vect2f32 const& GetPosition();
+    
+    void SetPosition(Vect2f32 const& _position);
+    void Move(Vect2f32 const& _delta);
+    void Move(Vect2f32 const& _dir, float _distance);
 
-    XMFLOAT2& GetPosition()         { return pos; }
-    void SetPosition(XMFLOAT2 const& position);
-    void Move(XMFLOAT2 const& delta);
-    void Move(XMFLOAT2 const& dir, float distance);
-
-    const XMFLOAT2& GetScale() const { return scale; }
-    void SetScale(XMFLOAT2 const& _scale);
+    ////////////////////// Scale //////////////////////
+    
+    Vect2f32 const& GetScale();
+    
+    void SetScale(Vect2f32 const& _scale);
     void SetScale(float _scale);
-    void Scale(XMFLOAT2 const& _scale);
+    void Scale(Vect2f32 const& _scale);
     void Scale(float _scale);
+    
+    ///////////////////// Rotation /////////////////////
 
-    float GetRotation() const { return angle; }
-    XMFLOAT2 GetRight()   const { return { cosf(angle),  sinf(angle) }; }
-    XMFLOAT2 GetUp()      const { return { -sinf(angle), cosf(angle) }; }
+    float GetRotation() const;
+    Vect2f32 GetRight()   const;
+    Vect2f32 GetUp()      const;
 
     void SetRotation(float _angle);
     void Rotate(float _delta);
     void ResetRotation();
-
-private:
-    XMFLOAT2   pos   = { 0.0f, 0.0f };
-    XMFLOAT2   scale = { 1.0f, 1.0f };
-    float      angle = 0.0f;
     
-    XMFLOAT4X4 matrix;
+private:
+    Vect2f32   m_pos   = { 0.0f, 0.0f };
+    Vect2f32   m_scale = { 1.0f, 1.0f };
+    float      m_angle = 0.0f;
+    
+    Mat4f32 m_matrix;
 
-    uint32 dirty = 0;
+    uint32 m_dirty = 0;
 };
 
 #endif

@@ -68,10 +68,10 @@ void Geometry::CalculateBounds(const Vertex* _data, uint64 _vertexCount)
     if (_vertexCount == 0) 
         return;
     
-    Vect3f32 min;
-    Vect3f32 max;
+    Vect3f32 min = _data[0].position;
+    Vect3f32 max = _data[0].position;
     
-    for (int i = 0; i < _vertexCount; i++)
+    for (uint64 i = 0; i < _vertexCount; i++)
     {
         min.x = MathUtils::Min( min.x, _data[i].position.x );
         min.y = MathUtils::Min( min.y, _data[i].position.y );

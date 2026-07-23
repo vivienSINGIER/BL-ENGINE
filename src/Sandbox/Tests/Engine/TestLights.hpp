@@ -15,24 +15,24 @@ public:
             LightComponent& l = GetComponent<LightComponent>();
 
             if (InputManager::IsKey(Z))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, 1.0f * dt));
             if (InputManager::IsKey(S))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, -1.0f * dt));
             if (InputManager::IsKey(Q))
-                t.local.Move(XMFLOAT3(-1.0f * dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(-1.0f * dt, 0.0f, 0.0f));
             if (InputManager::IsKey(D))
-                t.local.Move(XMFLOAT3(1.0f * dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(1.0f * dt, 0.0f, 0.0f));
             if (InputManager::IsKey(SPACE))
-                t.local.Move(XMFLOAT3(0.0f, 1.0f * dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, 1.0f * dt, 0.0f));
             if (InputManager::IsKey(LCONTROL))
-                t.local.Move(XMFLOAT3(0.0f, -1.0f * dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, -1.0f * dt, 0.0f));
 
             if (InputManager::IsKeyDown(ENTER))
-                l.color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+                l.color = Vect4f32(1.0f, 0.0f, 0.0f, 1.0f);
             if (InputManager::IsKeyDown(RSHIFT))
-                l.color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+                l.color = Vect4f32(0.0f, 1.0f, 0.0f, 1.0f);
             if (InputManager::IsKeyDown(RCONTROL))
-                l.color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+                l.color = Vect4f32(0.0f, 0.0f, 1.0f, 1.0f);
         }
     };
     
@@ -46,7 +46,7 @@ public:
         Material* white = RessourceManager::GetShader(shaderId)->CreateMaterial();
         RessourceManager::AddMaterial("White", white);
         Material* debugMat = RessourceManager::GetShader(shaderId)->CreateMaterial();
-        debugMat->SetFloat4("DiffuseAlbedo", XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
+        debugMat->SetFloat4("DiffuseAlbedo", Vect4f32(1.0f, 1.0f, 0.0f, 1.0f));
         RessourceManager::AddMaterial("Debug", debugMat);
         RessourceManager::AddCamera("Default");
         
@@ -58,14 +58,14 @@ public:
 
         EntityId e1 = scene->world->CreateEntity();
         TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
-        t1.local.SetPosition(XMFLOAT3(1.0f, 1.0f, -5.0f));
+        t1.local.SetPosition(Vect3f32(1.0f, 1.0f, -5.0f));
         CameraComponent& cam = scene->world->AddComponent<CameraComponent>(e1);
         cam.camId = RessourceManager::GetCameraId("Default");
         cam.isMainCamera = true;
 
         EntityId e2 = scene->world->CreateEntity();
         TransformComponent& t2 = scene->world->AddComponent<TransformComponent>(e2);
-        t2.local.SetPosition(XMFLOAT3(0.0f, 2.0f, 0.0f));
+        t2.local.SetPosition(Vect3f32(0.0f, 2.0f, 0.0f));
         LightComponent& l = scene->world->AddComponent<LightComponent>(e2);
         l.SetPoint(1.0f, 10.0f, 1);
         scene->world->AddScript<TestScript>(e2);

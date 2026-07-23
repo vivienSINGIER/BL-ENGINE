@@ -21,8 +21,8 @@ void LightSystem::OnUpdate(float _dt, EntityId _e, LightComponent& _l, Transform
 
         desc.type = _l.type;
 
-        desc.light.Position = _t.world.pos;
-        desc.light.Direction = _t.world.forward;
+        desc.light.Position = _t.world.GetPosition();
+        desc.light.Direction = _t.world.GetForward();
         lightDescriptors.push_back(desc);
         count++;
     }

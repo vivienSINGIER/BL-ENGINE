@@ -34,10 +34,11 @@ public:
         scene->world->AddScript<TestScript>(e);
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, -3.0f, -3.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Transform camT;
+        camT.SetPosition(Vect3f32(0.0f, -3.0f, -3.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
+        
+        cam.SetWorld(camT.GetMatrix());
 
         EngineManager::GetDevice()->SetMainCamera(&cam);
 

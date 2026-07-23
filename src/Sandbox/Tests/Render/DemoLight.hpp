@@ -6,13 +6,6 @@
 
 class DemoLight : public Test
 {
-    static void SetPosition(XMFLOAT3 position, XMFLOAT4X4& matrix)
-    {
-        matrix._41 = position.x;
-        matrix._42 = position.y;
-        matrix._43 = position.z;
-    }
-    
 public: 
     void Run()
     {
@@ -22,16 +15,6 @@ public:
         Device* pDevice = window.GetDevice();
         
         Shader* litTextured = ShaderFactory::CreateLitTextured(pDevice);
-
-        Material* litBrick = litTextured->CreateMaterial();
-        Texture* brickAlbedo = pDevice->CreateTexture(RES("/Textures/Bricks/Albedo.dds"));
-        litBrick->SetTexture("Albedo", brickAlbedo);
-        Texture* brickRoughness = pDevice->CreateTexture(RES("/Textures/Bricks/Roughness.dds"));
-        litBrick->SetTexture("Roughness", brickRoughness);
-        Texture* brickNormal = pDevice->CreateTexture(RES("/Textures/Bricks/NormalDX.dds"));
-        litBrick->SetTexture("Normal", brickNormal);
-        Texture* brickAmbient = pDevice->CreateTexture(RES("/Textures/Bricks/Ambient.dds"));
-        litBrick->SetTexture("Ambient", brickAmbient);
 
         Material* litWood = litTextured->CreateMaterial();
         Texture* woodAlbedo = pDevice->CreateTexture(RES("/Textures/Wood/Albedo.dds"));
@@ -68,30 +51,27 @@ public:
         Geometry* Pyramid = GeometryFactory::BuildPyramid(pDevice);
         Geometry* Cylinder = GeometryFactory::BuildCylinder(pDevice, 16);
         
-        XMFLOAT4X4 donutMat = MathHelper::Identity4x4();
-        SetPosition({-0.0f, 0.0f, 0.0f}, donutMat);
-
-        XMFLOAT3 axis = XMFLOAT3(1.0f, 1.0f, 0.0f);
-        XMMATRIX rotationMat;
-
-        Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, -3.0f, -3.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Transform donutMat;
+        donutMat.SetPosition({-0.0f, 0.0f, 0.0f});
         
+        Camera cam;
+        Transform camT;
+        camT.SetPosition(Vect3f32(0.0f, -3.0f, -3.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
+        
+        cam.SetWorld(camT.GetMatrix());
         pDevice->SetMainCamera(&cam);
 
         {
             LightDescriptor point1 = LightHelper::CreateLight(LightType::Point);
-            point1.light.Position = XMFLOAT3(-2.0, -1.0f, -1.0f);
-            point1.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point1.light.Color = XMFLOAT4(1.0f, 0.5f, 0.0f, 1.0f);
+            point1.light.Position = Vect3f32(-2.0, -1.0f, -1.0f);
+            point1.light.Strength = Vect3f32(1.0f, 1.0f, 1.0f);
+            point1.light.Color = Vect4f32(1.0f, 0.5f, 0.0f, 1.0f);
 
             LightDescriptor point2 = LightHelper::CreateLight(LightType::Point);
-            point2.light.Position = XMFLOAT3(2.0, 1.0f, -1.0f);
-            point2.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point2.light.Color = XMFLOAT4(0.0f, 0.3f, 0.8f, 1.0f);
+            point2.light.Position = Vect3f32(2.0, 1.0f, -1.0f);
+            point2.light.Strength = Vect3f32(1.0f, 1.0f, 1.0f);
+            point2.light.Color = Vect4f32(0.0f, 0.3f, 0.8f, 1.0f);
         
             Vector<LightDescriptor> lights = { point1, point2 };
             pDevice->SetLights(lights);
@@ -105,15 +85,12 @@ public:
 
             angle += 0.001f;
             
-            XMMATRIX rot = XMMatrixRotationY(angle) * XMMatrixRotationX(angle) * XMMatrixRotationZ(angle);
-
-            XMFLOAT4X4 donutM = MathHelper::Identity4x4();
-            XMStoreFloat4x4(&donutM,    rot * XMLoadFloat4x4(&donutMat));
+            donutMat.SetYPR({angle, angle, angle});
             
             window.Clear();
 
             pDevice->SetMaterial(litRock);
-            pDevice->Draw(Donut, donutM);
+            pDevice->Draw(Donut, donutMat.GetMatrix());
             
             window.Display();
         }

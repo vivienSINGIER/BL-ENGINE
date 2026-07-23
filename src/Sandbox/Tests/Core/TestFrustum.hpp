@@ -22,6 +22,7 @@ public:
     Geometry* sphere;
     Geometry* line;
     Camera cam;
+    Transform camT;
     
     XMFLOAT4X4 ToD3DMatrix(Mat4f32 const& _m)
     {
@@ -135,31 +136,29 @@ public:
     {
         if (_im.IsKeyDown(_1, 1))
         {
-            XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, -5.0f);
-            cam.SetPos(pos);
+            Vect3f32 pos = Vect3f32(0.0f, 0.0f, -5.0f);
+            camT.SetPosition(pos);
         }
         if (_im.IsKeyDown(_2, 1))
         {
-            XMFLOAT3 pos = XMFLOAT3(5.0f, 0.0f, 0.0f);
-            cam.SetPos(pos); 
+            Vect3f32 pos = Vect3f32(5.0f, 0.0f, 0.0f);
+            camT.SetPosition(pos); 
         }
         if (_im.IsKeyDown(_3, 1))
         {
-            XMFLOAT3 pos = XMFLOAT3(0.1f, 5.0f, 0.0f);
-            cam.SetPos(pos); 
+            Vect3f32 pos = Vect3f32(0.1f, 5.0f, 0.0f);
+            camT.SetPosition(pos); 
         }
         
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Vect3f32 target = Vect3f32(0.0f, 0.0f, 0.0f);
+        camT.LookAt(target);
     }
     
     void DrawLine(Device* _d, Vect3f32 _p1, Vect3f32 _p2)
     {
         Mat4f32 t = Mat4f32::MakeLineToLineTransform(Vect3f32(0.0f), Vect3f32(1.0f, 0.0f, 0.0f), _p1, _p2);
         
-        XMFLOAT4X4 m = ToD3DMatrix(t);
-        
-        _d->Draw(line, m);
+        _d->Draw(line, t);
     }
     
     void DrawAABB(Device* _d, AABB _a)
@@ -170,9 +169,7 @@ public:
         scale.m22 = _a.Extent().z * 2.0f;
         scale.rows[3] = Vect4f32(_a.Center(), 1.0f);
         
-        XMFLOAT4X4 m = ToD3DMatrix(scale);
-        
-        _d->Draw(cube, m);
+        _d->Draw(cube, scale);
     }
     
     void DrawSphere(Device* _d, Sphere _s)
@@ -183,18 +180,14 @@ public:
         scale.m22 = _s.radius * 2.0f;
         scale.rows[3] = Vect4f32(_s.center, 1.0f);
         
-        XMFLOAT4X4 m = ToD3DMatrix(scale);
-        
-        _d->Draw(sphere, m);
+        _d->Draw(sphere, scale);
     }
     
     void DrawOBB(Device* _d, OBB _o)
     {
         Mat4f32 t = Mat4f32::MakeTransform(_o.position, _o.extent * 2.0f, _o.orientation.ToMatrix4());
         
-        XMFLOAT4X4 m = ToD3DMatrix(t);
-        
-        _d->Draw(cube, m);
+        _d->Draw(cube, t);
     }
     
     void DrawFrustum(Device* _d, Frustum _f)
@@ -229,9 +222,7 @@ public:
             Vect3f32(0.0f, 0.0f, 0.0f), Vect3f32(1.0f, 0.0f, 0.0f),
             origin, end);
         
-        XMFLOAT4X4 m = ToD3DMatrix(t);
-        
-        _d->Draw(line, m);
+        _d->Draw(line, t);
     }
         
     void Run()
@@ -240,9 +231,6 @@ public:
         window.InitD3D12();
 
         Device* pDevice = window.GetDevice();
-
-        XMFLOAT4X4 matrix = MathHelper::Identity4x4();
-        XMFLOAT4X4 fM = MathHelper::Identity4x4();
 
         Shader* s = ShaderFactory::CreateWireframe(pDevice);
         Material* greenWF = s->CreateMaterial();
@@ -258,18 +246,17 @@ public:
         cube = GeometryFactory::BuildCube(pDevice);
         sphere = GeometryFactory::BuildIcosphere(pDevice, 2);
         
-        XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, -5.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        camT.SetPosition(Vect3f32(0.0f, 0.0f, -5.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
         
+        cam.SetWorld(camT.GetMatrix());
         pDevice->SetMainCamera(&cam);
         
         {
             LightDescriptor point1 = LightHelper::CreateLight(LightType::Point);
-            point1.light.Position = XMFLOAT3(-2.0, -1.0f, -1.0f);
-            point1.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point1.light.Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+            point1.light.Position = Vect3f32(-2.0, -1.0f, -1.0f);
+            point1.light.Strength = Vect3f32(1.0f, 1.0f, 1.0f);
+            point1.light.Color = Vect4f32(1.0f, 1.0f, 1.0f, 1.0f);
         
             Vector<LightDescriptor> lights = { point1 };
             pDevice->SetLights(lights);
@@ -294,8 +281,6 @@ public:
             HandleObjectInput(inputManager, t);
             HandleFrustumInput(inputManager, fT);
             HandleCamInput(inputManager);
-            
-            matrix = ToD3DMatrix(t.GetMatrix());
             
             Mat4f32 view = fT.GetInvMatrix();
             Frustum frustum(view, proj);

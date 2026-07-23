@@ -14,17 +14,17 @@ public:
             TransformComponent& t = GetComponent<TransformComponent>();
 
             if (InputManager::IsKey(Z))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, 1.0f * dt));
             if (InputManager::IsKey(S))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, -1.0f * dt));
             if (InputManager::IsKey(Q))
-                t.local.Move(XMFLOAT3(-1.0f * dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(-1.0f * dt, 0.0f, 0.0f));
             if (InputManager::IsKey(D))
-                t.local.Move(XMFLOAT3(1.0f * dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(1.0f * dt, 0.0f, 0.0f));
             if (InputManager::IsKey(SPACE))
-                t.local.Move(XMFLOAT3(0.0f, 1.0f * dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, 1.0f * dt, 0.0f));
             if (InputManager::IsKey(LCONTROL))
-                t.local.Move(XMFLOAT3(0.0f, -1.0f * dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, -1.0f * dt, 0.0f));
         }
     };
     
@@ -43,7 +43,7 @@ public:
 
         EntityId e1 = scene->world->CreateEntity();
         TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
-        t1.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
+        t1.local.SetPosition(Vect3f32(0.0f, 0.0f, -5.0f));
 
         CameraComponent& cam = scene->world->AddComponent<CameraComponent>(e1);
         cam.camId = RessourceManager::GetCameraId("Default");

@@ -40,6 +40,7 @@ public:
     float GetAspectRatio() const;
     
     void UpdateMatrices();
+    Frustum const& GetFrustum();
     
 private:
     Mat4f32 m_world      = Mat4f32::Identity();
@@ -49,7 +50,7 @@ private:
     
     Vect3f32 m_pos = { 0.0f, 0.0f, 0.0f };
     
-    float m_fov = 0.25f * MathHelper::Pi;
+    float m_fov = 0.25f * MathUtils::PI;
     float m_nearPlane = 1.0f;
     float m_farPlane = 1000.0f;
     float m_aspectRatio = 0.0f;

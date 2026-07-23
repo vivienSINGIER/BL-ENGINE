@@ -38,9 +38,9 @@ public:
     virtual void RunComputeShader(ComputeShader* _pComputeShader, bool _isOnRT = false) = 0;
 
     virtual void Blit(RenderTarget* _pRt = nullptr) = 0;
-    virtual void Draw(Geometry* _geo, XMFLOAT4X4& _mat) = 0;
-    virtual void DrawUi(Sprite* _sprite, XMFLOAT4X4& _mat) = 0;
-    virtual void DrawRenderText(Text* _text, XMFLOAT4X4& _mat) = 0;
+    virtual void Draw(Geometry* _geo, Mat4f32 const& _mat) = 0;
+    virtual void DrawUi(Sprite* _sprite, Mat4f32 const& _mat) = 0;
+    virtual void DrawRenderText(Text* _text, Mat4f32 const& _mat) = 0;
 
     void SetMaterial(Material* _material) { m_pCurrMaterial = _material; }
     void SetUiMaterial(UiMaterial* _material) { m_pCurrUiMaterial = _material; }

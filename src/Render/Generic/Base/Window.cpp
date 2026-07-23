@@ -198,7 +198,7 @@ void Window::SetSize(int _width, int _height)
 
 float Window::GetAspectRatio()
 {
-    return MathHelper::Min(10.0f, (float)m_width / (float)m_height);
+    return MathUtils::Min(10.0f, (float)m_width / (float)m_height);
 }
 
 LRESULT Window::HandleMessage(UINT _msg, WPARAM _wParam, LPARAM _lParam)

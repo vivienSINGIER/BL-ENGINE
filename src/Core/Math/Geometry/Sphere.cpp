@@ -46,7 +46,7 @@ void Sphere::Transform(Mat4f32 const& _t)
     Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
     
     center = position;
-    radius *= (scale.x + scale.y + scale.z) / 3.0f; 
+    radius *= MathUtils::Max(scale.x, MathUtils::Max(scale.y, scale.z)); 
 }
 
 Sphere Sphere::Transformed(Mat4f32 const& _t)
@@ -57,7 +57,7 @@ Sphere Sphere::Transformed(Mat4f32 const& _t)
     Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
     
     Vect3f32 nCenter = position;
-    float nRadius = radius * (scale.x + scale.y + scale.z) / 3.0f; 
+    float nRadius = radius * MathUtils::Max(scale.x, MathUtils::Max(scale.y, scale.z)); 
     return Sphere(nCenter, nRadius);
 }
 
@@ -142,7 +142,7 @@ Sphere Sphere::Transform(Sphere const& _sphere, Mat4f32 const& _t)
     Mat4f32::FastDecompose(_t, &position, &scale, (Quaternion*)nullptr);
     
     Vect3f32 nCenter = position;
-    float nRadius = _sphere.radius * (scale.x + scale.y + scale.z) / 3.0f; 
+    float nRadius = _sphere.radius * MathUtils::Max(scale.x, MathUtils::Max(scale.y, scale.z)); 
     return Sphere(nCenter, nRadius);
 }
 

@@ -24,15 +24,15 @@ public:
 
         text->SetString("Tu est moche");
 
-        XMFLOAT4X4 matrix = MathHelper::Identity4x4();
-        matrix._41 = -300.0f;
+        Transform2D t;
+        t.SetPosition({-300.0f, 0.0f});
         
         while (window.IsOpen())
         {
             window.Update();
             window.Clear();
             
-            pDevice->DrawRenderText(text, matrix);
+            pDevice->DrawRenderText(text, t.GetMatrix());
             
             window.Display();
         }

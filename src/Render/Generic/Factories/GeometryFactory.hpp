@@ -54,32 +54,31 @@ private:
 	 	    Vertex& vertex1 = _vertices[i1];
 	 	    Vertex& vertex2 = _vertices[i2];
 	
-	 	    XMVECTOR e0 = XMVectorSubtract(XMLoadFloat3(&vertex1.position), XMLoadFloat3(&vertex0.position));
-	 	    XMVECTOR e1 = XMVectorSubtract(XMLoadFloat3(&vertex2.position), XMLoadFloat3(&vertex0.position));
+	 	    Vect3f32 e0 = vertex1.position - vertex0.position;
+	 	    Vect3f32 e1 = vertex2.position - vertex0.position;
 	
-	 	    XMVECTOR normal = XMVector3Cross(e0, e1);
+	 	    Vect3f32 normal = e0.Cross(e1);
 	
 	 	    Vect2f32 deltaUV1 = { vertex1.uv.x - vertex0.uv.x, vertex1.uv.y - vertex0.uv.y };
 	 	    Vect2f32 deltaUV2 = { vertex2.uv.x - vertex0.uv.x, vertex2.uv.y - vertex0.uv.y };
 	
-	 	    XMVECTOR tangent = XMVectorZero();
+	 	    Vect3f32 tangent;
 	 	    float denom = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 	 	    if (std::abs(denom) >= 1e-6f)
 	 	    {
 	 	        float f = 1.0f / denom;
 	 	        Vect3f32 t;
-	 	        t.x = f * (deltaUV2.y * XMVectorGetX(e0) - deltaUV1.y * XMVectorGetX(e1));
-	 	        t.y = f * (deltaUV2.y * XMVectorGetY(e0) - deltaUV1.y * XMVectorGetY(e1));
-	 	        t.z = f * (deltaUV2.y * XMVectorGetZ(e0) - deltaUV1.y * XMVectorGetZ(e1));
-	 	        tangent = XMLoadFloat3(&t);
+	 	        tangent.x = f * (deltaUV2.y * e0.x - deltaUV1.y * e1.x);
+	 	        tangent.y = f * (deltaUV2.y * e0.y - deltaUV1.y * e1.y);
+	 	        tangent.z = f * (deltaUV2.y * e0.z - deltaUV1.y * e1.z);
 	 	    }
 	
 	 	    // Accumulate directly into the map for all 3 vertices
 	 	    for (uint32 idx : { i0, i1, i2 })
 	 	    {
 	 	        AccumData& data = accum[_vertices[idx].position];
-	 	        XMStoreFloat3(&data.normal,  XMVectorAdd(XMLoadFloat3(&data.normal),  normal));
-	 	        XMStoreFloat3(&data.tangent, XMVectorAdd(XMLoadFloat3(&data.tangent), tangent));
+	 	        data.normal += normal;
+	 	        data.tangent += tangent;
 	 	    }
 	 	}
 	
@@ -87,13 +86,14 @@ private:
 	 	{
 	 	    AccumData& data = accum[_vertices[i].position];
 	
-	 	    XMVECTOR N = XMVector3Normalize(XMLoadFloat3(&data.normal));
-	 	    XMVECTOR T = XMLoadFloat3(&data.tangent);
+	 	    Vect3f32 N = data.normal.Normalized();
+	 	    Vect3f32 T = data.tangent;
+			
+	 		T = T - (T.Dot(N) * N);
+	 		T = T.Normalized();
 	
-	 	    T = XMVector3Normalize(XMVectorSubtract(T, XMVectorMultiply(XMVector3Dot(T, N), N)));
-	
-	 	    XMStoreFloat3(&_vertices[i].normal,  N);
-	 	    XMStoreFloat3(&_vertices[i].tangent, T);
+	 	    _vertices[i].normal  = N;
+	 	    _vertices[i].tangent = T;
 	 	}
 	
 	 	return _vertices;
@@ -102,7 +102,7 @@ private:
 	static Vector<Vertex> CalculateNormalsAndTangents(Vector<Vertex>& _vertices, const Vector<uint32>& _indices)
 	{
 		// 1. Utiliser un vecteur simple au lieu d'une map (beaucoup plus rapide)
-		struct Accum { XMVECTOR n = XMVectorZero(); XMVECTOR t = XMVectorZero(); };
+		struct Accum { Vect3f32 n = {0.0f, 0.0f, 0.0f}; Vect3f32 t = {0.0f, 0.0f, 0.0f}; };
 		std::vector<Accum> accum(_vertices.size());
 	
 		// 2. Premier passage : Accumulation par face
@@ -111,18 +111,18 @@ private:
 			uint32 i0 = _indices[i], i1 = _indices[i+1], i2 = _indices[i+2];
 			Vertex& v0 = _vertices[i0]; Vertex& v1 = _vertices[i1]; Vertex& v2 = _vertices[i2];
 	
-			XMVECTOR p0 = XMLoadFloat3(&v0.position), p1 = XMLoadFloat3(&v1.position), p2 = XMLoadFloat3(&v2.position);
-			XMVECTOR e1 = p1 - p0, e2 = p2 - p0;
+			Vect3f32 p0 = v0.position, p1 = v1.position, p2 = v2.position;
+			Vect3f32 e1 = p1 - p0, e2 = p2 - p0;
 	
 			// Normale de la face (non normalisée pour pondérer par l'aire de la face)
-			XMVECTOR faceNormal = XMVector3Cross(e1, e2);
+			Vect3f32 faceNormal = e1.Cross(e2);
 	
 			// Tangente
 			float du1 = v1.uv.x - v0.uv.x, dv1 = v1.uv.y - v0.uv.y;
 			float du2 = v2.uv.x - v0.uv.x, dv2 = v2.uv.y - v0.uv.y;
 			float f = 1.0f / (du1 * dv2 - du2 * dv1);
 	
-			XMVECTOR faceTangent = f * (dv2 * e1 - dv1 * e2);
+			Vect3f32 faceTangent = f * (dv2 * e1 - dv1 * e2);
 	
 			for (uint32 idx : {i0, i1, i2}) {
 				accum[idx].n += faceNormal;
@@ -133,28 +133,18 @@ private:
 		// 3. Second passage : Orthogonalisation et stockage
 		for (size_t i = 0; i < _vertices.size(); i++)
 		{
-			XMVECTOR N = XMVector3Normalize(accum[i].n);
-			XMVECTOR T = accum[i].t;
+			Vect3f32 N = accum[i].n.Normalized();
+			Vect3f32 T = accum[i].t;
 	
 			// Gram-Schmidt : T' = Normalize(T - (N.T) * N)
-			T = XMVector3Normalize(T - XMVector3Dot(T, N) * N);
+			T = (T - T.Dot(N) * N).Normalized();
 	
-			XMStoreFloat3(&_vertices[i].normal, N);
+			_vertices[i].normal = N;
 			// On stocke souvent la tangente en float4 (x, y, z, w) pour la bitangente
-			XMStoreFloat3(&_vertices[i].tangent, T); 
+			_vertices[i].tangent = T; 
 		}
 	
 		return _vertices;
-	}
-
-	static Vect3f32 Normalize(const Vect3f32& v, float radius)
-	{
-		XMVECTOR vec = XMLoadFloat3(&v);
-		vec = XMVector3Normalize(vec) * radius;
-
-		Vect3f32 out;
-		XMStoreFloat3(&out, vec);
-		return out;
 	}
 
 	static Vertex MidPoint(Vertex const& v0, Vertex const& v1)
@@ -469,7 +459,7 @@ public:
 
     	for (uint32 i = 0; i < (uint32)vertices.size(); ++i)
     	{
-    		Vect3f32 n = Normalize(vertices[i].position, 0.5f);
+    		Vect3f32 n = vertices[i].position.Normalized() * 0.5f;
     		vertices[i].position = { n.x, n.y, n.z };
     		
     		float u = 0.5f + atan2f(n.z, n.x) / XM_2PI;

@@ -42,6 +42,10 @@ public:
     
     Mat4f32 UpdateFromParent(Mat4f32 const& _p);
     
+    void AddFlag(uint8 _flag);
+    void RemoveFlag(uint8 _flag);
+    bool GetDirtyState(uint8 _flag) const;
+    
     //////////////////// Pos //////////////////////////
     
     Vect3f32 const& GetPosition();
@@ -95,10 +99,6 @@ private:
     Mat4f32 m_invMatrix;
 
     uint8 m_dirty;
-
-    void AddFlag(uint8 _flag);
-    void RemoveFlag(uint8 _flag);
-    bool GetDirtyState(uint8 _flag) const;
 };
 
 #endif

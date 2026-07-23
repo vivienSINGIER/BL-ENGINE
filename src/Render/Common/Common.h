@@ -3,6 +3,5 @@
 
 #include "../Core/define.h"
 #include "../Core/Core.h"
-#include "Utils/MathHelper.h"
 
 #endif

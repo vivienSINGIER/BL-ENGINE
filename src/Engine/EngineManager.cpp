@@ -75,16 +75,9 @@ void EngineManager::Initialize(UINT _width, UINT _height, WString _title, uint8 
     SystemScheduler::Get().RegisterSystem<LightSystem>(Phase::PreRender, NetworkFlag::CLIENT);
     SystemScheduler::Get().RegisterSystem<ReceiveSystem>(Phase::NetworkReceive);
     SystemScheduler::Get().RegisterSystem<SendSystem>(Phase::NetworkSend);
-
-    SystemScheduler::Get().RegisterSystem<PhysicIntegrateSystem>(Phase::FixedUpdate);
+    
     SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::FixedUpdate);
-	BroadPhaseSystem* bps = SystemScheduler::Get().RegisterSystem<BroadPhaseSystem>(Phase::FixedUpdate);
-	NarrowPhaseSystem* nps = SystemScheduler::Get().RegisterSystem<NarrowPhaseSystem>(Phase::FixedUpdate);
-	PhysicSystem* ps = SystemScheduler::Get().RegisterSystem<PhysicSystem>(Phase::FixedUpdate);
     SystemScheduler::Get().RegisterSystem<TransformSystem>(Phase::FixedUpdate);
-
-	nps->SetBroadPhaseSystem(bps);
-	ps->SetNarrowPhaseSystem(nps);
 }
 
 void EngineManager::Run()

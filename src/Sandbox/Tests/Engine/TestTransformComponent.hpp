@@ -27,9 +27,9 @@ public:
             if (t.local.GetScale().x < 0.1f)
                 scaleFactor = 1.001f;
             
-            t.local.AddYPR(XMFLOAT3(1.0f * dt, 1.0f * dt, 0.0f));
-            t.local.Move(XMFLOAT3(moveDir * dt, 0.0f, 0.0f));
-            t.local.Scale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
+            t.local.AddYPR(Vect3f32(1.0f * dt, 1.0f * dt, 0.0f));
+            t.local.Move(Vect3f32(moveDir * dt, 0.0f, 0.0f));
+            t.local.Scale(Vect3f32(scaleFactor, scaleFactor, scaleFactor));
 
             activetimer += dt;
         }
@@ -41,9 +41,9 @@ public:
         {
             TransformComponent& t = GetComponent<TransformComponent>();
             
-            t.local.AddYPR(XMFLOAT3(1.0f * dt, 1.0f * dt, 0.0f));
+            t.local.AddYPR(Vect3f32(1.0f * dt, 1.0f * dt, 0.0f));
             t.local.Scale(1.000001f);
-            t.local.Move(XMFLOAT3(0.1f * dt, 0.0f, 0.0f));
+            t.local.Move(Vect3f32(0.1f * dt, 0.0f, 0.0f));
         }
     };
     
@@ -63,16 +63,17 @@ public:
         EntityId e1 = scene->world->CreateEntity();
         TransformComponent& t1 = scene->world->AddComponent<TransformComponent>(e1);
         t1.SetParent(e);
-        t1.local.SetPosition(XMFLOAT3(2.0f, 0.0f, 0.0f));
+        t1.local.SetPosition(Vect3f32(2.0f, 0.0f, 0.0f));
         MeshRenderer& m1 = scene->world->AddComponent<MeshRenderer>(e1);
         m.geoId = RessourceManager::GetGeometryId("Cube");
         scene->world->AddScript<TestScript2>(e1);
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, -5.0f, -5.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Transform camT;
+        camT.SetPosition(Vect3f32(0.0f, -5.0f, -5.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
+        
+        cam.SetWorld(camT.GetMatrix());
         
         EngineManager::GetDevice()->SetMainCamera(&cam);
         

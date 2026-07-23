@@ -15,6 +15,5 @@ void CameraSystem::OnUpdate(float _dt, EntityId _e, CameraComponent& _camera, Tr
     if (_camera.isMainCamera)
     {
         d->SetMainCamera(cam);
-        _transform.world.dirty &= ~(uint8)DIRTY_FLAG::WORLD;
     }   
 }

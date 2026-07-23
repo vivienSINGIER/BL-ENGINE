@@ -17,7 +17,7 @@ public:
             m.materialId = RessourceManager::GetMaterialId("White");
             
             TransformComponent& t = AddComponent<TransformComponent>();
-            t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+            t.local.SetPosition(Vect3f32(0.0f, 0.0f, 0.0f));
         }
         
         void Update(float _dt) override
@@ -39,7 +39,7 @@ public:
             m.materialId = RessourceManager::GetMaterialId("White");
             
             TransformComponent& t = AddComponent<TransformComponent>();
-            t.local.SetPosition(XMFLOAT3(0.0f, 0.0f, -5.0f));
+            t.local.SetPosition(Vect3f32(0.0f, 0.0f, -5.0f));
             
             OwnerComponent& o = AddComponent<OwnerComponent>();
             o.ownerId = clientId;
@@ -69,17 +69,17 @@ public:
             OwnerComponent& o = GetComponent<OwnerComponent>();
             
             if (InputManager::IsKey(Z, o.ownerId))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, 1.0f * _dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, 1.0f * _dt));
             if (InputManager::IsKey(S, o.ownerId))
-                t.local.Move(XMFLOAT3(0.0f, 0.0f, -1.0f * _dt));
+                t.local.Move(Vect3f32(0.0f, 0.0f, -1.0f * _dt));
             if (InputManager::IsKey(Q, o.ownerId))
-                t.local.Move(XMFLOAT3(-1.0f * _dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(-1.0f * _dt, 0.0f, 0.0f));
             if (InputManager::IsKey(D, o.ownerId))
-                t.local.Move(XMFLOAT3(1.0f * _dt, 0.0f, 0.0f));
+                t.local.Move(Vect3f32(1.0f * _dt, 0.0f, 0.0f));
             if (InputManager::IsKey(SPACE, o.ownerId))
-                t.local.Move(XMFLOAT3(0.0f, 1.0f * _dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, 1.0f * _dt, 0.0f));
             if (InputManager::IsKey(LCONTROL, o.ownerId))
-                t.local.Move(XMFLOAT3(0.0f, -1.0f * _dt, 0.0f));
+                t.local.Move(Vect3f32(0.0f, -1.0f * _dt, 0.0f));
         }
     };
     

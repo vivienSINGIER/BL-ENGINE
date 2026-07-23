@@ -83,8 +83,6 @@ public:
 
         Device* pDevice = window.GetDevice();
 
-        XMFLOAT4X4 matrix = MathHelper::Identity4x4();
-
         Shader* s = ShaderFactory::CreateLitColored(pDevice);
         Material* green = s->CreateMaterial();
         green->SetFloat4("DiffuseAlbedo", {0.0f, 1.0f, 0.0f, 1.0f});
@@ -93,18 +91,18 @@ public:
         Geometry* cube = GeometryFactory::BuildCube(pDevice);
 
         Camera cam;
-        XMFLOAT3 pos = XMFLOAT3(0.0f, 0.0f, -5.0f);
-        cam.SetPos(pos);
-        XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        cam.LookAt(target);
+        Transform camT;
+        camT.SetPosition(Vect3f32(0.0f, 0.0f, -5.0f));
+        camT.LookAt({0.0f, 0.0f, 0.0f});
         
+        cam.SetWorld(camT.GetMatrix());
         pDevice->SetMainCamera(&cam);
         
         {
             LightDescriptor point1 = LightHelper::CreateLight(LightType::Point);
-            point1.light.Position = XMFLOAT3(-2.0, -1.0f, -1.0f);
-            point1.light.Strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
-            point1.light.Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+            point1.light.Position = Vect3f32(-2.0, -1.0f, -1.0f);
+            point1.light.Strength = Vect3f32(1.0f, 1.0f, 1.0f);
+            point1.light.Color = Vect4f32(1.0f, 1.0f, 1.0f, 1.0f);
         
             Vector<LightDescriptor> lights = { point1 };
             pDevice->SetLights(lights);
@@ -118,13 +116,12 @@ public:
         while (window.IsOpen())
         {
             HandleObjectInput(inputManager, t);
-            matrix = ToD3DMatrix(t.GetMatrix());
             
             window.Update();
             window.Clear();
 
             pDevice->SetMaterial(green);
-            pDevice->Draw(cube, matrix);
+            pDevice->Draw(cube, t.GetMatrix());
             
             window.Display();
         }

@@ -18,13 +18,13 @@ public:
             TextComponent& t = GetComponent<TextComponent>();
 
             if (InputManager::IsKey(Z))
-                t.transform.Move(XMFLOAT2(0.0f, 100.0f * _dt));
+                t.transform.Move(Vect2f32(0.0f, 100.0f * _dt));
             if (InputManager::IsKey(S))
-                t.transform.Move(XMFLOAT2(0.0f, -100.0f * _dt));
+                t.transform.Move(Vect2f32(0.0f, -100.0f * _dt));
             if (InputManager::IsKey(Q))
-                t.transform.Move(XMFLOAT2(-100.0f * _dt, 0.0f));
+                t.transform.Move(Vect2f32(-100.0f * _dt, 0.0f));
             if (InputManager::IsKey(D))
-                t.transform.Move(XMFLOAT2(100.0f * _dt, 0.0f));
+                t.transform.Move(Vect2f32(100.0f * _dt, 0.0f));
             if (InputManager::IsKey(A))
                 t.transform.Rotate(1.0f * _dt);
             if (InputManager::IsKey(E))

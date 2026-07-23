@@ -18,10 +18,10 @@ public:
         float midHeight = (float)_height / 2;
         
         vertices = {
-            UiVertex(XMFLOAT2(-midWidth, midHeight), XMFLOAT2(0.0f, 0.0f)),
-            UiVertex(XMFLOAT2(midWidth, midHeight), XMFLOAT2(1.0f, 0.0f)),
-            UiVertex(XMFLOAT2(-midWidth, -midHeight), XMFLOAT2(0.0f, 1.0f)),
-            UiVertex(XMFLOAT2(midWidth, -midHeight), XMFLOAT2(1.0f, 1.0f)),
+            UiVertex(Vect2f32(-midWidth, midHeight), Vect2f32(0.0f, 0.0f)),
+            UiVertex(Vect2f32(midWidth, midHeight), Vect2f32(1.0f, 0.0f)),
+            UiVertex(Vect2f32(-midWidth, -midHeight), Vect2f32(0.0f, 1.0f)),
+            UiVertex(Vect2f32(midWidth, -midHeight), Vect2f32(1.0f, 1.0f)),
         };
 
         indices = {
@@ -47,7 +47,7 @@ public:
 
         _radius = min(_radius, min(halfW, halfH));
 
-        const XMFLOAT2 arcCenters[4] = {
+        const Vect2f32 arcCenters[4] = {
             {  halfW - _radius,  halfH - _radius },
             { -halfW + _radius,  halfH - _radius },
             { -halfW + _radius, -halfH + _radius },
@@ -61,7 +61,7 @@ public:
             XM_PI + XM_PIDIV2,             
         };
         
-        vertices.push_back(UiVertex(XMFLOAT2(0.0f, 0.0f), XMFLOAT2(0.5f, 0.5f)));
+        vertices.push_back(UiVertex(Vect2f32(0.0f, 0.0f), Vect2f32(0.5f, 0.5f)));
 
         float angleStep = XM_PIDIV2 / (float)_cornerSegments;
 
@@ -80,7 +80,7 @@ public:
                 float u = (px + halfW) / (float)_width;
                 float v = 1.0f - (py + halfH) / (float)_height;
 
-                vertices.push_back(UiVertex(XMFLOAT2(px, py), XMFLOAT2(u, v)));
+                vertices.push_back(UiVertex(Vect2f32(px, py), Vect2f32(u, v)));
             }
         }
         
